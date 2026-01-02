@@ -4741,15 +4741,10 @@ BREAK2:
     lda CPU_PORT_DATA
     ora #CPU_PORT_DATA_LORAM_SET_ROM                        ; BASIC ROM
     sta CPU_PORT_DATA
-    ;
-    ; Because entrypoint and main return addresses are on the stack.
-    pla
-    pla
-    pla
-    pla
-    ;
-    rts
-    ;<<
+
+    ; Jump to BASIC, basically same as <RUN STOP>+<RESTORE>.
+    jmp [KERNAL_CBINV]
+        ; Does not return to here.
 .endproc
 
 ;;;; summary: ?
