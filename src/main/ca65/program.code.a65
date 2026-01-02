@@ -23,11 +23,6 @@
 ;;;     | __ | 1E 08      | 46 E1 | E9 A7 A7 79 A6 9C E3 |
 ;;;     |    | ENTRYPOINT | KERNAL|
 .proc main
-    ; Select BASIC RAM
-    lda CPU_PORT_DATA
-    and #CPU_PORT_DATA_LORAM_CLR_RAM                        ; BASIC:RAM
-    sta CPU_PORT_DATA
-
     jsr INITIALIZE
     from_loop
         ldy T5B
@@ -70,16 +65,6 @@
 .proc GET_CHAR_FROM_INPUT_FILTERED
 
 
-.endproc
-
-;;; summary: Restore ZP, select BASIC ROM
-;;; changed: A, X
-.proc RESTORE_ZP_BASIC_ROM                                  ; L183D:
-    ; Select BASIC ROM
-    lda CPU_PORT_DATA
-    ora #CPU_PORT_DATA_LORAM_SET_ROM                        ; BASIC ROM
-    sta CPU_PORT_DATA
-    rts
 .endproc
 
 ;;; summary reverse character under cursor
@@ -4487,7 +4472,12 @@ BREAK2:
 
 ;;; summary: Initialize
 ;;; changed: A, X, Y, ...
-.proc INITIALIZE                                            ; L2FB0:
+.proc INITIALIZE
+    ; Select BASIC RAM
+    lda CPU_PORT_DATA
+    and #CPU_PORT_DATA_LORAM_CLR_RAM
+    sta CPU_PORT_DATA
+
 ;    ; Disable CBM+SHIFT
 ;    lda #PETSCII_DISABLE_CBM_SHIFT
 ;    jsr KERNAL_CHROUT
@@ -4668,33 +4658,10 @@ BREAK2:
 
 ;;; summary: Command: Quit
 ;;; changed: ...
-.proc CMD_QUIT                                              ; L30D4:
-;    ; Select BASIC ROM
-;    lda CIA_2_PRA
-;    ora #CPU_PORT_DATA_LORAM_SET_ROM                        ; Was $03 ; BASIC ROM / KERNAL ROM
-;    sta CIA_2_PRA
-;    ; Screen at $0400 (standard)
-;    lda #$15
-;    sta VIC_MP
-;    lda #>SCREEN_TEXT_RAM_BASE                              ; $04
-;    sta KVAR_HIBASE                                         ; $0288 High byte of pointer to screen memory for screen input/output.
-;    ;
-;    ;>>
-;    ;--lda     #PETSCII_BLACK                               ; $90
-;    lda #PETSCII_ENABLE_CBM_SHIFT                           ; $09 Fix: re-enable disabled CBM+SHIFT
-;    ;<<
-;    jsr KERNAL_CHROUT
-    ; Set correct S for return to BASIC/Shell
-;    ldx S_BACKUP                                            ; L312E
-;    txs
-    ;>>
-    ;jmp L183D
-    ;jsr RESTORE_ZP_BASIC_ROM                                ; L183D
-    ;
-
+.proc CMD_QUIT
     ; Select BASIC ROM
     lda CPU_PORT_DATA
-    ora #CPU_PORT_DATA_LORAM_SET_ROM                        ; BASIC ROM
+    ora #CPU_PORT_DATA_LORAM_SET_ROM
     sta CPU_PORT_DATA
 
     ; Jump to BASIC, basically same as <RUN STOP>+<RESTORE>.
