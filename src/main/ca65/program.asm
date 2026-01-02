@@ -240,7 +240,7 @@
 .exportzp T5E := $5E    ; [T5E+T5F],y
 .exportzp T5F := $5F
 
-.export Z92 := $92
+.exportzp Z92 := $92
 
 .exportzp TFB := $FB    ; [TFB+TFC],y
 .exportzp TFC := $FC
