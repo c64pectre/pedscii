@@ -41,7 +41,7 @@
             lda ZPKERNAL_TIME_2
             sec
             sbc PREVIOUS_ZPKERNAL_TIME_2
-            cmp #CURSOR_BLINK_DELAY
+            cmp # CURSOR_BLINK_DELAY
             if_pl_then
                 jsr REVERSE_CURSOR_CHAR
             else_end
@@ -488,9 +488,9 @@
 ;;; changed: ...
 .proc L1A89
     ;>>
-    ;--lda #COLOR_DGY
+    ;--lda # COLOR_DGY
     ;--sta VIC_EC
-    ;--lda #COLOR_GRY
+    ;--lda # COLOR_GRY
     ;--sta VIC_B0C
     ;<<
     ldx # >COLOR_RAM_BASE
@@ -4231,17 +4231,17 @@
 ;;; changed: A+ X+ Y+
 .proc SCROLL_RIGHT
     from
-        lda #<OUR_VIDEO_MATRIX_BASE
+        lda # <OUR_VIDEO_MATRIX_BASE
         sta TFB
-        lda #>OUR_VIDEO_MATRIX_BASE
+        lda # >OUR_VIDEO_MATRIX_BASE
         sta TFC
 
         lda P36
         clc
-        adc #VIC_CHAR_COLUMNS - 1
+        adc # VIC_CHAR_COLUMNS - 1
         sta ZAB
 
-        lda #$00
+        lda # 0
         sta Z9E
         sta T5C
 
@@ -4251,12 +4251,12 @@
 
         ; [Z9E=$00,Z9F] = [L322E=$00,L322F] = [L3223=$00,L3224]
 
-        ldy #$02
+        ldy # 2
         lda [T5C],y
         sta V38B1
         jsr L333B                                           ; A+ L3380+ L337F+
 
-        lda #EDIT_PANEL_FIRST_LINE
+        lda # EDIT_PANEL_FIRST_LINE
         sta PFD                                             ; Screen line index
 
         ldx V37D8
@@ -4269,17 +4269,17 @@
         else_end
 
         from
-            ldy #$00
+            ldy # 0
             sty ZA9                                         ; Y = [ZA9]
             sty ZAA                                         ; [L3235] = [ZAA]
         loop
             ldy ZA8
             lda [Z9E],y
-            cmp #PETSCII_RETURN
+            cmp # PETSCII_RETURN
             if_eq_then
                 lda ZAA
                 if_eq_then
-                    lda #PETSCII_SPACE
+                    lda # PETSCII_SPACE
                     pha
                 else_end
                 
@@ -4316,7 +4316,7 @@
         from
             inx
             inc ZA8
-            ldy #$01
+            ldy # 1
         loop
             lda [TFB],y
             dey
@@ -4324,7 +4324,7 @@
         next
             iny
             iny
-            cpy #VIC_CHAR_COLUMNS
+            cpy # VIC_CHAR_COLUMNS
             bne _loop
         end
 
@@ -4334,7 +4334,7 @@
         sta [TFB],y
         lda TFB
         clc
-        adc #VIC_CHAR_COLUMNS
+        adc # VIC_CHAR_COLUMNS
         sta TFB
         if_cs_then
             inc TFC
@@ -4342,7 +4342,7 @@
     next
         inc PFD
         lda PFD
-        cmp #EDIT_PANEL_LAST_LINE + 1
+        cmp # EDIT_PANEL_LAST_LINE + 1
         bne _loop
     end
 
@@ -4354,15 +4354,15 @@
 .proc L3287
     tya
     pha
-        ldy #$00
+        ldy # 0
         lda [T5C],y
         sta Z9F
         sta ZB1
         sta T5D
-        ldy #$02
+        ldy # 2
         lda [T5C],y
         sta V38B1
-        ldx #$02
+        ldx # 2
     pla
     tay
     rts
@@ -4372,22 +4372,22 @@
 ;;; changed: A+ X+ Y+
 .proc SCROLL_LEFT
     from OUTER_LOOP
-        lda #<OUR_VIDEO_MATRIX_BASE
+        lda # <OUR_VIDEO_MATRIX_BASE
         sta TFB
-        lda #>OUR_VIDEO_MATRIX_BASE
+        lda # >OUR_VIDEO_MATRIX_BASE
         sta TFC
 
-        lda #$00
+        lda # 0
         sta ZB0
         sta T5C
         lda V37D7
         sta ZB1
         sta T5D
-        ldy #$02
+        ldy # 2
         lda [T5C],y
         sta V38B1
         jsr L333B                                           ; A+ L3380+ L337F+
-        lda #$00
+        lda # 0
         sta PFD
         ldx V37D8
         stx Z9C
@@ -4400,17 +4400,17 @@
         else_end
 
         from INNER_LOOP
-            ldy #$00
+            ldy # 0
             sty ZB2
             sty ZB3
         loop
             ldy Z9C
             lda [ZB0],y
-            cmp #PETSCII_RETURN
+            cmp # PETSCII_RETURN
             if_eq_then
                 lda ZB2
                 if_eq_then
-                    lda #PETSCII_SPACE
+                    lda # PETSCII_SPACE
                     pha
                 else_end
 
@@ -4448,7 +4448,7 @@
         inx
         inc Z9C
         from
-            ldy #VIC_CHAR_COLUMNS
+            ldy # VIC_CHAR_COLUMNS
         loop
             dey
             dey
@@ -4466,7 +4466,7 @@
         sta [TFB],y
         lda TFB
         clc
-        adc #VIC_CHAR_COLUMNS
+        adc # VIC_CHAR_COLUMNS
         sta TFB
         if_cs_then
             inc TFC
@@ -4475,7 +4475,7 @@
     next
         inc PFD
         lda PFD
-        cmp #EDIT_PANEL_LAST_LINE + 1
+        cmp # EDIT_PANEL_LAST_LINE + 1
         bne _loop
     end
 
@@ -4495,10 +4495,10 @@
             sec
             sbc L1CE7
             sta L337F
-            lda #$00
+            lda # 0
             sbc L1CE8
             if_mi_then
-                lda #$00
+                lda # 0
                 sta L337F
             else_end
 
@@ -4511,10 +4511,10 @@
             sbc L1CE7
             sta L3380
             inc L3380
-            lda #$FF
+            lda # $FF
             sbc L1CE8
             if_pl_then
-                lda #$19
+                lda # $19                                   ; ?
                 sta L3380
             else_end
         end
@@ -4536,7 +4536,7 @@
                 cmp L3380
                 if_cc_then
                     pla
-                    eor #$80                                ; Reverse?
+                    eor # $80                               ; Reverse?
                     pha
                 else_end
             else_end
@@ -4644,7 +4644,7 @@ BREAK1:
         stx P19
         jsr L1B9C
         lda T5B
-        cmp #BUMP_RIGHT
+        cmp # BUMP_RIGHT
         if_cs_then
             inc P36
             jsr SCROLL_RIGHT
@@ -4670,14 +4670,14 @@ BREAK1:
         rts
     else_end
 
-    cpx #$00
+    cpx # 0
     if_ne_then
         dex
         stx P35
         stx P19
         jsr L1C99                                           ; A- X- Y-
         lda T5B
-        cmp #BUMP_LEFT
+        cmp # BUMP_LEFT
         if_cc_then
             jsr L19D0
             inx
@@ -4700,7 +4700,7 @@ BREAK1:
 ;;; changed: ...
 .proc CMD_CURSOR_UP
     lda T5A
-    cmp #BUMP_TOP
+    cmp # BUMP_TOP
     if_cs_then
         jsr MOVE_CURSOR_UP                                  ; A+ X- Y- ZPKERNAL_PNT_LO+ ZPKERNAL_PNT_HI+ T5A+
         jmp _end
@@ -4745,7 +4745,7 @@ BREAK1:
         else
             lda ZPKERNAL_PNT_LO
             clc
-            adc #VIC_CHAR_COLUMNS
+            adc # VIC_CHAR_COLUMNS
             sta TFB
             if_cs_then
                 inc TFC
@@ -4769,10 +4769,10 @@ BREAK1:
 ;;; summary: Reverse line @TFB
 ;;; changed: ...
 .proc L34F3
-    ldy #VIC_CHAR_COLUMNS - 1
+    ldy # VIC_CHAR_COLUMNS - 1
     from_loop
         lda [TFB],y
-        eor #$80
+        eor # $80
         sta [TFB],y
     next
         dey
@@ -4785,7 +4785,7 @@ BREAK1:
 ;;; summary: ?
 ;;; changed: ...
 .proc L34FF
-    ldy #$00
+    ldy # 0
     from_loop
         cpy T5A
         beq _end                                            ; break
@@ -4808,9 +4808,9 @@ BREAK1:
 ;;; summary: ?
 ;;; changed: ...
 .proc L351B
-    lda #<OUR_VIDEO_MATRIX_BASE
+    lda # <OUR_VIDEO_MATRIX_BASE
     sta TFB
-    lda #>OUR_VIDEO_MATRIX_BASE
+    lda # >OUR_VIDEO_MATRIX_BASE
     sta TFC
     lda G_MODE
     if_ne_then
@@ -4820,10 +4820,10 @@ BREAK1:
             lda T5A
             sec
             sbc L1CE7
-            lda #$00
+            lda # 0
             sbc L1CE8
             if_mi_then
-                lda #$80                                        ; ?
+                lda # $80                                   ; ?
                 sta L2340
             else_end
         else_end
@@ -4846,7 +4846,7 @@ BREAK1:
     else_end
 
     lda T5A
-    cmp #BUMP_BOTTOM
+    cmp # BUMP_BOTTOM
     if_cc_then
         jsr MOVE_CURSOR_DOWN                                ; A+ X- Y- ZPKERNAL_PNT_LO+ ZPKERNAL_PNT_HI+ T5A+
         jmp _end
@@ -4875,7 +4875,7 @@ BREAK1:
         if_pl_then
             lda ZPKERNAL_PNT_LO
             sec
-            sbc #VIC_CHAR_COLUMNS
+            sbc # VIC_CHAR_COLUMNS
             sta TFB
             if_cc_then
                 dec TFC
@@ -4907,7 +4907,7 @@ BREAK1:
 ;;; summary: Command: Page down
 ;;; changed: ...
 .proc CMD_PAGE_DOWN
-    lda #PAGE_LINE_COUNT
+    lda # PAGE_LINE_COUNT
     sta V38B3
     from_loop
         jsr L1982
@@ -4931,7 +4931,7 @@ BREAK1:
         bne _loop
     end
 
-    lda #BUMP_BOTTOM
+    lda # BUMP_BOTTOM
     sta T5A
     jsr L21A2
 
@@ -4941,7 +4941,7 @@ BREAK1:
 ;;; summary: Command: Page up
 ;;; changed: ...
 .proc CMD_PAGE_UP
-    lda #PAGE_LINE_COUNT
+    lda # PAGE_LINE_COUNT
     sta V38B3
     jsr L1BEC
     from_loop
@@ -4968,7 +4968,7 @@ BREAK1:
         bne _loop
     end
 
-    lda #BUMP_TOP - 1
+    lda # BUMP_TOP - 1
     sta T5A
     jsr L21A2
 
@@ -4980,7 +4980,7 @@ BREAK1:
 .proc CMD_GO_TOP
     lda ZPBASIC_VALTYP
     sta T4F
-    lda #$03
+    lda # 3
     sta T50
     lda G_MODE
     if_ne_then
@@ -4994,7 +4994,7 @@ BREAK1:
         sta L1CE8
     else_end
 
-    lda #$00
+    lda # 0
     sta P38
     sta P39
     jsr L21A2
@@ -5026,7 +5026,7 @@ BREAK1:
         bne _loop
     end
 
-    lda #BUMP_BOTTOM
+    lda # BUMP_BOTTOM
     sta T5A
     jsr L21A2
 
@@ -5041,7 +5041,7 @@ BREAK1:
         jsr L1C99                                           ; A- X- Y-
     else_end
     
-    lda #BUMP_RIGHT
+    lda # BUMP_RIGHT
     sta T5B
     jsr L219D
 
@@ -5076,7 +5076,7 @@ BREAK1:
         jsr L1C99                                           ; A- X- Y-
     else_end
     
-    lda #PETSCII_RETURN
+    lda # PETSCII_RETURN
     jsr CMD_SPLIT_LINE
 
     rts
