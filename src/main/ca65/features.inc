@@ -19,4 +19,3 @@
 ; features
 
 FEATURE_ARG   = 1
-;FEATURE_BACKUP_ZP = 0

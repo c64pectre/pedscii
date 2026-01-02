@@ -27,10 +27,7 @@
     lda CPU_PORT_DATA
     and #CPU_PORT_DATA_LORAM_CLR_RAM                        ; BASIC:RAM
     sta CPU_PORT_DATA
-    ;
-;    .if ::FEATURE_BACKUP_ZP = 1
-;        jsr BACKUP_ZP
-;    .endif
+
     jsr INITIALIZE
     from_loop
         ldy T5B
@@ -78,9 +75,6 @@
 ;;; summary: Restore ZP, select BASIC ROM
 ;;; changed: A, X
 .proc RESTORE_ZP_BASIC_ROM                                  ; L183D:
-;    .if ::FEATURE_BACKUP_ZP = 1
-;        jsr RESTORE_ZP                                      ; L185E
-;    .endif
     ; Select BASIC ROM
     lda CPU_PORT_DATA
     ora #CPU_PORT_DATA_LORAM_SET_ROM                        ; BASIC ROM
@@ -98,42 +92,6 @@
     sta PREVIOUS_ZPKERNAL_TIME_2                            ; V3680
     rts
 .endproc
-
-;.if ::FEATURE_BACKUP_ZP = 1
-;    ;;; summary: Backup ZP (copy ZP to ZP_BACKUP)
-;    ;;; changed: A, X
-;    .proc BACKUP_ZP                                         ; L1853:
-;        from
-;            ldx #$00
-;        loop                                                ; L1855:
-;            lda ZEROPAGE_BASE,x
-;            sta ZP_BACKUP,x                                 ; V3681
-;        next
-;            inx
-;            bne _loop                                       ; L1855
-;        end
-;
-;        rts
-;    .endproc
-;.endif
-
-;.if ::FEATURE_BACKUP_ZP = 1
-;    ;;; summary: Restore ZP (copy ZP_BACKUP to ZP)
-;    ;;; changed: A, X
-;    .proc RESTORE_ZP                                        ; L185E:
-;        from
-;            ldx #$00
-;        loop                                                ; L1860:
-;            lda ZP_BACKUP,x                                 ; V3681
-;            sta ZEROPAGE_BASE,x
-;        next
-;            inx
-;            bne _loop                                       ; L1860
-;        end
-;
-;        rts
-;    .endproc
-;.endif
 
 ;;; summary: Add character in A to current cursor position, afterwards move 1 position to the right
 ;;; changed: A, X
@@ -4733,9 +4691,6 @@ BREAK2:
     ;jmp L183D
     ;jsr RESTORE_ZP_BASIC_ROM                                ; L183D
     ;
-;    .if ::FEATURE_BACKUP_ZP = 1
-;        jsr RESTORE_ZP                                      ; L185E
-;    .endif
 
     ; Select BASIC ROM
     lda CPU_PORT_DATA

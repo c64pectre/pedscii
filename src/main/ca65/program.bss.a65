@@ -23,9 +23,6 @@ _3680:
 PREVIOUS_ZPKERNAL_TIME_2:
     V3680:  .res 1      ; $3680
 
-;ZP_BACKUP:
-;    V3681:  .res 256    ; $3681..$3780 ZP_BACKUP
-
 V3781:      .res 1      ; $3781
 ;U3782:      .res 1      ; $3782 Unused
 V3783:      .res 1      ; $3783
