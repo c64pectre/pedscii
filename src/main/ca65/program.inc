@@ -204,3 +204,8 @@ CMD_KEY_CURSOR_LEFT   = PETSCII_CURSOR_LEFT   ; $9D  157  <SHIFT> + <CRSR L R>
 CMD_KEY_CUT           = PETSCII_CTRL_X        ; $BD  189  <CTRL> + <X>
 CMD_KEY_PASTE         = PETSCII_CTRL_V        ; $BE  190  <CTRL> + <V>
 
+;
+; Exceptions
+;
+
+EXCEPTION_NONE = 0

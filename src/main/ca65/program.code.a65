@@ -4091,30 +4091,31 @@
 ;;; summary: Initialize
 ;;; changed: A, X, Y, ...
 .proc INITIALIZE
+
+    lda # CPU_P_V
+    sta ZP_BIT_V
+
+    ; Clear any exception
+    clv
+
     ; Set all keys repeat
     lda # $80                                               ; All keys repeat
     sta KVAR_RPTFLG                                         ; Keyboard repeat switch. Bits: Bits #6-#7: %00 = Only cursor up/down, cursor left/right, Insert/Delete and Space repeat; %01 = No key repeats; %1x = All keys repeat.
     ; A = $80 , X = ? Y = ?
     ;
     ldy # 0                                                 ; MODE_EDIT
-    ; A = $80 , X = ? Y = $00
-    sty G_MODE                                              ; G_MODE = 0 = MODE_EDIT
-    sty V38AB
+    sty ZP_EXCEPTION_CODE                                   ; EXCEPTION_NONE
+    sty G_MODE                                              ; MODE_EDIT
     sty T22
     sty T26
     sty P38
     sty P39
-    sty L1CE9
-    sty L1CEA
     sty T4E
     sty T5A
     sty T5B
-
-    ;clc
-    ;lda #EDIT_BUFFERS_1_FIRST_PAGE - 1
-    ;adc #$01
-    ;lda #EDIT_BUFFERS_1_FIRST_PAGE
-    ;sta ZPBASIC_INTFLG                                      ; $0E Current numerical expression type. Bits: Bit #7: 0 = Floating point; 1 = Integer.
+    sty L1CE9
+    sty L1CEA
+    sty V38AB
 
     ; Initialize edit buffers: First byte of page points to page of next block.
     sei
@@ -4637,7 +4638,6 @@ BREAK1:
     lda P35
     cmp Z92
     if_ne_then
-        ;beq L3451
         ldx P35
         inx
         stx P35

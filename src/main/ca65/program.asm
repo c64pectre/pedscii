@@ -45,6 +45,7 @@
 ;   $02 - $09    8  ZP_1_FIRST  REGISTERS_BASE AX - DX
 ;   $0B - $12    8  ZP_2_FIRST
 ;   $14 - $2A   23  ZP_3_FIRST  FS FS_BOTTOM..FS_TOP
+;   $35 - $36    2
 ;   $3F - $48   10  ZP_4_FIRST
 ;   $4B - $72   40  ZP_5_FIRST  RS RS_BOTTOM RS_TOP
 ;   $8B - $8F    5  ZP_6_FIRST  RSP FSP FP MPX/MPL/MPH
@@ -58,14 +59,14 @@
 ;   $F7 - $FF    9  ZP_E_FIRST
 ;   Total     127
 
-.exportzp ZP_02 := $02  ; Unused                ; AL  General purpose register
-.exportzp ZP_03 := $03  ; ZPBASIC_ADRAY1_LO     ; AH  General purpose register
-.exportzp ZP_04 := $04  ; ZPBASIC_ADRAY1_HI     ; BL  General purpose register
-.exportzp ZP_05 := $05  ; ZPBASIC_ADRAY2_LO     ; BH  General purpose register
-.exportzp ZP_06 := $06  ; ZPBASIC_ADRAY2_HI     ; CL  General purpose register
-.exportzp ZP_07 := $07  ; ZPBASIC_CHARAC_INTEGR ; CH  General purpose register
-.exportzp ZP_08 := $08  ; ZPBASIC_ENDCHR        ; DL  General purpose register
-.exportzp ZP_09 := $09  ; ZPBASIC_TRMPOS        ; DH  General purpose register
+.exportzp ZP_02 := $02  ; Unused                ; AL  General purpose register  USED
+.exportzp ZP_03 := $03  ; ZPBASIC_ADRAY1_LO     ; AH  General purpose register  USED
+.exportzp ZP_04 := $04  ; ZPBASIC_ADRAY1_HI     ; BL  General purpose register  USED
+.exportzp ZP_05 := $05  ; ZPBASIC_ADRAY2_LO     ; BH  General purpose register  USED
+.exportzp ZP_06 := $06  ; ZPBASIC_ADRAY2_HI     ; CL  General purpose register  USED
+.exportzp ZP_07 := $07  ; ZPBASIC_CHARAC_INTEGR ; CH  General purpose register  USED
+.exportzp ZP_08 := $08  ; ZPBASIC_ENDCHR        ; DL  General purpose register  USED
+.exportzp ZP_09 := $09  ; ZPBASIC_TRMPOS        ; DH  General purpose register  USED
 
 .exportzp ZP_0B := $0B  ; ZPBASIC_COUNT
 .exportzp ZP_0C := $0C  ; ZPBASIC_DIMFLG
@@ -81,7 +82,7 @@
 .exportzp ZP_16 := $16  ; ZPBASIC_TEMPPT
 .exportzp ZP_17 := $17  ; ZPBASIC_LASTPT_LO
 .exportzp ZP_18 := $18  ; ZPBASIC_LASTPT_HI
-.exportzp ZP_19 := $19  ; ZPBASIC_TEMPST
+.exportzp ZP_19 := $19  ; ZPBASIC_TEMPST                                        USED
 .exportzp ZP_1A := $1A  ; ZPBASIC_TEMPST + 1
 .exportzp ZP_1B := $1B  ; ZPBASIC_TEMPST + 2
 .exportzp ZP_1C := $1C  ; ZPBASIC_TEMPST + 3
@@ -90,15 +91,21 @@
 .exportzp ZP_1F := $1F  ; ZPBASIC_TEMPST + 6
 .exportzp ZP_20 := $20  ; ZPBASIC_TEMPST + 7
 .exportzp ZP_21 := $21  ; ZPBASIC_TEMPST + 8
-.exportzp ZP_22 := $22  ; ZPBASIC_INDEX_LO_INDEX1_LO
-.exportzp ZP_23 := $23  ; ZPBASIC_INDEX_HI_INDEX1_HI
+.exportzp ZP_22 := $22  ; ZPBASIC_INDEX_LO_INDEX1_LO                            USED
+.exportzp ZP_23 := $23  ; ZPBASIC_INDEX_HI_INDEX1_HI                            USED
 .exportzp ZP_24 := $24  ; ZPBASIC_INDEX2_LO
 .exportzp ZP_25 := $25  ; ZPBASIC_INDEX2_HI
-.exportzp ZP_26 := $26  ; ZPBASIC_RESHO
-.exportzp ZP_27 := $27  ; ZPBASIC_RESMOH
+.exportzp ZP_26 := $26  ; ZPBASIC_RESHO                                         USED
+.exportzp ZP_27 := $27  ; ZPBASIC_RESMOH                                        USED
 .exportzp ZP_28 := $28  ; ZPBASIC_ADDEND_RESMO
 .exportzp ZP_29 := $29  ; ZPBASIC_RESLO
 .exportzp ZP_2A := $2A  ; ZPBASIC_UNUSED_2A ; Unused
+
+.exportzp ZP_35 := $35  ; ZPBASIC_FRESPC_LO                                     USED
+.exportzp ZP_36 := $36  ; ZPBASIC_FRESPC_HI                                     USED
+
+.exportzp ZP_38 := $38  ; ZPBASIC_MEMSIZ_HI                                     USED
+.exportzp ZP_39 := $39  ; ZPBASIC_CURLIN_LO                                     USED
 
 .exportzp ZP_3F := $3F  ; ZPBASIC_DATLIN_LO
 .exportzp ZP_40 := $40  ; ZPBASIC_DATLIN_HI
@@ -114,24 +121,24 @@
 .exportzp ZP_4B := $4B  ; ZPBASIC_OPPTR_LO_VARTXT_LO
 .exportzp ZP_4C := $4C  ; ZPBASIC_OPPTR_HI_VARTXT_HI
 .exportzp ZP_4D := $4D  ; ZPBASIC_OPMASK
-.exportzp ZP_4E := $4E  ; ZPBASIC_DEFPNT_LO_GRBPNT_LO_TEMPF3_LO
-.exportzp ZP_4F := $4F  ; ZPBASIC_DEFPNT_HI_GRBPNT_HI_TEMPF3_HI
-.exportzp ZP_50 := $50  ; ZPBASIC_DSCPNT_LO
+.exportzp ZP_4E := $4E  ; ZPBASIC_DEFPNT_LO_GRBPNT_LO_TEMPF3_LO                 USED
+.exportzp ZP_4F := $4F  ; ZPBASIC_DEFPNT_HI_GRBPNT_HI_TEMPF3_HI                 USED
+.exportzp ZP_50 := $50  ; ZPBASIC_DSCPNT_LO                                     USED
 .exportzp ZP_51 := $51  ; ZPBASIC_DSCPNT_HI
-.exportzp ZP_52 := $52  ; ZPBASIC_UNUSED_52 ; Unused
-.exportzp ZP_53 := $53  ; ZPBASIC_FOUR6
+.exportzp ZP_52 := $52  ; ZPBASIC_UNUSED_52 ; Unused                            USED
+.exportzp ZP_53 := $53  ; ZPBASIC_FOUR6                                         USED
 .exportzp ZP_54 := $54  ; ZPBASIC_JMPER
 .exportzp ZP_55 := $55  ; ZPBASIC_SIZE
 .exportzp ZP_56 := $56  ; ZPBASIC_OLDOV
-.exportzp ZP_57 := $57  ; ZPBASIC_TEMPF1
-.exportzp ZP_58 := $58  ; ZPBASIC_ARYPNT_LO_HIGHDS_LO
-.exportzp ZP_59 := $59  ; ZPBASIC_ARYPNT_HI_HIGHDS_HI
-.exportzp ZP_5A := $5A  ; ZPBASIC_HIGHTR_LO
-.exportzp ZP_5B := $5B  ; ZPBASIC_HIGHTR_HI
-.exportzp ZP_5C := $5C  ; ZPBASIC_TEMPF2
-.exportzp ZP_5D := $5D  ; ZPBASIC_DECCNT_LO_LOWDS_LO
-.exportzp ZP_5E := $5E  ; ZPBASIC_DECCNT_HI_LOWDS_HI_TENEXP
-.exportzp ZP_5F := $5F  ; ZPBASIC_DPTFLG_GRBTOP_LOWTR
+.exportzp ZP_57 := $57  ; ZPBASIC_TEMPF1                                        USED
+.exportzp ZP_58 := $58  ; ZPBASIC_ARYPNT_LO_HIGHDS_LO                           USED
+.exportzp ZP_59 := $59  ; ZPBASIC_ARYPNT_HI_HIGHDS_HI                           USED
+.exportzp ZP_5A := $5A  ; ZPBASIC_HIGHTR_LO                                     USED
+.exportzp ZP_5B := $5B  ; ZPBASIC_HIGHTR_HI                                     USED
+.exportzp ZP_5C := $5C  ; ZPBASIC_TEMPF2                                        USED
+.exportzp ZP_5D := $5D  ; ZPBASIC_DECCNT_LO_LOWDS_LO                            USED
+.exportzp ZP_5E := $5E  ; ZPBASIC_DECCNT_HI_LOWDS_HI_TENEXP                     USED
+.exportzp ZP_5F := $5F  ; ZPBASIC_DPTFLG_GRBTOP_LOWTR                           USED
 .exportzp ZP_60 := $60  ; ZPBASIC_EXPSGN_EPSGN
 .exportzp ZP_61 := $61  ; ZPBASIC_DSCTMP_FAC_FACEXP
 .exportzp ZP_62 := $62  ; ZPBASIC_FACHO
@@ -158,28 +165,28 @@
 .exportzp ZP_8E := $8E  ; ZPBASIC_RNDX + 3
 .exportzp ZP_8F := $8F  ; ZPBASIC_RNDX + 4
 
-.exportzp ZP_92 := $92  ; ZPKERNAL_SVXT         ; Datasette
+.exportzp ZP_92 := $92  ; ZPKERNAL_SVXT         ; Datasette                     USED
 
-.exportzp ZP_96 := $96  ; ZPKERNAL_SYNO         ; Datasette
-.exportzp ZP_97 := $97  ; ZPKERNAL_XSAV         ; Datasette, RS232
+.exportzp ZP_96 := $96  ; ZPKERNAL_SYNO         ; Datasette                     USED
+.exportzp ZP_97 := $97  ; ZPKERNAL_XSAV         ; Datasette, RS232              USED
 
-.exportzp ZP_9B := $9B  ; ZPKERNAL_PRTY         ; Datasette
-.exportzp ZP_9C := $9C  ; ZPKERNAL_DPSW         ; Datasette
+.exportzp ZP_9B := $9B  ; ZPKERNAL_PRTY         ; Datasette                     USED
+.exportzp ZP_9C := $9C  ; ZPKERNAL_DPSW         ; Datasette                     USED
 
-.exportzp ZP_9E := $9E  ; ZPKERNAL_PTR1_T1      ; Datasette, RS232
-.exportzp ZP_9F := $9F  ; ZPKERNAL_PTR2_T2_TMPC ; Datasette
+.exportzp ZP_9E := $9E  ; ZPKERNAL_PTR1_T1      ; Datasette, RS232              USED
+.exportzp ZP_9F := $9F  ; ZPKERNAL_PTR2_T2_TMPC ; Datasette                     USED
 
-.exportzp ZP_A6 := $A6  ; ZPKERNAL_BUFPT        ; Datasette
-.exportzp ZP_A7 := $A7  ; ZPKERNAL_INBIT_SHCNL  ; RS232
-.exportzp ZP_A8 := $A8  ; ZPKERNAL_BITCI_RER    ; RS232
-.exportzp ZP_A9 := $A9  ; ZPKERNAL_REZ_RINONE   ; RS232
-.exportzp ZP_AA := $AA  ; ZPKERNAL_RDFLG_RIDATA ; RS232
-.exportzp ZP_AB := $AB  ; ZPKERNAL_RIPRTY_SHCNH ; Datasette, RS232
+.exportzp ZP_A6 := $A6  ; ZPKERNAL_BUFPT        ; Datasette                     USED
+.exportzp ZP_A7 := $A7  ; ZPKERNAL_INBIT_SHCNL  ; RS232                         USED
+.exportzp ZP_A8 := $A8  ; ZPKERNAL_BITCI_RER    ; RS232                         USED
+.exportzp ZP_A9 := $A9  ; ZPKERNAL_REZ_RINONE   ; RS232                         USED
+.exportzp ZP_AA := $AA  ; ZPKERNAL_RDFLG_RIDATA ; RS232                         USED
+.exportzp ZP_AB := $AB  ; ZPKERNAL_RIPRTY_SHCNH ; Datasette, RS232              USED
 
-.exportzp ZP_B0 := $B0  ; ZPKERNAL_CMP0         ; Unknown
-.exportzp ZP_B1 := $B1  ; ZPKERNAL_TEMP         ; Unknown
-.exportzp ZP_B2 := $B2  ; ZPKERNAL_TAPE1_LO     ; Datasette ; Pointer to datasette buffer. Default: $033C
-.exportzp ZP_B3 := $B3  ; ZPKERNAL_TAPE1_HI     ; Datasette ; ^
+.exportzp ZP_B0 := $B0  ; ZPKERNAL_CMP0         ; Unknown                       USED
+.exportzp ZP_B1 := $B1  ; ZPKERNAL_TEMP         ; Unknown                       USED
+.exportzp ZP_B2 := $B2  ; ZPKERNAL_TAPE1_LO     ; Datasette                     USED
+.exportzp ZP_B3 := $B3  ; ZPKERNAL_TAPE1_HI     ; Datasette                     USED
 .exportzp ZP_B4 := $B4  ; ZPKERNAL_BITTS_SNSW1  ; RS232
 .exportzp ZP_B5 := $B5  ; ZPKERNAL_DIFF_NXTBIT  ; RS232
 .exportzp ZP_B6 := $B6  ; ZPKERNAL_PRP_RODATA   ; RS232
@@ -193,86 +200,109 @@
 .exportzp ZP_F8 := $F8  ; ZPKERNAL_RIBUF_HI     ; RS232
 .exportzp ZP_F9 := $F9  ; ZPKERNAL_ROBUF_LO     ; RS232
 .exportzp ZP_FA := $FA  ; ZPKERNAL_ROBUF_HI     ; RS232
-.exportzp ZP_FB := $FB  ; ZPKERNAL_FREKZP_FB    ; Unused
-.exportzp ZP_FC := $FC  ; ZPKERNAL_FREKZP_FC    ; Unused
-.exportzp ZP_FD := $FD  ; ZPKERNAL_FREKZP_FD    ; Unused
-.exportzp ZP_FE := $FE  ; ZPKERNAL_FREKZP_FE    ; Unused
+.exportzp ZP_FB := $FB  ; ZPKERNAL_FREKZP_FB    ; Unused                        USED
+.exportzp ZP_FC := $FC  ; ZPKERNAL_FREKZP_FC    ; Unused                        USED
+.exportzp ZP_FD := $FD  ; ZPKERNAL_FREKZP_FD    ; Unused                        USED
+.exportzp ZP_FE := $FE  ; ZPKERNAL_FREKZP_FE    ; Unused                        USED`
 .exportzp ZP_FF := $FF  ; ZPKERNAL_BASZPT_STRTMP_LOFBUF ; Might be used
 
+;
+; Variables
+;
+
+; KVAR_COLOR      := $0286 ; Current color, cursor color. Values: $00-$0F, 0-15.
+
+;
+; Zero page variables
+;
 
 ; ZPKERNAL_TIME_0 := $A0 ; Value of TI variable, time of day, increased by 1 every 1/60 second (on PAL machines). Values: $000000-$4F19FF, 0-518399 (on PAL machines).
 ; ZPKERNAL_TIME_1 := $A1
 ; ZPKERNAL_TIME_2 := $A2
-; kernal-r3-internal.export.asm:
 ; ZPKERNAL_PNT    := $D1-$D2 Pointer to current line in screen memory
-; KVAR_COLOR := $0286 ; Current color, cursor color. Values: $00-$0F, 0-15.
 
 .exportzp P19 := ZP_19
 
-.exportzp T22 := $22    ; [T22+T23],y
-.exportzp T23 := $23
+.exportzp T22 := ZP_22                  ; Init 0  [T22+T23],y
+.exportzp T23 := ZP_23
 
-.exportzp T26 := $26    ; [T26+T27],y
-.exportzp T27 := $27
+.exportzp T26 := ZP_26                  ; Init 0  [T26+T27],y
+.exportzp T27 := ZP_27
 
-.exportzp P35 := $35
-.exportzp P36 := $36
-.exportzp P38 := $38
-.exportzp P39 := $39
+.exportzp P35 := ZP_35
+.exportzp P36 := ZP_36
 
-.exportzp T4E := $4E    ; [T4E+T4F],y
-.exportzp T4F := $4F
+.exportzp P38 := ZP_38                  ; Init 0
 
-.exportzp T50 := $50
-.exportzp T52 := $52
-.exportzp T53 := $53
+.exportzp P39 := ZP_39                  ; Init 0
 
-.exportzp T57 := $57    ; [T57+T58],y
-.exportzp T58 := $58
+.exportzp T4E := ZP_4E                  ; Init 0  [T4E+T4F],y
+.exportzp T4F := ZP_4F
 
-.exportzp T59 := $59
-.exportzp T5A := $5A
-.exportzp T5B := $5B    ; CURSOR_X_SCREEN 0..35
+.exportzp T50 := ZP_50
 
-.exportzp T5C := $5C    ; [T5C+T5D],y
-.exportzp T5D := $5D
+.exportzp T52 := ZP_52
+.exportzp T53 := ZP_53
 
-.exportzp T5E := $5E    ; [T5E+T5F],y
-.exportzp T5F := $5F
+.exportzp T57 := ZP_57                  ; [T57+T58],y
+.exportzp T58 := ZP_58
 
-.exportzp Z92 := $92
+.exportzp T59 := ZP_59
 
-.exportzp TFB := $FB    ; [TFB+TFC],y
-.exportzp TFC := $FC
+.exportzp T5A := ZP_5A                  ; Init 0
 
-.exportzp PFD := $FD    ; [PFD+PFE],y
-.exportzp PFE := $FE
+.exportzp T5B := ZP_5B                  ; Init 0  CURSOR_X_SCREEN 0..35
 
-.exportzp Z96 := $96
-.exportzp Z97 := $97
+.exportzp T5C := ZP_5C                  ; [T5C+T5D],y
+.exportzp T5D := ZP_5D
 
-.exportzp Z9B := $9B
-.exportzp Z9C := $9C                    ; X = V37D8
+.exportzp T5E := ZP_5E                  ; [T5E+T5F],y
+.exportzp T5F := ZP_5F
 
-.exportzp Z9E := $9E
-.exportzp Z9F := $9F
+.exportzp Z92 := ZP_92
 
-.exportzp ZA6 := $A6                    ; free
-.exportzp ZA7 := $A7                    ; free
+.exportzp Z96 := ZP_96                  ;[Z96+Z97],y
+.exportzp Z97 := ZP_97
 
-.exportzp ZA8 := $A8
-.exportzp ZA9 := $A9
+.exportzp Z9B := ZP_9B
 
-.exportzp ZAA := $AA
-.exportzp ZAB := $AB
+.exportzp Z9C := ZP_9C
 
-.exportzp ZB0 := $B0                    ; L32D6 cmp0 ZPKERNAL_CMP0 Tape
-.exportzp ZB1 := $B1                    ; L32D7 temp               Tape
-.exportzp ZB2 := $B2                    ; L32E8
-.exportzp ZB3 := $B3                    ; Y
-.exportzp ZB4 := $B4                    ; free
-.exportzp ZB5 := $B5                    ; free
-.exportzp ZB6 := $B6                    ; free
+.exportzp Z9E := ZP_9E                  ; [Z9E+Z9F],y
+.exportzp Z9F := ZP_9F
+
+;;; summary: Used in exception handling: set `V` without changing any register
+;;; notes:
+;;;   Set `V`: `bit ZP_BIT_V`
+.export ZP_BIT_V := ZP_A6               ; Init $40 = CPU_P_V
+
+;;; summary: Code of current (V=1) or last exception, if any.
+.exportzp ZP_EXCEPTION_CODE := ZP_A7    ; Init 0 = EXCEPTION_NONE
+
+.exportzp ZA8 := ZP_A8
+
+.exportzp ZA9 := ZP_A9
+
+.exportzp ZAA := ZP_AA
+
+.exportzp ZAB := ZP_AB
+
+.exportzp ZB0 := ZP_B0                  ; [ZB0+ZB1],y
+.exportzp ZB1 := ZP_B1
+
+.exportzp ZB2 := ZP_B2
+
+.exportzp ZB3 := ZP_B3
+
+.exportzp TFB := ZP_FB                  ; [TFB+TFC],y
+.exportzp TFC := ZP_FC
+
+.exportzp PFD := ZP_FD                  ; [PFD+PFE],y
+.exportzp PFE := ZP_FE
+
+;
+; Variables for argc and argv
+;
 
 V033C := __OS_TAPE_BUFFER_START__ + $0000                   ; $033C KERNAL_TBUFFR Datasette buffer (192 bytes).
 V033D := __OS_TAPE_BUFFER_START__ + $0001                   ; $00 Because it is not possible to have >= 256 arguments
