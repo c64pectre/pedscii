@@ -2241,13 +2241,13 @@
             if_ne_then
                 ;beq L2464
                 pla
-                cmp # PETSCII_F3
+                cmp # CMD_KEY_SEARCH_DOWN
                 if_eq_then
                     sta V378E,x
                     rts
                 else_end
 
-                cmp # PETSCII_F4
+                cmp # CMD_KEY_SEARCH_UP
                 if_eq_then
                     sta V378E,x
                     rts
@@ -3661,14 +3661,14 @@
         ldx # 0
     loop
         lda V378E,y
-        cmp # PETSCII_F3
+        cmp # CMD_KEY_SEARCH_DOWN
         if_eq_then
             stx V38AB
             jsr CMD_SEARCH_DOWN
             rts
         else_end
 
-        cmp # PETSCII_F4
+        cmp # CMD_KEY_SEARCH_UP
         if_eq_then
             stx V38AB
             jsr CMD_SEARCH_UP
@@ -3690,14 +3690,14 @@
         ldx # 0
     loop
         lda V378E,y
-        cmp # PETSCII_F3
+        cmp # CMD_KEY_SEARCH_DOWN
         if_eq_then
             stx V38AC
             jsr CMD_SEARCH_DOWN
             rts
         else_end
 
-        cmp # PETSCII_F4
+        cmp # CMD_KEY_SEARCH_UP
         if_eq_then
             stx V38AC
             jsr CMD_SEARCH_UP
@@ -3719,13 +3719,13 @@
     loop
         iny
         lda V378E,y
-        cmp # PETSCII_F3
+        cmp # CMD_KEY_SEARCH_DOWN
         if_eq_then
             jsr CMD_SEARCH_DOWN
             rts
         else_end
 
-        cmp # PETSCII_F4
+        cmp # CMD_KEY_SEARCH_UP
         if_eq_then
             jsr CMD_SEARCH_UP
             rts
