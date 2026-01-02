@@ -16,176 +16,183 @@
 ;
 ;    Contact: https://github.com/c64pectre/pedscii/ create an issue
 
-RESOURCE_STRING_OUT_OF_MEMORY:
-    _1B8E:  .byte   "out of memory", PETSCII_NUL
-
-RESOURCE_STRING_NOT_ENOUGH_MEMORY:
-    _1EE8:  .byte   "not enough memory", PETSCII_NUL
+;
+; Resource strings
+;
 
 RESOURCE_STRING_BOTTOM:
-    _2337:  .byte   "[bottom]", PETSCII_NUL
+    .byte "[bottom]", PETSCII_NUL
 
 RESOURCE_STRING_NO_MORE_FREE_FILES:
-    _2809:  .byte   "no more free files", PETSCII_NUL
+    .byte "no more free files", PETSCII_NUL
 
 RESOURCE_STRING_LIST_HEADER:
-    _28FC:  .byte PETSCII_RETURN, PETSCII_RETURN, PETSCII_RETURN, PETSCII_RETURN, PETSCII_RETURN, "name        blocks", PETSCII_RETURN, PETSCII_RETURN, PETSCII_NUL
+    .byte PETSCII_RETURN, PETSCII_RETURN, PETSCII_RETURN, PETSCII_RETURN, PETSCII_RETURN, "name        blocks", PETSCII_RETURN, PETSCII_RETURN, PETSCII_NUL
 
 RESOURCE_STRING_LIST_FOOTER:
-    _2916:  .byte PETSCII_RETURN, PETSCII_RETURN, "blocks free: ", PETSCII_NUL
+    .byte PETSCII_RETURN, PETSCII_RETURN, "blocks free: ", PETSCII_NUL
 
 RESOURCE_STRING_HIT_RETURN_TO_CONTINUE:
-    _2926:  .byte   "hit return to continue", PETSCII_NUL
+    .byte "hit return to continue", PETSCII_NUL
 
-COMMAND_ADDR_TABLE_LO:
-    .lobytes CMD_GET                                        ; 0
-    .lobytes CMD_PUT                                        ; 1
-    .lobytes CMD_GOTO                                       ; 2
-    .lobytes CMD_CLEAR                                      ; 3
-    .lobytes CMD_LIST                                       ; 4
-    .lobytes CMD_QUIT                                       ; 5
-    .lobytes CMD_DIR                                        ; 6
-    .lobytes CMD_DISK                                       ; 7
-
-COMMAND_ADDR_TABLE_HI:
-    .hibytes CMD_GET                                        ; 0
-    .hibytes CMD_PUT                                        ; 1
-    .hibytes CMD_GOTO                                       ; 2
-    .hibytes CMD_CLEAR                                      ; 3
-    .hibytes CMD_LIST                                       ; 4
-    .hibytes CMD_QUIT                                       ; 5
-    .hibytes CMD_DIR                                        ; 6
-    .hibytes CMD_DISK                                       ; 7
-
-COMMAND_NAME_TABLE:
-    _2A0C:  .byte   "get", PETSCII_NUL, PETSCII_NUL, PETSCII_NUL, PETSCII_NUL   ; 0 GET
-    _2A13:  .byte   "put", PETSCII_NUL, PETSCII_NUL, PETSCII_NUL, PETSCII_NUL   ; 1 PUT
-    _2A1A:  .byte   "goto"            , PETSCII_NUL, PETSCII_NUL, PETSCII_NUL   ; 2 GOTO
-    _2A21:  .byte   "clear"                        , PETSCII_NUL, PETSCII_NUL   ; 3 CLEAR
-    _2A28:  .byte   "list"            , PETSCII_NUL, PETSCII_NUL, PETSCII_NUL   ; 4 LIST
-    _2A36:  .byte   "quit"            , PETSCII_NUL, PETSCII_NUL, PETSCII_NUL   ; 6 QUIT
-    _2A3D:  .byte   "dir", PETSCII_NUL, PETSCII_NUL, PETSCII_NUL, PETSCII_NUL   ; 7 DIR
-    _2A44:  .byte   "disk"            , PETSCII_NUL, PETSCII_NUL, PETSCII_NUL   ; 8 DISK
-
-COMMAND_NAME_SIGNIFICANT_CHAR_COUNT:                        ; L2A4B:
-    .byte   $02                                             ; 0 GET
-    .byte   $02                                             ; 1 PUT
-    .byte   $02                                             ; 2 GOTO
-    .byte   $05                                             ; 3 CLEAR
-    .byte   $01                                             ; 4 LIST
-    .byte   $04                                             ; 6 QUIT
-    .byte   $03                                             ; 7 DIR
-    .byte   $03                                             ; 8 DISK
+;;; summary: Disk directory (length is 1)
+RESOURCE_STRING_DIR_NAME:
+    .byte "$"
 
 RESOURCE_STRING_COMMAND_PROMPT:
-    _2A54:  .byte   "cmd: ", PETSCII_NUL
+    .byte "cmd: ", PETSCII_NUL
+
+RESOURCE_STRING_OUT_OF_MEMORY:
+    .byte "out of memory", PETSCII_NUL
+
+RESOURCE_STRING_NOT_ENOUGH_MEMORY:
+    .byte "not enough memory", PETSCII_NUL
 
 RESOURCE_STRING_INVALID_COMMAND:
-    _2A5A:  .byte   "invalid command", PETSCII_NUL
+    .byte "invalid command", PETSCII_NUL
 
 RESOURCE_STRING_DRIVE_NOT_PRESENT:
-    _2B2D:  .byte   "drive not present", PETSCII_NUL
-
-RESOURCE_STRING_HIT_RETURN_TO_CONTINUE_DUPLICATE_TODO_REMOVE:
-    _2D0F:  .byte   "hit return to continue", PETSCII_NUL
-
-RESOURCE_STRING_DIR_NAME:
-    _2D26:  .byte   "$"                                     ; $24 Disk directory (length is 1)
+    .byte "drive not present", PETSCII_NUL
 
 RESOURCE_STRING_SEARCH_STRING_NOT_FOUND:
-    _2F98:  .byte   "search string not found", PETSCII_NUL
+    .byte "search string not found", PETSCII_NUL
+
+;
+; Tables power of 10
+;
 
 ;;; summary Table power of 10 lo bytes: 1, 10, 100, 1000
 TABLE_POWER_OF_10_LO:
-    ;               0   1    2     3
-    ; L2617:  .byte   $01, $0A, $64, $E8
-    L2617:  .byte   <1, <10, <100, <1000
-;
+    ;      0    1     2      3
+    .byte <1, <10, <100, <1000
 
 ;;; summary Table power of 10 hi bytes: 1, 10, 100, 1000
 TABLE_POWER_OF_10_HI:
-    ;               0   1    2     3
-    ; L261B:  .byte   $00, $00, $00, $03
-    L261B:  .byte   >1, >10, >100, >1000
+    ;      0    1     2      3
+    .byte >1, >10, >100, >1000
+
+;
+; Command maps
 ;
 
 ; Map key to edit command. Sorted ascending by key.
 MAP_KEY_TO_EDIT_CMD:
-    KEY_CMD_SELECT_ALL:     .byte PETSCII_CTRL_A            ;  0  $01    1  <CTRL> + <A>
-    KEY_CMD_COMMAND_MODE:   .byte PETSCII_STOP              ;  1  $03    3  <RUN STOP> or <CTRL> + <C>
-    KEY_CMD_SPLIT_LINE:     .byte PETSCII_RETURN            ;  2  $0D   13  <RETURN>
-    KEY_CMD_COPY:           .byte PETSCII_CTRL_P            ;  3  $10   16  <CTRL> + <P>
-    KEY_CMD_CURSOR_DOWN:    .byte PETSCII_CURSOR_DOWN       ;  4  $11   17  <CRSR U D>
-    KEY_CMD_GO_BEGIN_LINE:  .byte PETSCII_HOME              ;  5  $13   19  <HOME_CLR>
-    KEY_CMD_DELETE:         .byte PETSCII_DELETE            ;  6  $14   20  <INST DEL>
-    KEY_CMD_CURSOR_RIGHT:   .byte PETSCII_CURSOR_RIGHT      ;  7  $1D   29  <CRSR L R>
-    KEY_CMD_SELECT_MODE:    .byte PETSCII_RUN               ;  8  $83  131  <SHIFT> + <RUN STOP>
-    KEY_CMD_PAGE_DOWN:      .byte PETSCII_F1                ;  9  $85  133  <F1>
-    KEY_CMD_SEARCH_DOWN:    .byte PETSCII_F3                ; 10  $86  134  <F3>
-    KEY_CMD_GO_TOP:         .byte PETSCII_F5                ; 11  $87  135  <F5>
-    KEY_CMD_F7:             .byte PETSCII_F7                ; 12  $88  136  <F7>
-    KEY_CMD_PAGE_UP:        .byte PETSCII_F2                ; 13  $89  137  <SHIFT> + <F1> (<F2>)
-    KEY_CMD_SEARCH_UP:      .byte PETSCII_F4                ; 14  $8A  138  <SHIFT> + <F3> (<F4>)
-    KEY_CMD_GO_BOTTOM:      .byte PETSCII_F6                ; 15  $8B  139  <SHIFT> + <F5> (<F6>)
-    KEY_CMD_F8:             .byte PETSCII_F8                ; 16  $8C  140  <SHIFT> + <F7> (<F8>)
-    KEY_CMD_ADD_LINE:       .byte PETSCII_SHIFT_RETURN      ; 17  $8D  141  <SHIFT> + <RETURN>
-    KEY_CMD_CURSOR_UP:      .byte PETSCII_CURSOR_UP         ; 18  $91  145  <SHIFT> + <CRSR U D>
-    KEY_CMD_GO_END_LINE:    .byte PETSCII_CLR               ; 19  $93  147  <SHIFT> + <CLR HOME>
-    KEY_CMD_INSERT:         .byte PETSCII_INSERT            ; 20  $94  148  <SHIFT> + <INST DEL>
-    KEY_CMD_CURSOR_LEFT:    .byte PETSCII_CURSOR_LEFT       ; 21  $9D  157  <SHIFT> + <CRSR L R>
-    KEY_CMD_CUT:            .byte PETSCII_CTRL_X            ; 22  $BD  189  <CTRL> + <X>
-    KEY_CMD_PASTE:          .byte PETSCII_CTRL_V            ; 23  $BE  190  <CTRL> + <V>
-                            .byte PETSCII_NUL               ; 24  $00    0
+    .byte PETSCII_CTRL_A        ;  0  CMD_NUMBER_SELECT_ALL     $01    1  <CTRL> + <A>
+    .byte PETSCII_STOP          ;  1  CMD_NUMBER_COMMAND_MODE   $03    3  <RUN STOP> or <CTRL> + <C>
+    .byte PETSCII_RETURN        ;  2  CMD_NUMBER_SPLIT_LINE     $0D   13  <RETURN>
+    .byte PETSCII_CTRL_P        ;  3  CMD_NUMBER_COPY           $10   16  <CTRL> + <P>
+    .byte PETSCII_CURSOR_DOWN   ;  4  CMD_NUMBER_CURSOR_DOWN    $11   17  <CRSR U D>
+    .byte PETSCII_HOME          ;  5  CMD_NUMBER_GO_BEGIN_LINE  $13   19  <HOME_CLR>
+    .byte PETSCII_DELETE        ;  6  CMD_NUMBER_DELETE         $14   20  <INST DEL>
+    .byte PETSCII_CURSOR_RIGHT  ;  7  CMD_NUMBER_CURSOR_RIGHT   $1D   29  <CRSR L R>
+    .byte PETSCII_RUN           ;  8  CMD_NUMBER_SELECT_MODE    $83  131  <SHIFT> + <RUN STOP>
+    .byte PETSCII_F1            ;  9  CMD_NUMBER_PAGE_DOWN      $85  133  <F1>
+    .byte PETSCII_F3            ; 10  CMD_NUMBER_SEARCH_DOWN    $86  134  <F3>
+    .byte PETSCII_F5            ; 11  CMD_NUMBER_GO_TOP         $87  135  <F5>
+    .byte PETSCII_F7            ; 12  CMD_NUMBER_F7             $88  136  <F7>
+    .byte PETSCII_F2            ; 13  CMD_NUMBER_PAGE_UP        $89  137  <SHIFT> + <F1> (<F2>)
+    .byte PETSCII_F4            ; 14  CMD_NUMBER_SEARCH_UP      $8A  138  <SHIFT> + <F3> (<F4>)
+    .byte PETSCII_F6            ; 15  CMD_NUMBER_GO_BOTTOM      $8B  139  <SHIFT> + <F5> (<F6>)
+    .byte PETSCII_F8            ; 16  CMD_NUMBER_F8             $8C  140  <SHIFT> + <F7> (<F8>)
+    .byte PETSCII_SHIFT_RETURN  ; 17  CMD_NUMBER_ADD_LINE       $8D  141  <SHIFT> + <RETURN>
+    .byte PETSCII_CURSOR_UP     ; 18  CMD_NUMBER_CURSOR_UP      $91  145  <SHIFT> + <CRSR U D>
+    .byte PETSCII_CLR           ; 19  CMD_NUMBER_GO_END_LINE    $93  147  <SHIFT> + <CLR HOME>
+    .byte PETSCII_INSERT        ; 20  CMD_NUMBER_INSERT         $94  148  <SHIFT> + <INST DEL>
+    .byte PETSCII_CURSOR_LEFT   ; 21  CMD_NUMBER_CURSOR_LEFT    $9D  157  <SHIFT> + <CRSR L R>
+    .byte PETSCII_CTRL_X        ; 22  CMD_NUMBER_CUT            $BD  189  <CTRL> + <X>
+    .byte PETSCII_CTRL_V        ; 23  CMD_NUMBER_PASTE          $BE  190  <CTRL> + <V>
+    .byte PETSCII_NUL           ; 24                            $00    0
+
 CMD_ADDR_TABLE_LO:
-    .lobytes CMD_SELECT_ALL     ;  0
-    .lobytes CMD_COMMAND_MODE   ;  1
-    .lobytes CMD_SPLIT_LINE     ;  2
-    .lobytes CMD_COPY           ;  3
-    .lobytes CMD_CURSOR_DOWN    ;  4
-    .lobytes CMD_GO_BEGIN_LINE  ;  5
-    .lobytes CMD_DELETE         ;  6
-    .lobytes CMD_CURSOR_RIGHT   ;  7
-    .lobytes CMD_SELECT_MODE    ;  8
-    .lobytes CMD_PAGE_DOWN      ;  9
-    .lobytes CMD_SEARCH_DOWN    ; 10
-    .lobytes CMD_GO_TOP         ; 11
-    .lobytes CMD_F7             ; 12
-    .lobytes CMD_PAGE_UP        ; 13
-    .lobytes CMD_SEARCH_UP      ; 14
-    .lobytes CMD_GO_BOTTOM      ; 15
-    .lobytes CMD_F8             ; 16
-    .lobytes CMD_ADD_LINE       ; 17
-    .lobytes CMD_CURSOR_UP      ; 18
-    .lobytes CMD_GO_END_LINE    ; 19
-    .lobytes CMD_INSERT         ; 20
-    .lobytes CMD_CURSOR_LEFT    ; 21
-    .lobytes CMD_CUT            ; 22
-    .lobytes CMD_PASTE          ; 23
-    .lobytes 0                  ; 24
+    .lobytes CMD_SELECT_ALL     ;  0  CMD_NUMBER_SELECT_ALL  
+    .lobytes CMD_COMMAND_MODE   ;  1  CMD_NUMBER_COMMAND_MODE
+    .lobytes CMD_SPLIT_LINE     ;  2  CMD_NUMBER_SPLIT_LINE  
+    .lobytes CMD_COPY           ;  3  CMD_NUMBER_COPY        
+    .lobytes CMD_CURSOR_DOWN    ;  4  CMD_NUMBER_CURSOR_DOWN 
+    .lobytes CMD_GO_BEGIN_LINE  ;  5  CMD_NUMBER_GO_BEGIN_LIN
+    .lobytes CMD_DELETE         ;  6  CMD_NUMBER_DELETE      
+    .lobytes CMD_CURSOR_RIGHT   ;  7  CMD_NUMBER_CURSOR_RIGHT
+    .lobytes CMD_SELECT_MODE    ;  8  CMD_NUMBER_SELECT_MODE 
+    .lobytes CMD_PAGE_DOWN      ;  9  CMD_NUMBER_PAGE_DOWN   
+    .lobytes CMD_SEARCH_DOWN    ; 10  CMD_NUMBER_SEARCH_DOWN 
+    .lobytes CMD_GO_TOP         ; 11  CMD_NUMBER_GO_TOP      
+    .lobytes CMD_F7             ; 12  CMD_NUMBER_F7          
+    .lobytes CMD_PAGE_UP        ; 13  CMD_NUMBER_PAGE_UP     
+    .lobytes CMD_SEARCH_UP      ; 14  CMD_NUMBER_SEARCH_UP   
+    .lobytes CMD_GO_BOTTOM      ; 15  CMD_NUMBER_GO_BOTTOM   
+    .lobytes CMD_F8             ; 16  CMD_NUMBER_F8          
+    .lobytes CMD_ADD_LINE       ; 17  CMD_NUMBER_ADD_LINE    
+    .lobytes CMD_CURSOR_UP      ; 18  CMD_NUMBER_CURSOR_UP   
+    .lobytes CMD_GO_END_LINE    ; 19  CMD_NUMBER_GO_END_LINE 
+    .lobytes CMD_INSERT         ; 20  CMD_NUMBER_INSERT      
+    .lobytes CMD_CURSOR_LEFT    ; 21  CMD_NUMBER_CURSOR_LEFT 
+    .lobytes CMD_CUT            ; 22  CMD_NUMBER_CUT         
+    .lobytes CMD_PASTE          ; 23  CMD_NUMBER_PASTE       
+    .lobytes 0                  ; 24                               
 
 CMD_ADDR_TABLE_HI:
-    .hibytes CMD_SELECT_ALL     ;  0
-    .hibytes CMD_COMMAND_MODE   ;  1
-    .hibytes CMD_SPLIT_LINE     ;  2
-    .hibytes CMD_COPY           ;  3
-    .hibytes CMD_CURSOR_DOWN    ;  4
-    .hibytes CMD_GO_BEGIN_LINE  ;  5
-    .hibytes CMD_DELETE         ;  6
-    .hibytes CMD_CURSOR_RIGHT   ;  7
-    .hibytes CMD_SELECT_MODE    ;  8
-    .hibytes CMD_PAGE_DOWN      ;  9
-    .hibytes CMD_SEARCH_DOWN    ; 10
-    .hibytes CMD_GO_TOP         ; 11
-    .hibytes CMD_F7             ; 12
-    .hibytes CMD_PAGE_UP        ; 13
-    .hibytes CMD_SEARCH_UP      ; 14
-    .hibytes CMD_GO_BOTTOM      ; 15
-    .hibytes CMD_F8             ; 16
-    .hibytes CMD_ADD_LINE       ; 17
-    .hibytes CMD_CURSOR_UP      ; 18
-    .hibytes CMD_GO_END_LINE    ; 19
-    .hibytes CMD_INSERT         ; 20
-    .hibytes CMD_CURSOR_LEFT    ; 21
-    .hibytes CMD_CUT            ; 22
-    .hibytes CMD_PASTE          ; 23
+    .hibytes CMD_SELECT_ALL     ;  0  CMD_NUMBER_SELECT_ALL  
+    .hibytes CMD_COMMAND_MODE   ;  1  CMD_NUMBER_COMMAND_MODE
+    .hibytes CMD_SPLIT_LINE     ;  2  CMD_NUMBER_SPLIT_LINE  
+    .hibytes CMD_COPY           ;  3  CMD_NUMBER_COPY        
+    .hibytes CMD_CURSOR_DOWN    ;  4  CMD_NUMBER_CURSOR_DOWN 
+    .hibytes CMD_GO_BEGIN_LINE  ;  5  CMD_NUMBER_GO_BEGIN_LIN
+    .hibytes CMD_DELETE         ;  6  CMD_NUMBER_DELETE      
+    .hibytes CMD_CURSOR_RIGHT   ;  7  CMD_NUMBER_CURSOR_RIGHT
+    .hibytes CMD_SELECT_MODE    ;  8  CMD_NUMBER_SELECT_MODE 
+    .hibytes CMD_PAGE_DOWN      ;  9  CMD_NUMBER_PAGE_DOWN   
+    .hibytes CMD_SEARCH_DOWN    ; 10  CMD_NUMBER_SEARCH_DOWN 
+    .hibytes CMD_GO_TOP         ; 11  CMD_NUMBER_GO_TOP      
+    .hibytes CMD_F7             ; 12  CMD_NUMBER_F7          
+    .hibytes CMD_PAGE_UP        ; 13  CMD_NUMBER_PAGE_UP     
+    .hibytes CMD_SEARCH_UP      ; 14  CMD_NUMBER_SEARCH_UP   
+    .hibytes CMD_GO_BOTTOM      ; 15  CMD_NUMBER_GO_BOTTOM   
+    .hibytes CMD_F8             ; 16  CMD_NUMBER_F8          
+    .hibytes CMD_ADD_LINE       ; 17  CMD_NUMBER_ADD_LINE    
+    .hibytes CMD_CURSOR_UP      ; 18  CMD_NUMBER_CURSOR_UP   
+    .hibytes CMD_GO_END_LINE    ; 19  CMD_NUMBER_GO_END_LINE 
+    .hibytes CMD_INSERT         ; 20  CMD_NUMBER_INSERT      
+    .hibytes CMD_CURSOR_LEFT    ; 21  CMD_NUMBER_CURSOR_LEFT 
+    .hibytes CMD_CUT            ; 22  CMD_NUMBER_CUT         
+    .hibytes CMD_PASTE          ; 23  CMD_NUMBER_PASTE       
     .hibytes 0                  ; 24
+
+COMMAND_NAME_TABLE:
+    .byte   "get", PETSCII_NUL, PETSCII_NUL, PETSCII_NUL, PETSCII_NUL  ; 0 GET
+    .byte   "put", PETSCII_NUL, PETSCII_NUL, PETSCII_NUL, PETSCII_NUL  ; 1 PUT
+    .byte   "goto"            , PETSCII_NUL, PETSCII_NUL, PETSCII_NUL  ; 2 GOTO
+    .byte   "clear"                        , PETSCII_NUL, PETSCII_NUL  ; 3 CLEAR
+    .byte   "list"            , PETSCII_NUL, PETSCII_NUL, PETSCII_NUL  ; 4 LIST
+    .byte   "quit"            , PETSCII_NUL, PETSCII_NUL, PETSCII_NUL  ; 6 QUIT
+    .byte   "dir", PETSCII_NUL, PETSCII_NUL, PETSCII_NUL, PETSCII_NUL  ; 7 DIR
+    .byte   "disk"            , PETSCII_NUL, PETSCII_NUL, PETSCII_NUL  ; 8 DISK
+
+COMMAND_NAME_SIGNIFICANT_CHAR_COUNT:
+    .byte 2  ; 0 GEt
+    .byte 2  ; 1 PUt
+    .byte 2  ; 2 GOto
+    .byte 5  ; 3 CLEAR
+    .byte 1  ; 4 List
+    .byte 4  ; 6 QUIT
+    .byte 3  ; 7 DIR
+    .byte 3  ; 8 DISk
+
+COMMAND_ADDR_TABLE_LO:
+    .lobytes CMD_GET    ; 0
+    .lobytes CMD_PUT    ; 1
+    .lobytes CMD_GOTO   ; 2
+    .lobytes CMD_CLEAR  ; 3
+    .lobytes CMD_LIST   ; 4
+    .lobytes CMD_QUIT   ; 5
+    .lobytes CMD_DIR    ; 6
+    .lobytes CMD_DISK   ; 7
+
+COMMAND_ADDR_TABLE_HI:
+    .hibytes CMD_GET    ; 0
+    .hibytes CMD_PUT    ; 1
+    .hibytes CMD_GOTO   ; 2
+    .hibytes CMD_CLEAR  ; 3
+    .hibytes CMD_LIST   ; 4
+    .hibytes CMD_QUIT   ; 5
+    .hibytes CMD_DIR    ; 6
+    .hibytes CMD_DISK   ; 7
