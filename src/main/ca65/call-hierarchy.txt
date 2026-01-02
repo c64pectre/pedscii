@@ -1,0 +1,97 @@
++-- ENTRYPOINT
+    +-- main
+        +-- INITIALIZE
+        |   +-- KERNAL_CHROUT
+        |   +-- SETUP_FONT_AND_TEXT_SCREEN
+        |   +-- L272C
+        |   |   +-- L1B77
+        |   |   |   +-- L2017
+        |   |   |   |   +-- L1C55
+        |   |   |   +-- PRINT_STATUS_LINE
+        |   |   |   |   +-- PRINT_FILL_LINE
+        |   |   |   |   |   +-- L240D
+        |   |   |   |   +-- KERNAL_CLRCHN
+        |   |   |   |   +-- L24E6
+        |   |   |   |   |   +-- L2521
+        |   |   |   |   |   +-- KERNAL_GETIN
+        |   |   |   |   +-- L2545
+        |   |   |   |   |   +-- INT_TO_STRING
+        |   |   |   |   |   +-- PRINT_FILL_LINE
+        |   |   |   |   |   |   +-- *
+        |   |   +-- L26AB
+        |   +-- L1A89
+        |   +-- L21A2
+        |   |   +-- L21A5
+        |   |   |   +-- L1BCB
+        |   |   |   +-- L1BBC
+        |   |   |   +-- L1B9C
+        |   |   |   +-- L19DD
+        |   |   |   |   +-- L1C99
+        |   |   |   |   +-- L1BBC
+        |   |   |   |   +-- L1B9C
+        |   |   |   +-- L1BE1
+        |   |   |   +-- L1982
+        |   |   |   |   +-- L1BBC
+        |   |   |   |   +-- L1B9C
+        |   |   |   +-- L1BEC
+        |   |   |   +-- L34FF
+        |   |   |   |   +-- L19DD
+        |   |   |   |   |   +-- *
+        |   |   |   +-- L333B
+        |   |   |   +-- L2290
+        |   |   |   +-- L22B8
+        |   |   |   |   +-- PRINT_FILL_LINE
+        |   |   |   |       +-- *
+        |   |   |   +-- L1BD6
+        |   |   |   +-- L2545
+        |   |   |       +-- INT_TO_STRING
+        |   |   |       +-- PRINT_FILL_LINE
+        |   |   |           +-- *
+        |   +-- CMD_GET
+        |   |   +-- KERNAL_CLOSE
+        |   |   +-- KERNAL_CLRCHN
+        |   |   +-- KERNAL_CHKIN
+        |   |   +-- KERNAL_CHRIN
+        |   |   +-- KERNAL_READST
+        |   |   +-- KERNAL_CLOSE
+        |   |   +-- L2AB7
+        |   |   |   +-- KERNAL_CLOSE
+        |   |   |   +-- KERNAL_SETLFS
+        |   |   |   +-- KERNAL_SETNAM
+        |   |   |   +-- KERNAL_OPEN
+        |   |   |   +-- PRINT_STATUS_LINE
+        |   |   |   +-- READ_DISK_STATUS
+        |   |   +-- L2C3F
+        |   |       +-- PRINT_STATUS_LINE
+        |   |   +-- L1BCB                                   ; A- X- Y- T52:=T4F T53:=T50
+        |   |   +-- L1AE4
+        |   |   |   +-- L1B77
+        |   |   |   +-- L1B48
+        |   |   +-- L1C99
+        |   |   +-- L1BBC
+        |   |   +-- L1BF7
+        |   |   +-- L1B9C
+        |   |   +-- L1C99
+        |   |   +-- L1BD6
+        |   +-- L21A2
+        +-- REVERSE_CURSOR_CHAR
+        +-- KERNAL_GETIN
+        +-- L2017
+        +-- PROCESS_CHAR
+
+CMD_COMMAND_MODE
++-- L2426
++-- L2545
++-- L2D74
++-- STRING_COMPARE_SIGNIFICANT
++-- PRINT_STATUS_LINE
++-- EXECUTE_COMMAND
+    +-- JSR_INDIRECT_DX
+        +-- L21A2
+        +-- CMD_PUT
+        +-- CMD_GOTO
+        +-- CMD_CLEAR
+        +-- CMD_LIST
+        +-- CMD_QUIT
+        +-- CMD_DIR
+        +-- CMD_DISK

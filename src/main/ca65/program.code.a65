@@ -1,0 +1,5824 @@
+;    PEDSCII: Editor for the Commodore.
+;    Copyright (C) 2025  C64PECTRE
+;
+;    This program is free software: you can redistribute it and/or modify
+;    it under the terms of the GNU General Public License as published by
+;    the Free Software Foundation, either version 3 of the License, or
+;    (at your option) any later version.
+;
+;    This program is distributed in the hope that it will be useful,
+;    but WITHOUT ANY WARRANTY; without even the implied warranty of
+;    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;    GNU General Public License for more details.
+;
+;    You should have received a copy of the GNU General Public License
+;    along with this program.  If not, see https://www.gnu.org/licenses/.
+;
+;    Contact: https://github.com/c64pectre/pedscii/ create an issue
+
+;;; summary: Main
+;;; notes:
+;;;   Stack:
+;;;     | F4 | F5 F6      | F7 F8 | F9 FA FB FC FD FE FF |
+;;;     | __ | 1E 08      | 46 E1 | E9 A7 A7 79 A6 9C E3 |
+;;;     |    | ENTRYPOINT | KERNAL|
+.proc main
+    ; Select BASIC RAM
+    lda CPU_PORT_DATA
+    and #CPU_PORT_DATA_LORAM_CLR_RAM                        ; BASIC:RAM
+    sta CPU_PORT_DATA
+    ;
+;    .if ::FEATURE_BACKUP_ZP = 1
+;        jsr BACKUP_ZP
+;    .endif
+    jsr INITIALIZE
+    from_loop
+        ldy T5B
+        lda [ZPKERNAL_PNT],y
+        pha
+        jsr REVERSE_CURSOR_CHAR
+        from_loop
+            tya
+            pha
+            jsr KERNAL_GETIN
+            bne _end                                        ; break ; We've got a char
+            jsr L2017
+            pla
+            tay
+            lda ZPKERNAL_TIME_2
+            sec
+            sbc PREVIOUS_ZPKERNAL_TIME_2
+            cmp #CURSOR_BLINK_DELAY                         ; $14 = 20
+            if_pl_then
+                jsr REVERSE_CURSOR_CHAR
+            else_end
+        next
+            jmp _loop
+        end
+        ;
+        ; We've got a char in A
+        tax
+        pla
+        tay
+        pla
+        sta [ZPKERNAL_PNT],y
+        txa
+        jsr PROCESS_CHAR
+    next
+        jmp _loop
+    end
+.endproc
+
+;;; summary: Get character from input device (KERNAL_GETIN), filtering out 
+.proc GET_CHAR_FROM_INPUT_FILTERED
+
+
+.endproc
+
+;;; summary: Restore ZP, select BASIC ROM
+;;; changed: A, X
+.proc RESTORE_ZP_BASIC_ROM                                  ; L183D:
+;    .if ::FEATURE_BACKUP_ZP = 1
+;        jsr RESTORE_ZP                                      ; L185E
+;    .endif
+    ; Select BASIC ROM
+    lda CPU_PORT_DATA
+    ora #CPU_PORT_DATA_LORAM_SET_ROM                        ; BASIC ROM
+    sta CPU_PORT_DATA
+    rts
+.endproc
+
+;;; summary reverse character under cursor
+;;; changed: A
+.proc REVERSE_CURSOR_CHAR                                   ; L1847:
+    lda [ZPKERNAL_PNT],y
+    eor #$80
+    sta [ZPKERNAL_PNT],y
+    lda ZPKERNAL_TIME_2
+    sta PREVIOUS_ZPKERNAL_TIME_2                            ; V3680
+    rts
+.endproc
+
+;.if ::FEATURE_BACKUP_ZP = 1
+;    ;;; summary: Backup ZP (copy ZP to ZP_BACKUP)
+;    ;;; changed: A, X
+;    .proc BACKUP_ZP                                         ; L1853:
+;        from
+;            ldx #$00
+;        loop                                                ; L1855:
+;            lda ZEROPAGE_BASE,x
+;            sta ZP_BACKUP,x                                 ; V3681
+;        next
+;            inx
+;            bne _loop                                       ; L1855
+;        end
+;
+;        rts
+;    .endproc
+;.endif
+
+;.if ::FEATURE_BACKUP_ZP = 1
+;    ;;; summary: Restore ZP (copy ZP_BACKUP to ZP)
+;    ;;; changed: A, X
+;    .proc RESTORE_ZP                                        ; L185E:
+;        from
+;            ldx #$00
+;        loop                                                ; L1860:
+;            lda ZP_BACKUP,x                                 ; V3681
+;            sta ZEROPAGE_BASE,x
+;        next
+;            inx
+;            bne _loop                                       ; L1860
+;        end
+;
+;        rts
+;    .endproc
+;.endif
+
+;;; summary: Add character in A to current cursor position, afterwards move 1 position to the right
+;;; changed: A, X
+.proc ADD_CHAR                                              ; L1869:
+    ldx G_MODE                                              ; L1CE4
+    if_ne_then
+        ;beq     L186F
+        rts
+    else_end                                                ; L186F:
+
+    cmp # PETSCII_NO_BREAK_SPACE
+    if_eq_then
+        lda #PETSCII_SPACE
+    else_end
+
+    ldx Z92
+    cpx #MAX_LINE_LENGTH - 1                                ; $EF = 239
+    if_eq_then
+        ;bne L1876
+        rts
+    else_end                                                ; L1876:
+
+    ldx P35
+    cpx P36
+    if_cc_then
+        ;bcs L187D
+        rts
+    else_end                                                ; L187D:
+
+    jsr L1AE4
+    if_cs_then
+        ;bcc L1883
+        rts
+    else_end                                                ; L1883:
+    
+    jsr L1B9C
+    ldx P35
+    inx
+    stx P35
+    stx P19
+    inc Z92
+    jsr L1BBC
+    if_cs_then
+        ;bcc L18BC
+        lda #PETSCII_RETURN
+        jsr L1AE4
+        if_cs_then
+            ;bcc L18A1
+            jsr L1C99                                       ; A- X- Y-
+            ;>>
+            ;jmp L1BF7
+            jsr L1BF7
+            rts
+            ;<<
+        else                                                ; L18A1:
+            inc T5B
+            jsr L1BCB
+            jsr L1982
+            lda T4F
+            sta V37D4
+            lda T50
+            sta V37D5
+            jsr L1BD6
+            inc V37D6
+            ;>>
+            ;jmp L219D
+            jsr L219D
+            rts
+            ;<<
+        end
+    else                                                    ; L18BC:
+        lda T5B
+        cmp #BUMP_RIGHT                                     ; $23 = 35
+        if_cs_then
+            ;bcc L18CA
+            inc P36
+            jsr SCROLL_RIGHT                                ; L31EC
+            ;>>
+            ;jmp L1A15
+            jsr L1A15
+            rts
+            ;<<
+        else                                                ; L18CA:
+            inc T5B
+            ;>>
+            ;jmp L1A15
+            jsr L1A15
+            rts
+            ;<<
+        end
+    end
+.endproc
+
+;;; summary: Command: Delete (BACKSPACE)
+;;; summary: A+ ...
+.proc CMD_DELETE                                            ; L18CF:
+BREAK2:
+    lda G_MODE                                              ; L1CE4
+    if_ne_then
+        ; MODE_SELECT
+        ;beq L18D5
+        rts
+    else_end                                                ; L18D5:
+
+    ; MODE_EDIT
+
+    lda P35
+    cmp P36
+    if_cc_then
+        ;bcs L18DC
+        rts
+    else_end                                                ; L18DC:
+    
+    jsr L1C99                                               ; A- X- Y-
+    if_cs_then
+        ;bcc L18E2
+        rts
+    else_end                                                ; L18E2:
+    
+    jsr L1BBC
+    cmp #PETSCII_RETURN
+    if_ne_then
+        ;beq L190A
+        jsr L1BF7
+        dec P35
+        lda P35
+        sta P19
+        dec Z92
+        jsr L19FD
+        jsr L1A15
+        jsr L19D0
+        inx
+        cpx T5B
+        if_ne_then
+            ;beq L1907
+            dec P36
+            ;>>
+            ;jmp L32A7
+            jsr SCROLL_LEFT                                 ; L32A7
+            rts
+            ;<<<
+        else_end                                            ; L1907:
+        dec T5B
+
+        rts
+    else_end                                                ; L190A:
+
+    jsr L1BCB
+    jsr L1B9C
+    jsr L19DD
+    jsr L1982
+    stx V3781
+    jsr L1982
+    jsr L1BD6
+    txa
+    clc
+    adc V3781
+    if_cs_then
+        ;bcc L1929
+        ;>>
+        ;jmp L1B9C
+        jsr L1B9C
+        rts
+        ;<<
+    else_end                                                ; L1929:
+
+    cmp #MAX_LINE_LENGTH                                    ; $F0 = 240
+    if_cs_then
+        ;bcc L1930
+        ;>>
+        ;jmp L1B9C
+        jsr L1B9C
+        rts
+        ;<<
+    else_end                                                ; L1930:
+
+    jsr L1B9C
+    jsr L1BBC
+    if_cs_then
+        ;bcc L1953
+        jsr L1C99                                           ; A- X- Y-
+        jsr L1C99                                           ; A- X- Y-
+        if_cc_then
+            ;bcs L1950
+            jsr L1BBC
+            cmp #PETSCII_RETURN
+            if_ne_then
+                ;beq L194D
+                jsr L1B9C
+                ;>>
+                ;jmp L1B9C
+                jsr L1B9C                                   ; Why twice?
+                rts
+                ;<<
+            else_end                                        ; L194D:
+
+            jsr L1B9C
+        else_end                                            ; L1950:
+
+        jmp _end                                            ; L1956
+    else                                                    ; L1953:
+        jsr L1C99                                           ; A- X- Y-
+    end                                                     ; L1956:
+
+    lda P38
+    if_eq_then
+        ;bne L195C
+        dec P39
+    else_end                                                ; L195C:
+
+    dec P38
+    jsr L1BF7
+    lda #BUMP_RIGHT                                         ; $23 = 35
+    sta T5B
+    lda T5A
+    cmp #PETSCII_RETURN
+    if_cs_then
+        ;bcc L1974
+        jsr L2627
+        jsr MOVE_CURSOR_UP                                  ; L1AC2: A+ X- Y- ZPKERNAL_PNT_LO+ ZPKERNAL_PNT_HI+ T5A+
+        ;>>
+        ;jmp L219D
+        jsr L219D
+        rts
+        ;<<
+    else_end                                                ; L1974:
+
+    jsr L268E
+    if_cs_then
+        ;bcc L197F
+        jsr L2627
+        jsr MOVE_CURSOR_UP                                  ; L1AC2: A+ X- Y- ZPKERNAL_PNT_LO+ ZPKERNAL_PNT_HI+ T5A+
+    else_end                                                ; L197F:
+
+    ;>>
+    ;jmp L219D
+    jsr L219D
+    rts
+    ;<<
+.endproc
+
+;;; summary: ?
+;;; return:
+;;;   CS: CC:
+;;; changed: X+ ...
+.proc L1982
+    ldx #$00
+    jsr L1BBC
+    if_cs_then
+        ;bcc L198A
+        rts
+    else_end                                                ; L198A:
+
+    from_loop
+        cmp #PETSCII_RETURN
+        beq _end                                            ; break L1998
+        inx
+        jsr L1B9C
+        jsr L1BBC
+    next
+        jmp _loop                                           ; L198A
+    end                                                     ; L1998:
+
+    jsr L1B9C
+    clc
+    rts
+.endproc
+
+;;; summary: ?
+;;; changed: A+ X+ Y+ ...
+.proc L199D
+    lda #<EDIT_PANEL_LAST_LINE_START_VM                     ; $98
+    sta TFB
+    lda #>EDIT_PANEL_LAST_LINE_START_VM                     ; $77
+    sta TFC
+    lda G_MODE                                              ; L1CE4
+    if_ne_then
+        ;beq L19C4
+        lda L1CE8
+        if_mi_then
+            ;bpl L19C4
+            lda #EDIT_PANEL_LAST_LINE                       ; $17 = 23
+            sec
+            sbc T5A
+            clc
+            adc L1CE7
+            lda #$00
+            adc L1CE8
+            if_mi_then
+                ;bpl L19C4
+                lda #$80                                    ; $80 = 128 = ?
+                sta L2340
+            else_end                                        ; L19C4:
+        else_end
+    else_end
+
+    ldx V37D4
+    ldy V37D5
+    jsr L2290
+    ;>>
+    ;jmp L22B8
+    jsr L22B8
+    rts
+    ;<<
+.endproc
+
+;;; summary: ?
+;;; changed: X+ ...
+.proc L19D0
+    jsr L1BCB
+    jsr L1B9C
+    jsr L19DD
+    dex
+    ;>>
+    ;jmp L1BD6
+    jsr L1BD6
+    rts
+    ;<<
+.endproc
+
+;;; summary: ?
+;;; changed: ...
+.proc L19DD
+    ldx #$00
+    jsr L1C99                                               ; A- X- Y-
+    if_cs_then
+        ;bcc L19E5
+        rts
+    else_end                                                ; L19E5:
+
+    inx
+    from_loop                                               ; L19E6:
+        jsr L1C99                                           ; A- X- Y-
+        if_cs_then
+            ;bcc L19ED
+            clc
+            rts
+        else_end                                            ; L19ED:
+
+        jsr L1BBC
+        cmp #PETSCII_RETURN
+        beq _end                                            ; break L19F8
+    next
+        inx
+        jmp _loop                                           ; L19E6
+    end                                                     ; L19F8:
+
+    jsr     L1B9C
+    clc
+    rts
+.endproc
+
+;;; summary: ?
+;;; changed: ...
+.proc L19FD
+    try
+        jsr L1BCB
+        from_loop                                           ; L1A00:
+            jsr L1C99                                       ; A- X- Y-
+            bcs _catch                                      ; throw L1A0F
+            jsr L1BBC
+            cmp #PETSCII_RETURN
+        next
+            bne _loop                                       ; L1A00
+        end
+
+        jsr L1B9C
+    catch_finally_end                                       ; L1A0F:
+
+    jsr L1BE1
+    ;>>
+    ;jmp L1BD6
+    jsr L1BD6
+    rts
+    ;<<
+.endproc
+
+;;; summary: ?
+;;; changed: ...
+.proc L1A15
+    lda ZPKERNAL_PNT_LO                                     ; $D1
+    sta TFB
+    lda ZPKERNAL_PNT_HI                                     ; $D2
+    sta TFC
+    ldx T58
+    ldy T59
+    jsr L2290
+    jsr L22B8
+    ;>>
+    ;jmp L2545
+    jsr L2545
+    rts
+    ;<<
+.endproc
+
+;;; summary: ?
+;;; changed: ...
+.proc L1A2A
+    try
+        lda #$00
+        sta T5B
+        sta P35
+        jsr L1BEC
+        ldy #$00
+        inx
+        from_loop                                           ; L1A36:
+            cpy P36
+            beq _end                                        ; break L1A4F
+            dex
+            beq _catch                                      ; L1A7C
+            jsr L1BBC
+            bcs _catch                                      ; L1A7C
+            cmp #PETSCII_RETURN
+            beq _catch                                      ; L1A7C
+            iny
+            jsr L1B9C
+            inc P35
+        next
+            jmp _loop                                       ; L1A36
+        end                                                 ; L1A4F:
+
+        from_loop
+            dex
+            beq _end                                        ; break L1A66
+            jsr L1BBC
+            bcs _catch                                      ; L1A7C
+            cmp #PETSCII_RETURN
+            beq _catch                                      ; L1A7C
+            iny
+            jsr L1B9C
+        next
+            inc T5B
+            inc P35
+            jmp _loop                                       ; L1A4F
+        else_end                                            ; L1A66:
+
+        jsr L1BCB
+        from_loop                                           ; L1A69:
+            jsr L1BBC
+            bcs _end                                        ; break L1A79
+            cmp #PETSCII_RETURN
+            beq _end                                        ; break L1A79
+            iny
+            jsr L1B9C
+        next
+            jmp _loop                                       ; L1A69
+        end                                                 ; L1A79:
+
+        jsr L1BD6
+    catch_finally_end                                       ; L1A7C:
+
+    sty Z92
+    rts
+.endproc
+
+;;; summary: ?
+;;; changed: ...
+.proc L1A7F
+    lda #$00
+    sta T5C
+    ldx #>COMMAND_PANEL_FIRST_LINE_START_CR                 ; $DB
+    ldy #<COMMAND_PANEL_FIRST_LINE_START_CR                 ; $C0
+    bne L1A9B                                               ; bra
+.endproc
+
+;;; summary: Setup colors
+;;; changed: ...
+.proc L1A89
+    ;>>
+    ;--lda #COLOR_DGY
+    ;--sta VIC_EC
+    ;--lda #COLOR_GRY
+    ;--sta VIC_B0C
+    ;<<
+    ldx #>COLOR_RAM_BASE                                    ; $D8
+    ldy #<COLOR_RAM_BASE                                    ; $00
+    sty T5C
+    ;>>
+    ;--lda #COLOR_WHT                                       ; $01 edit color
+    lda KVAR_COLOR
+    ;<<
+.endproc
+
+;;; summary: ?
+;;; changed: ...
+.proc L1A9B
+    from_loop
+        stx T5D
+        from_loop                                       ; L1A9D:
+            cpy #<COMMAND_PANEL_FIRST_LINE_START_CR     ; $C0
+            if_eq_then
+                ;bne L1AA7
+                cpx #>COMMAND_PANEL_FIRST_LINE_START_CR     ; $DB
+                if_eq_then
+                    ;bne L1AA7
+                    ;>>
+                    ;--lda #COLOR_BLK               ; $00 command color
+                    ;nop
+                    ;nop
+                    ;<<
+                else_end
+            else_end                                        ; L1AA7:
+            sta [T5C],y
+        next
+            iny
+            bne _loop                                       ; L1A9D
+        end
+    next
+        inx
+        cpx #>(SCREEN_COLOR_RAM_BASE + SCREEN_COLOR_RAM_SIZE)   ; $DC
+        bne _loop                                           ; L1A9B
+    end
+
+    rts
+.endproc
+
+;;; summary: Move cursor down
+;;; changed: A+ X- Y- ZPKERNAL_PNT_LO+ ZPKERNAL_PNT_HI+ T5A+
+.proc MOVE_CURSOR_DOWN                                      ; L1AB2:
+    lda ZPKERNAL_PNT_LO                                     ; $D1
+    clc
+    adc #VIC_CHAR_COLUMNS                                   ; $28 = 40
+    sta ZPKERNAL_PNT_LO                                     ; $D1
+    lda ZPKERNAL_PNT_HI                                     ; $D2
+    adc #$00
+    sta ZPKERNAL_PNT_HI                                     ; $D2
+    inc T5A                                                 ; $5A
+    rts
+.endproc
+
+;;; summary: Move cursor up
+;;; changed: A+ X- Y- ZPKERNAL_PNT_LO+ ZPKERNAL_PNT_HI+ T5A+
+.proc MOVE_CURSOR_UP                                        ; L1AC2:
+    lda ZPKERNAL_PNT_LO                                     ; $D1
+    sec
+    sbc #VIC_CHAR_COLUMNS                                   ; $28 = 40
+    sta ZPKERNAL_PNT_LO                                     ; $D1
+    lda ZPKERNAL_PNT_HI                                     ; $D2
+    sbc #$00
+    sta ZPKERNAL_PNT_HI                                     ; $D2
+    dec T5A                                                 ; $5A
+    rts
+.endproc
+
+;;; summary: Clear the last edit panel line
+;;; changed: ...
+.proc CLEAR_EDIT_PANEL_LAST_LINE                            ; L1AD2
+    ldx #<EDIT_PANEL_LAST_LINE_START_VM                     ; $98
+    ldy #>EDIT_PANEL_LAST_LINE_START_VM                     ; $77
+    stx T5C
+    sty T5D
+    from
+        lda #PETSCII_SPACE                                  ; $20
+        ldy #VIC_CHAR_COLUMNS-1                             ; $27 = 39
+    loop                                                    ; L1ADE:
+        sta [T5C],y
+    next
+        dey
+        bpl _loop                                           ; L1ADE
+    end
+    rts
+.endproc
+
+;;; summary: ?
+;;; changed: ...
+.proc L1AE4
+    sta L1B46
+    tya
+    pha
+    ldy #$02                                                ; ?
+    lda [T4E],y
+    cmp #$FF                                                ; ?
+    if_eq_then
+        ;bne L1AFB
+        jsr L1B77
+        if_cs_then
+            ;bcc L1AF8
+            pla
+            rts
+        else_end                                            ; L1AF8:
+        sta L1B47
+    else_end                                                ; L1AFB:
+
+    lda V37D4
+    cmp T4F
+    if_eq_then
+        ;bne L1B05
+        inc V37D5
+    else_end                                                ; L1B05:
+
+    ldy #$02                                                ; ?
+    lda [T4E],y
+    tay
+    iny
+    from_loop                                               ; L1B0B:
+        dey
+        lda [T4E],y
+        iny
+        if_eq_then
+            ;bne L1B28
+            jsr L1B48
+            ldy V37D5
+            if_eq_then
+                ;bne L1B23
+                lda T23
+                sta V37D4
+                lda #$03
+                sta V37D5
+            else_end                                        ; L1B23:
+
+            ldy #$00
+            jmp _end                                        ; L1B2A
+        else                                                ; L1B28:
+            sta [T4E],y
+        end                                                 ; L1B2A:
+    next
+        dey
+        cpy T50
+        bne _loop                                           ; L1B0B
+    end
+
+    lda L1B46
+    sta [T4E],y
+    ldy #$02                                                ; ?
+    lda [T4E],y
+    clc
+    adc #$01
+    if_ne_then
+        ;beq L1B3F
+        sta [T4E],y
+    else_end                                                ; L1B3F:
+
+    pla
+    tay
+    lda L1B46
+    clc
+    rts
+.endproc
+
+;;; summary: ?
+;;; changed: ...
+.proc L1B48
+    pha
+    lda [T4E],y
+    pha
+    if_ne_then
+        ;beq L1B5A
+        sta T23
+        lda L1B47
+        iny
+        sta [T22],y
+        dey
+        jmp _end                                            ; L1B5D
+    else                                                    ; L1B5A:
+        lda L1B47
+    end                                                     ; L1B5D:
+    
+    sta [T4E],y
+    sta T23
+    lda [T22],y
+    sta ZP_0E
+    pla
+    sta [T22],y
+    lda T4F
+    iny
+    sta [T22],y
+    lda #$03                                                ; ?
+    iny
+    sta [T22],y
+    pla
+    iny
+    sta [T22],y
+    rts
+.endproc
+
+;;; summary: ?
+;;; changed: ...
+.proc L1B77
+    clc
+    lda ZP_0E
+    if_eq_then
+        ;bne L1B8D
+        from_loop                                               ; L1B7C:
+            jsr L2017
+        next
+            bcs _loop                                           ; L1B7C
+        end
+
+        lda ZP_0E
+        if_eq_then
+            ;bne L1B8D
+            ; Show "out of memory"
+            ldx #<RESOURCE_STRING_OUT_OF_MEMORY                 ; <_1B8E = $8E
+            ldy #>RESOURCE_STRING_OUT_OF_MEMORY                 ; >_1B8E = $1B
+            jsr PRINT_STATUS_LINE                               ; L252D
+            sec
+        else_end                                                ; L1B8D:
+    else_end
+    
+    rts
+.endproc
+
+;;; summary:
+;;; changed: A-, Y-
+.proc L1B9C
+    pha
+    tya
+    pha
+    lda T50
+    ldy #$02
+    cmp [T4E],y
+    if_cs_then
+        ;bcc L1BB6
+        ldy #$00
+        lda [T4E],y
+        if_ne_then
+            ;beq L1BB3
+            sta T4F
+            lda #$03
+            sta T50
+        else_end                                            ; L1BB3:
+        jmp _end                                            ; L1BB8
+    else                                                    ; L1BB6:
+        inc T50
+    end                                                     ; L1BB8:
+
+    pla
+    tay
+    pla
+    rts
+.endproc
+
+;;; summary: C:= [T4E],T50 == 0
+;;; changed: A+
+.proc L1BBC
+    sty L1B46                                               ; Backup Y
+    ldy T50
+    lda [T4E],y
+    clc
+    if_eq_then
+        ;bne L1BC7
+        sec
+    else_end                                                ; L1BC7:
+    ldy L1B46                                               ; Restore Y
+    rts
+.endproc
+
+;;; summary: T52#T53 := T4F#T50
+;;; changed: A- X- Y- T52:=T4F T53:=T50
+.proc L1BCB
+    pha
+    lda T4F
+    sta T52
+    lda T50
+    sta T53
+    pla
+    rts
+.endproc
+
+;;; summary: T4F#T50 := T52#T53
+;;; changed: A- X- Y-
+.proc L1BD6
+    pha
+    lda T52
+    sta T4F
+    lda T53
+    sta T50
+    pla
+    rts
+.endproc
+
+;;; summary: T58#T59 := T4F#T50 
+;;; changed: A- X- Y-
+.proc L1BE1
+    pha
+    lda T4F
+    sta T58
+    lda T50
+    sta T59
+    pla
+    rts
+.endproc
+
+;;; summary: T4F#T50 := T58#T59
+;;; changed: A- X- Y-
+.proc L1BEC
+    pha
+    lda T58
+    sta T4F
+    lda T59
+    sta T50
+    pla
+    rts
+.endproc
+
+;;; summary: ?
+;;; changed: A- X- Y-
+.proc L1BF7
+    pha
+    txa
+    pha
+    tya
+    pha
+    lda V37D4
+    cmp T4F
+    if_eq_then
+        ;bne L1C06
+        dec V37D5
+    else_end                                                ; L1C06:
+
+    ldy #$02                                                ; ?
+    lda [T4E],y
+    tax
+    cmp T50
+    if_eq_then
+        ;bne L1C3C
+        lda [T4E],y
+        sec
+        sbc #$01                                            ; ?
+        sta [T4E],y
+        ldy T4F
+        jsr L1B9C
+        txa
+        cmp #$03                                            ; ?
+        bne L1C27
+        tya
+        jsr L1C55
+        jmp L1C39
+        L1C27:
+        ldy #$02                                            ; ?
+        lda [T57],y
+        cmp T59
+        bcs L1C39
+        ldy #$00                                            ; ?
+        lda [T57],y
+        sta T58
+        lda #$03                                            ; ?
+        sta T59
+        L1C39:
+        jmp _end                                            ; L1C4F
+    else                                                    ; L1C3C:
+        lda [T4E],y
+        sec
+        sbc #$01
+        sta [T4E],y
+        from
+            ldy T50
+            iny
+        loop                                                ; L1C46:
+            lda [T4E],y
+            dey
+            sta [T4E],y
+        next
+            iny
+            iny
+            bne _loop                                       ; L1C46
+        end
+    end                                                     ; L1C4F:
+
+    pla
+    tay
+    pla
+    tax
+    pla
+    rts
+.endproc
+
+;;; summary: ?
+;;; changed: A- X+ Y+
+.proc L1C55
+    ldy #$00
+    sta T23
+    cmp V37D7
+    if_eq_then
+        ;bne L1C68
+        lda [T22],y
+        sta V37D7
+        lda #$03                                            ; ?
+        sta V37D8
+    else_end                                                ; L1C68:
+
+    lda [T22],y
+    if_eq_then
+        ;bne L1C72
+        iny
+        lda [T22],y
+        jmp _end                                            ; L1C79
+    else                                                    ; L1C72:
+        sta T27
+        iny
+        lda [T22],y
+        sta [T26],y
+    end                                                     ; L1C79:
+
+    if_eq_then
+        ;bne L1C87
+        lda T27
+        sta ZPBASIC_VALTYP                                  ; $0D
+        ldx ZPKERNAL_CMP0                                   ; $B0
+        sta V37D9,x
+        jmp _end                                            ; L1C8E
+    else                                                    ; L1C87:
+        sta T27
+        dey
+        lda [T22],y
+        sta [T26],y
+    end                                                     ; L1C8E:
+
+    lda ZP_0E
+    ldy #$00
+    sta [T22],y
+    lda T23
+    sta ZP_0E
+    rts
+.endproc
+
+;;; summary: ?
+;;; changed: A- X- Y-
+.proc L1C99
+    pha
+    tya
+    pha
+    lda T50
+    cmp #$03                                                ; ?
+    if_eq_then
+        ;bne L1CB7
+        ldy #$01                                            ; ?
+        lda [T4E],y
+        if_eq_then
+            ;bne L1CAC
+            sec
+            jmp _end                                        ; L1CB4
+        else                                                ; L1CAC:
+            sta T4F
+            iny
+            lda [T4E],y
+            sta T50
+            clc
+        end                                                 ; L1CB4:
+        jmp _end                                            ; L1CBA
+    else                                                    ; L1CB7:
+        dec T50
+        clc
+    end                                                     ; L1CBA:
+
+    pla
+    tay
+    pla
+    rts
+.endproc
+
+;;; summary: Command: Enter select mode for cut <SHIFT + STOP_RUN>
+;;; changed: ...
+.proc CMD_SELECT_MODE                                       ; L1CBE:
+    lda G_MODE                                              ; L1CE4
+    if_ne_then
+        ;beq L1CC9
+        dec G_MODE                                          ; L1CE4 G_MODE == 0 == MODE_EDIT
+        ;>>
+        ;jmp L219D
+        jsr L219D
+        rts
+        ;<<
+    else_end                                                ; L1CC9:
+
+    ; check G_MODE == 0
+
+    jsr L1BBC
+    if_cc_then
+        ;bcs L1CE3
+        inc G_MODE                                          ; L1CE4 G_MODE == 1 == MODE_SELECT
+        lda T58
+        sta L1CE5
+        lda T59
+        sta L1CE6
+        lda #$00
+        sta L1CE7
+        sta L1CE8
+    else_end                                                ; L1CE3:
+
+    rts
+.endproc
+
+;;; summary: Command: Cut <F5>
+;;; changed: ...
+.proc CMD_CUT                                               ; L1CEB:
+    lda G_MODE                                              ; L1CE4
+    if_eq_then
+        ; G_MODE = $00
+        ;bne L1CF1
+        ; NOP if not in select mode
+        rts
+    else_end                                                ; L1CF1:
+
+    ; Mode is select mode
+    ; check G_MODE = $01
+    dec G_MODE                                              ; L1CE4 G_MODE == $00 = MODE_EDIT
+    ; Mode is edit mode
+
+    lda #$01                                                ; ?
+    jsr L26DA
+    lda #$00
+    sta TFB
+    sta PFD
+    jsr L1B77
+    if_cs_then
+        ;bcc L1D05
+        rts
+    else_end                                                ; L1D05:
+    
+    sta L1EE6
+    sta TFC
+    ldy #$00
+    lda [TFB],y
+    sta ZP_0E
+    jsr L1B77
+    if_cs_then
+        ;bcc L1D1B
+        lda L1EE6
+        sta ZP_0E
+        rts
+    else_end                                                ; L1D1B:
+    
+    sta L1EE7
+    jsr L1BCB
+    lda L1CE8
+    if_pl_then
+        ;bmi L1D46
+        sta L1CEA
+        lda L1CE7
+        sta L1CE9
+        lda L1CE5
+        sta T4F
+        lda L1CE6
+        sta T50
+        lda T58
+        sta V37D4
+        lda T59
+        sta V37D5
+        jmp _end                                            ; L1D78
+    else                                                    ; L1D46:
+        eor #$FF                                            ; ?
+        sta L1CEA
+        lda L1CE7
+        eor #$FF                                    ; ?
+        sta L1CE9
+        inc L1CE9
+        if_eq_then
+            ;bne L1D5B
+            inc L1CEA
+        else_end                                            ; L1D5B:
+
+        lda L1CE5
+        sta T4F
+        lda L1CE6
+        sta T50
+        jsr L1982
+        lda T4F
+        sta V37D4
+        lda T50
+        sta V37D5
+        jsr L1BD6
+        jsr L1982
+    end                                                     ; L1D78:
+
+    lda L1CE8
+    if_pl_then
+        ;bmi L1D8F
+        sec
+        lda P38
+        sbc L1CE9
+        sta P38
+        lda P39
+        sbc L1CEA
+        sta P39
+        jmp _end                                            ; L1D95
+    else                                                    ; L1D8F:
+        inc P38
+        if_eq_then
+            ;bne L1D95
+            inc P39
+        else_end                                            ; L1D95:
+    end
+
+    lda L1EE6
+    sta TFC
+    ldx #$01                                                ; ?
+    sta V37D9,x
+    sta V37E3,x
+    lda #$03                                                ; ?
+    sta V37ED,x
+    lda T4F
+    cmp V37D4
+    if_eq_then
+        ;bne L1DB1
+        ;>>
+        ;jmp L1E80
+        jsr L1E80
+        rts
+        ;<<
+    else_end                                                ; L1DB1:
+
+    ldy #$00                                                ; ?
+    lda L1EE7
+    sta PFE
+    lda [PFD],y
+    sta ZP_0E
+    lda [T4E],y
+    sta [TFB],y
+    sta PFE
+    tya
+    iny
+    sta [TFB],y
+    lda TFC
+    sta [PFD],y
+    iny
+    lda [T4E],y
+    sec
+    sbc T50
+    clc
+    adc #$03                                                ; ?
+    sta [TFB],y
+    ldy T50
+    dey
+    sty L1EE3
+    ldy #$02                                                ; ?
+    sty L1EE4
+    from_loop                                               ; L1DE0:
+        inc L1EE3
+        inc L1EE4
+        ldy L1EE3
+        lda [T4E],y
+        ldy L1EE4
+        sta [TFB],y
+        ldy #$02                                            ; ?
+        lda [T4E],y
+        cmp L1EE3
+    next
+        bne _loop                                           ; L1DE0
+    end
+
+    lda L1EE7
+    sta PFE
+    lda V37D4
+    sta TFC
+    ldy #$00                    ; ?
+    lda [TFB],y
+    sta [PFD],y
+    ldy #$02                    ; ?
+    lda [TFB],y
+    sec
+    sbc V37D5
+    clc
+    adc #$03                    ; ?
+    sta [PFD],y
+    ldy V37D5
+    dey
+    sty L1EE3
+    ldy #$02                                                ; ?
+    sty L1EE4
+    from_loop                                               ; L1E22:
+        inc L1EE3
+        inc L1EE4
+        ldy L1EE3
+        lda [TFB],y
+        ldy L1EE4
+        sta [PFD],y
+    next
+        ldy #$02                                            ; ?
+        lda [TFB],y
+        cmp L1EE3
+        bne _loop                                           ; L1E22
+    end
+
+    ldy #$02                                                ; ?
+    lda V37D5
+    sta [TFB],y
+    tay
+    lda #$00
+    sta [TFB],y
+    tay
+    sta [TFB],y
+    ldy #$01                                                ; ?
+    lda T4F
+    sta [PFD],y
+    dey
+    lda PFE
+    sta [T4E],y
+    lda [PFD],y
+    if_ne_then
+        ;beq L1E60
+        sta TFC
+        lda PFE
+        iny
+        sta [TFB],y
+    else_end                                                ; L1E60:
+
+    lda T50
+    cmp #$03                                                ; ?
+    if_eq_then
+        ;bne L1E6E
+        lda T4F
+        jsr L1C55
+        jmp _end                                            ; L1E75
+    else                                                    ; L1E6E:
+        sec
+        sbc #$01
+        ldy #$02                                            ; ?
+        sta [T4E],y
+    end                                                     ; L1E75:
+
+    lda PFE
+    sta T4F
+    lda #$03                                                ; ?
+    sta T50
+    ;>>
+    ;jmp L21A2
+    jsr L21A2
+    rts
+    ;<<
+.endproc
+
+;;; summary: Command: Select all
+.proc CMD_SELECT_ALL
+    ; TODO
+    rts
+.endproc
+
+;;; summary: Command: Copy
+.proc CMD_COPY
+    ; TODO
+    rts
+.endproc
+
+;;; summary: ?
+;;; changed: ...
+.proc L1E80
+    from
+        ldy T50
+        sty L1EE3
+        ldy #$03                                            ; ?
+        sty L1EE4
+    loop                                                    ; L1E8A:
+        ldy L1EE3
+        lda [T4E],y
+        ldy L1EE4
+        sta [TFB],y
+        inc L1EE3
+        inc L1EE4
+        lda L1EE3
+        cmp V37D5
+        bne _loop                                           ; L1E8A
+    end
+
+    lda #$00
+    tay
+    sta [TFB],y
+    iny
+    sta [TFB],y
+    lda L1EE4
+    iny
+    sta [TFB],y
+    tay
+    lda #$00
+    sta [TFB],y
+
+    from
+        ldy V37D5
+        dey
+        sty L1EE3
+        ldy T50
+        dey
+        sty L1EE4
+    loop                                                    ; L1EC2:
+        inc L1EE3
+        inc L1EE4
+        ldy L1EE3
+        lda [T4E],y
+        ldy L1EE4
+        sta [T4E],y
+        ldy #$02                                            ; ?
+        lda [T4E],y
+        cmp L1EE3
+        bne _loop                                           ; L1EC2
+    end
+
+    lda     L1EE4
+    sta     [T4E],y
+    ;>>
+    ;jmp     L21A2
+    jsr     L21A2
+    rts
+    ;<<
+.endproc
+
+;;; summary: Command: Paste
+;;; changed: ...
+.proc CMD_PASTE                                             ; L1EFA:
+    lda G_MODE                                              ; L1CE4
+    if_ne_then
+        ;beq L1F00
+        ; NOP in select mode
+        rts
+    else_end                                                ; L1F00:
+
+    ; Mode is edit mode
+
+    ldx #$01
+    lda V37D9,x
+    jsr L1FFE
+    sta L1EE5
+    inc L1EE5
+    lda ZP_0E
+    jsr L1FFE
+    cmp L1EE5
+    if_cc_then
+        ;bcs L1F1F
+        ; Show "not enough memory"
+        ldx #<RESOURCE_STRING_NOT_ENOUGH_MEMORY             ; <_1EE8 = $E8
+        ldy #>RESOURCE_STRING_NOT_ENOUGH_MEMORY             ; >_1EE8 = $1E
+        ;>>
+        ;jmp PRINT_STATUS_LINE                              ; L252D
+        jsr PRINT_STATUS_LINE                               ; L252D
+        rts
+        ;<<
+    else_end                                                ; L1F1F:
+
+    jsr L1BEC
+    clc
+    lda P38
+    adc L1CE9
+    sta P38
+    lda P39
+    adc L1CEA
+    sta P39
+    lda #$00
+    sta TFB
+    sta PFD
+    tay
+    lda [T4E],y
+    pha
+    lda T4F
+    sta TFC
+    ldx #$01
+    lda V37D9,x
+    if_eq_then
+        ;bne L1F48
+        pla
+        rts
+    else_end                                                ; L1F48:
+
+    from_loop                                               ; L1F48:
+        sta PFE
+        lda TFC
+        pha
+        jsr L1B77
+        ldy #$00
+        sta [TFB],y
+        sta TFC
+        lda [TFB],y
+        sta ZP_0E
+        pla
+        iny
+        sta [TFB],y
+        iny
+        from_loop                                           ; L1F5F:
+            lda [PFD],y
+            sta [TFB],y
+        next
+            iny
+            bne _loop                                       ; L1F5F
+        end
+    next
+        lda [PFD],y
+        bne _loop                                           ; L1F48
+    end
+
+    lda TFC
+    sta L1EE5
+    jsr L1B77
+    ldy #$00
+    sta [TFB],y
+    sta TFC
+    lda [TFB],y
+    sta ZP_0E
+    lda L1EE5
+    iny
+    sta [TFB],y
+    pla
+    dey
+    sta [TFB],y
+    cmp #$00
+    if_ne_then
+        ;beq L1F91
+        sta PFE
+        lda TFC
+        iny
+        sta [PFD],y
+    else_end                                                ; L1F91:
+
+    from
+        ldy T50
+        dey
+        sty L1EE3
+        ldy #$02
+        sty L1EE4
+    loop                                                    ; L1F9C:
+        inc L1EE3
+        inc L1EE4
+        ldy L1EE3
+        lda [T4E],y
+        ldy L1EE4
+        sta [TFB],y
+    next
+        ldy #$02
+        lda [T4E],y
+        cmp L1EE3
+        bne _loop                                           ; L1F9C
+    end
+
+    lda L1EE4
+    sta [TFB],y
+    lda T50
+    cmp #$03
+    if_eq_then
+        ;bne L1FC8
+        lda T4F
+        jsr L1C55
+        jmp _end                                            ; L1FCF
+    else                                                    ; L1FC8:
+        sec
+        sbc #$01
+        ldy #$02
+        sta [T4E],y
+    end                                                     ; L1FCF:
+
+    lda TFC
+    sta T4F
+    lda #$03
+    sta T50
+    lda L1EE5
+    sta PFE
+    ldy #$02
+    lda [PFD],y
+    cmp #$03
+    if_eq_then
+        ;bne L1FEC
+        lda PFE
+        jsr L1C55
+        jmp _end                                            ; L1FF1
+    else                                                    ; L1FEC:
+        sec
+        sbc #$01
+        sta [PFD],y
+    end                                                     ; L1FF1:
+
+    lda T5A
+    cmp #BUMP_TOP - 1                                       ; $06 = 6
+    if_cc_then
+        ;bcs L1FFB
+        lda #BUMP_TOP - 1                                   ; $06 = 6
+        sta T5A
+    else_end                                                ; L1FFB:
+
+    ;>>
+    ;jmp L21A2
+    jsr L21A2
+    rts
+    ;<<
+.endproc
+
+;;; summary: ?
+;;; changed: ...
+.proc L1FFE
+    cmp #$00
+    if_eq_then
+        ;bne L2003
+        rts
+    else_end                                                ; L2003:
+
+    sta TFC
+    lda #$00
+    sta TFB
+    tax
+    tay
+    from_loop                                               ; L200B:
+        inx
+        lda [TFB],y
+        beq _end                                            ; break L2015
+        sta TFC
+    next
+        jmp _loop                                           ; L200B
+    end                                                     ; L2015:
+
+    txa
+    rts
+.endproc
+
+;;; summary: ?
+;;; changed: ...
+.proc L2017
+    lda #$00
+    sta T5C
+    sta T5E
+    sta V3787
+    L2020:
+    sta V3788
+    sta V3789
+    sta V378A
+    sta V378B
+    lda ZPBASIC_VALTYP                                      ; $0D
+    pha
+    from_loop                                               ; L202F:
+        pla
+        sta T5D
+        ldy #$00
+        lda [T5C],y
+        if_eq_then
+            ;bne L203A
+            clc
+            rts
+        else_end                                            ; L203A:
+    next
+        pha
+        ldy #$02
+        lda [T5C],y
+        cmp #$FF
+        beq _loop                                           ; L202F
+    end
+
+    sta V3783
+    inc V3783
+    pla
+    sta T5F
+    cmp T4F
+    if_eq_then
+        ;bne L2053
+        inc V3787
+    else_end                                                ; L2053:
+
+    cmp T58
+    if_eq_then
+        ;bne L205A
+        inc V3788
+    else_end                                                ; L205A:
+
+    cmp V37D7
+    if_eq_then
+        ;bne L2062
+        inc V3789
+    else_end                                                ; L2062:
+
+    cmp V37D4
+    if_eq_then
+        ;bne L206A
+        inc V378A
+    else_end                                                ; L206A:
+
+    cmp L1CE5
+    if_eq_then
+        ;bne L2072
+        inc V378B
+    else_end                                                ; L2072:
+
+    from
+        ldy #$02
+        lda [T5E],y
+        sta V3785
+        ldy #$03
+        sty V3784
+    loop                                                    ; L207E:
+        ldy V3784
+        lda [T5E],y
+        ldy V3783
+        sta [T5C],y
+        lda V3787
+        if_ne_then
+            ;beq L209D
+            lda T50
+            cmp V3784
+            if_eq_then
+                ;bne L209D
+                lda T5D
+                sta T4F
+                sty T50
+                dec V3787
+            else_end                                        ; L209D:
+        else_end
+
+        lda V3788
+        if_ne_then
+            ;beq L20B2
+            lda T59
+            cmp V3784
+            if_eq_then
+                ;bne L20B2
+                lda T5D
+                sta T58
+                sty T59
+                dec V3788
+            else_end                                    ; L20B2:
+        else_end
+
+        lda V3789
+        if_ne_then
+            ;beq L20CA
+            lda V37D8
+            cmp V3784
+            if_eq_then
+                ;bne L20CA
+                lda T5D
+                sta V37D7
+                sty V37D8
+                dec V3789
+            else_end                                        ; L20CA:
+        else_end
+
+        lda V378A
+        if_ne_then
+            ;beq L20E2
+            lda V37D5
+            cmp V3784
+            if_eq_then
+                ;bne L20E2
+                lda T5D
+                sta V37D4
+                sty V37D5
+                dec V378A
+            else_end                                        ; L20E2:
+        else_end
+
+        lda V378B
+        if_ne_then
+            ;beq L20FA
+            lda L1CE6
+            cmp V3784
+            if_eq_then
+                ;bne L20FA
+                lda T5D
+                sta L1CE5
+                sty L1CE6
+                dec V378B
+            else_end                                        ; L20FA:
+        else_end
+
+        lda V3784
+        cmp V3785
+        if_eq_then
+            ;bne L2110
+            lda T5F
+            jsr L1C55
+            ldy #$02
+            lda V3783
+            sta [T5C],y
+            clc
+            rts
+        else_end                                            ; L2110:
+    next
+        inc V3784
+        inc V3783
+        beq _end                                            ; L211B
+        jmp _loop                                           ; L207E
+    end                                                     ; L211B:
+
+    from
+        lda #$FF
+        ldy #$02
+        sta [T5C],y
+        iny
+        sty V3783
+        lda V3784
+        sec
+        sbc #$03
+        sta V3786
+        inc V3785
+        ldy V3784
+    loop                                                    ; L2134:
+        lda [T5E],y
+        ldy V3783
+        sta [T5E],y
+    next
+        inc V3783
+        inc V3784
+        ldy V3784
+        cpy V3785
+        bne _loop                                           ; L2134
+    end
+
+    lda V3787
+    if_ne_then
+        ;beq L2156
+        lda T50
+        sec
+        sbc V3786
+        sta T50
+    else_end                                                ; L2156:
+
+    lda V3788
+    if_ne_then
+        ;beq L2163
+        lda T59
+        sec
+        sbc V3786
+        sta T59
+    else_end                                                ; L2163:
+
+    lda V3789
+    if_ne_then
+        ;beq L2172
+        lda V37D8
+        sec
+        sbc V3786
+        sta V37D8
+    else_end                                                ; L2172:
+
+    lda V378A
+    if_ne_then
+        ;beq L2181
+        lda V37D5
+        sec
+        sbc V3786
+        sta V37D5
+    else_end                                                ; L2181:
+
+    lda V378B
+    if_ne_then
+        ;beq L2190
+        lda L1CE6
+        sec
+        sbc V3786
+        sta L1CE6
+    else_end                                                ; L2190:
+
+    lda V3785
+    clc
+    sbc V3786
+    ldy #$02
+    sta [T5E],y
+    sec
+    rts
+.endproc
+
+;;; summary: ?
+;;; changed: ...
+.proc L219D
+    lda #$00
+    pha
+    beq L21A5                                               ; bra
+.endproc
+
+;;; summary: ?
+;;; changed: ...
+.proc L21A2
+    lda #$01
+    pha
+.endproc
+
+;;; summary: ?
+;;; changed: ...
+.proc L21A5
+    jsr L1BCB
+    jsr L1BBC
+    if_cc_then
+        ;bcs L21B7
+        jsr L1B9C
+        jsr L19DD
+        dex
+        jmp _end                                            ; L21B9
+    else                                                    ; L21B7:
+        ldx #$00
+    end                                                     ; L21B9:
+
+    stx P35
+    stx P19
+    txa
+    sec
+    sbc T5B
+    if_cc_then
+        ;bcs L21C9
+        lda P35
+        sta T5B
+        lda #$00
+    else_end                                                ; L21C9:
+
+    sta P36
+    jsr L1BE1
+    jsr L1982
+    stx Z92
+    pla
+    pha
+    if_ne_then
+        ;beq L21DD
+        jsr L1BEC
+        jsr L34FF
+    else_end                                                ; L21DD:
+
+    jsr L333B                                               ; A+ L3380+ L337F+
+    lda #>COLOR_RAM_BASE                                    ; $D8
+    sta TFB
+    lda #>(OUR_VIDEO_MATRIX_BASE - 1)                       ; $73
+    sta TFC
+    lda #<(OUR_VIDEO_MATRIX_BASE - 1)                       ; $FF
+    sta PFE
+    ldx V37D7
+    ldy V37D8
+    jsr L2290
+    try
+        from_loop                                           ; L21F5:
+            lda TFB
+            clc
+            adc #VIC_CHAR_COLUMNS                           ; $28 = 40
+            sta TFB
+            if_cs_then
+                ;bcc L2200
+                inc TFC
+            else_end                                        ; L2200:
+
+            inc PFE
+            lda G_MODE                                      ; L1CE4
+            if_ne_then
+                ;beq L2218
+                ; Mode is select mode
+                lda PFE
+                cmp L337F
+                if_cs_then
+                    ;bcc L2218
+                    cmp L3380
+                    if_cc_then
+                        ;bcs L2218
+                        lda #$80                            ; ?
+                        sta L2340
+                    else_end                                ; L2218:
+                else_end
+            else_end
+
+            jsr L22B8
+            bcs _catch                                      ; L2224
+        next
+            lda PFE
+            cmp #EDIT_PANEL_LAST_LINE                       ; $17=23
+            bne _loop                                       ; L21F5
+        end
+
+        clc
+    catch_finally_end                                       ; L2224:
+
+    pla
+    pha
+    if_ne_then
+        ;beq L224F
+        if_cc_then
+            ;bcs L2241
+            ;lda L22D0
+            lda Z97
+            sta T4F
+            stx T50
+            jsr L19DD
+            lda T4F
+            sta V37D4
+            lda T50
+            sta V37D5
+            jmp _end                                        ; L224A
+        else                                                ; L2241:
+            lda Z97     ; L22D0
+            sta V37D4
+            stx V37D5
+        end                                                 ; L224A:
+
+        lda PFE
+        sta V37D6
+    else_end                                                ; L224F:
+
+    from_loop                                               ; L224F:
+        lda PFE
+        cmp #EDIT_PANEL_LAST_LINE                           ; $17 = 23
+        beq _end                                            ; break L226E
+        clc
+        lda TFB
+        adc #VIC_CHAR_COLUMNS                               ; $28 = 40
+        sta TFB
+        if_cs_then
+            ;bcc L2260
+            inc TFC
+        else_end                                            ; L2260:
+
+        lda #PETSCII_SPACE                                  ; $20 = 32 = ' '
+        ldy #VIC_CHAR_COLUMNS - 1                           ; $27 = 39
+        from_loop                                           ; L2264:
+            sta [TFB],y
+        next
+            dey
+            bpl _loop                                       ; L2264
+        end
+    next
+        inc PFE
+        jmp _loop                                           ; L224F
+    end                                                     ; L226E:
+
+    jsr L1BD6
+    pla
+    if_ne_then
+        ;beq L228D
+        lda #$00
+        sta ZPKERNAL_PNT_HI                                 ; $D2
+        lda T5A
+        asl
+        asl
+        adc T5A
+        asl
+        asl
+        rol ZPKERNAL_PNT_HI                                 ; $D2
+        asl
+        rol ZPKERNAL_PNT_HI                                 ; $D2
+        sta ZPKERNAL_PNT_LO                                 ; $D1
+        lda ZPKERNAL_PNT_HI                                 ; $D2
+        adc #>OUR_VIDEO_MATRIX_BASE                         ; $74
+        sta ZPKERNAL_PNT_HI                                 ; $D2
+    else_end                                                ; L228D:
+
+    ;>>
+    ;jmp L2545
+    jsr L2545
+    rts
+    ;<<
+.endproc
+
+;;; summary: ?
+;;; changed: A+ X=Y' Y=2
+.proc L2290
+    lda #$00
+    sta T5C
+    ;sta L22B9
+    ;sta L22CF
+    ;sta L22E7
+    ;sta L22FB
+    sta Z96
+
+    stx T5D
+    ;stx L22BA
+    ;stx L22D0
+    ;stx L22E8
+    ;stx L22FC
+    stx Z97
+
+    tya
+    tax
+    ldy #$02
+    lda [T5C],y
+    sta V378C
+    rts
+.endproc
+
+;;; summary: ?
+;;; parameters:
+;;;   X: ?
+;;; return:
+;;;   X: ?
+;;; changed: ...
+.proc L22B8
+    ;>>
+    ;           .byte   OPCODE_LDA_AX                               ; $BD lda $FFFF,x
+    ;   L22B9:  .byte   $FF                                         ;            FF  
+    ;   L22BA:  .byte   $FF                                         ;          FF
+    ; Note: A & Y are free to use here.
+    txa
+    tay
+    lda [Z96],y
+    ;<<
+
+    if_eq_then
+        ;bne L22CA
+        ; A == 0
+        txa
+        pha
+            ; Show "[bottom]"
+            ldx #<RESOURCE_STRING_BOTTOM                    ; <_2337 = $37
+            ldy #>RESOURCE_STRING_BOTTOM                    ; >_2337 = $23
+            jsr PRINT_FILL_LINE                             ; L2361 A+ X- Y+
+        pla
+        tax
+        sec
+        rts
+    else_end                                                ; L22CA:
+    
+    ldy P36
+    ;if_ne_then
+        beq L22E6
+        ;from_loop
+            L22CE:
+            ;>>
+    ;               .byte   OPCODE_LDA_AX                           ; $BD lda $FFFF,x
+    ;   L22CF:      .byte   $FF                                     ;            FF
+    ;   L22D0:      .byte   $FF                                     ;          FF
+            sty Z9B
+                txa
+                tay
+                lda [Z96],y
+            ldy Z9B
+            ;<<
+
+            cmp #PETSCII_RETURN
+            if_eq_then
+                ;bne L22DA
+                ldy #$00
+                jmp L2319                                   ; break break
+            else_end                                        ; L22DA:
+
+            cpx V378C
+            if_eq_then
+                ;bne L22E2
+                jsr L2341
+            else_end                                        ; L22E2:
+        ;next
+            inx
+            dey
+            bne L22CE
+        ;end
+    ;else_end
+    L22E6:
+
+    ;from_loop
+        ;>>
+    ;           .byte OPCODE_LDA_AX                                 ; $BD lda $FFFF,x
+    ;   L22E7:  .byte $FF                                           ;            FF
+    ;   L22E8:  .byte $FF                                           ;          FF
+        sty Z9B
+            txa
+            tay
+            lda [Z96],y
+        ldy Z9B
+        ;<<
+
+        cmp #PETSCII_RETURN
+        beq L2319                                           ; break
+        cpy #VIC_CHAR_COLUMNS                               ; $28 = 40
+        ;if_eq_then
+            bne L2304
+            ;from_loop
+                L22F1:
+                cpx V378C
+                if_cs_then
+                    ;bcc L22F9
+                    jsr L2341
+                else_end                                    ; L22F9:
+
+                inx
+                ;>>
+    ;                   .byte   OPCODE_LDA_AX               ; $BD lda $FFFF,x
+    ;           L22FB:  .byte   $FF                         ;            FF
+    ;           L22FC:  .byte   $FF                         ;          FF
+                sty Z9B
+                    txa
+                    tay
+                    lda [Z96],y
+                ldy Z9B
+                ;<<
+            ;next
+                cmp #PETSCII_RETURN
+                bne L22F1                                   ; _loop
+            ;end
+
+            jmp L2319                                       ; break
+        ;else
+            L2304:
+            jsr L240D                                       ; A+, V378D+
+            eor L2340
+            sta [TFB],y
+            iny
+            cpx V378C
+            if_cs_then
+                ;bcc L2315
+                jsr L2341
+            else_end                                        ; L2315:
+        ;end
+    ;next
+        inx
+        jmp L22E6                                           ; _loop
+    ;end
+    L2319:
+
+    cpx V378C
+    if_cs_then
+        ;bcc L2321
+        jsr L2341
+    else_end                                                ; L2321:
+
+    inx
+    from
+        lda #PETSCII_SPACE                                  ; $20 = 32 = ' '
+        eor L2340
+    loop                                                    ; L2327:
+        cpy #VIC_CHAR_COLUMNS                               ; $28 = 40
+        beq _end                                            ; break L2330
+        sta [TFB],y
+    next
+        iny
+        bne _loop                                           ; L2327
+    end                                                     ; L2330:
+
+    lda #$00
+    sta L2340
+    clc
+    rts
+.endproc
+
+;;; summary: ?
+;;; changed:
+;;;   A+ X:=2 Y-
+;;;   L22BA := L22D0 := L22E8 := L22FC := T5D := Z97 := [T5C],0
+;;;   V378C := [T5C],2
+.proc L2341
+    tya
+    pha
+        ldy #$00
+        lda [T5C],y
+        ;sta L22BA
+        ;sta L22D0
+        ;sta L22E8
+        ;sta L22FC
+        sta T5D
+        sta Z97
+
+        ldy #$02
+        lda [T5C],y
+        sta V378C
+        ldx #$02
+    pla
+    tay
+    rts
+.endproc
+
+;;; summary: Print null terminated string in X#Y to T5C#T5D right fill the line with spaces.
+;;; return:
+;;;   Y: index 1 after character in line.
+;;; changed: A+ X- Y+ T5C+ T5D+
+.proc PRINT_FILL_LINE                                       ; L2361:
+    from
+        stx T5C
+        sty T5D
+        ldy #$00
+    loop                                                    ; L2367:
+        lda [T5C],y
+        beq _end                                            ; break L2373
+        jsr L240D                                           ; A+, V378D+
+        sta [TFB],y
+    next
+        iny
+        bne _loop                                           ; L2367 bra?
+    end                                                     ; L2373:
+
+    tya
+    pha
+    from
+        lda #PETSCII_SPACE                                  ; $20 = 32 = ' '
+    loop                                                    ; L2377:
+        cpy #VIC_CHAR_COLUMNS                               ; $28 = 40
+        beq _end                                            ; break L2380
+        sta [TFB],y
+    next
+        iny
+        bne _loop                                           ; L2377
+    end                                                     ; L2380:
+
+    pla
+    tay
+    rts
+.endproc
+
+;;; summary: Command: Split line (insert/add return)
+;;; changed: ...
+.proc CMD_SPLIT_LINE                                        ; L2383:
+    ldx G_MODE                                              ; L1CE4
+    if_ne_then
+        ;beq L2389
+        ; Mode is select mode
+        rts
+    else_end                                                ; L2389:
+
+    ; Mode is edit mode
+
+    jsr L1AE4
+    if_cs_then
+        ;bcc L238F
+        rts
+    else_end                                                ; L238F:
+
+    jsr L1B9C
+    lda T5A
+    cmp #BUMP_BOTTOM                                        ; $11 = 17
+    if_cc_then
+        ;bcs L23A1
+        jsr MOVE_CURSOR_DOWN                                ; L1AB2: A+ X- Y- ZPKERNAL_PNT_LO+ ZPKERNAL_PNT_HI+ T5A+
+        jsr L2649
+        jmp _end                                            ; L23A4:
+    else                                                    ; L23A1:
+        jsr L2671
+    end                                                     ; L23A4:
+
+    lda #$00
+    sta T5B
+    inc P38
+    if_eq_then
+        ;bne L23AE
+        inc P39
+    else_end                                                ; L23AE:
+
+    ;>>
+    ;jmp L219D
+    jsr L219D
+    rts
+    ;<<
+.endproc
+
+;;; summary: ?
+;;; changed: ...
+.proc L23B1
+    lda #>OUR_VIDEO_MATRIX_BASE                             ; $74 -> $04
+    sta T5D
+    sta T5F
+    lda #<OUR_VIDEO_MATRIX_BASE                             ; $00
+    sta T5C
+    lda #VIC_CHAR_COLUMNS                                   ; $28 = 40
+    sta T5E
+    ldx #EDIT_PANEL_LAST_LINE                               ; $17 = 23
+    from_loop                                               ; L23C1:
+        from
+            ldy #VIC_CHAR_COLUMNS - 1                       ; $27 = 39
+        loop                                                ; L23C3:
+            lda [T5E],y
+            sta [T5C],y
+        next
+            dey
+            bpl _loop                                       ; L23C3
+        end
+
+        lda T5F
+        sta T5D
+        lda T5E
+        sta T5C
+        clc
+        adc #VIC_CHAR_COLUMNS                               ; $28 = 40
+        sta T5E
+        if_cs_then
+            ;bcc L23DB
+            inc T5F
+        else_end                                            ; L23DB:
+    next
+        dex
+        bne _loop                                           ; L23C1
+    end
+
+    rts
+.endproc
+
+;;; summary: ?
+;;; changed: ...
+.proc L23DF
+    from
+        lda #<EDIT_PANEL_LAST_LINE_START_VM                 ; $98
+        sta T5C
+        lda #<EDIT_PANEL_BEFORE_LAST_LINE_START_VM          ; $70 ; een na laatste regel
+        sta T5E
+        lda #>EDIT_PANEL_LAST_LINE_START_VM                 ; $77
+        sta T5D
+        sta T5F
+        ldx #EDIT_PANEL_LAST_LINE                           ; $17 = 23
+    loop                                                    ; L23EF:
+        from
+            ldy #VIC_CHAR_COLUMNS - 1                       ; $27 = 39
+        loop                                                ; L23F1:
+            lda [T5E],y
+            sta [T5C],y
+        next
+            dey
+            bpl _loop                                       ; L23F1
+        end
+
+        lda T5F
+        sta T5D
+        lda T5E
+        sta T5C
+        clc
+        adc #>COLOR_RAM_BASE                                ; $D8
+        sta T5E
+        if_cc_then
+            ;bcs L2409
+            dec T5F
+        else_end                                            ; L2409:
+    next
+        dex
+        bne _loop                                           ; L23EF
+    end
+
+    rts
+.endproc
+
+;;; summary: ?
+;;; changed: A+, V378D+
+.proc L240D
+    pha
+    and #$7F                                                ; Clear reverse bit?
+    cmp #PETSCII_SPACE                                      ; $20 = 32 = ' '
+    ; A < $20  -> C=0
+    ; A >= $20 -> C=1
+    ror V378D
+    pla
+    asl
+    ror V378D
+    asl
+    asl V378D
+    ror
+    asl V378D
+    ror
+    eor #$80                                                ; ?
+    rts
+.endproc
+
+;;; summary: ?
+;;; changed: ...
+.proc L2426
+    lda #<COMMAND_PANEL_FIRST_LINE_START_VM                 ; $C0
+    sta TFB
+    lda #>COMMAND_PANEL_FIRST_LINE_START_VM                 ; $77
+    sta TFC
+    jsr PRINT_FILL_LINE                                     ; L2361 A+ X- Y+
+    from
+        ldx #$00
+    loop                                                    ; L2433:
+        jsr L247D
+        jsr L24E6
+        cmp #PETSCII_DELETE                                 ; $14 = 20 = <DEL_INST>
+        if_eq_then
+            ;bne L244A
+            cpx #$00
+            if_ne_then
+                ;beq L2447
+                dex
+                dey
+                lda #PETSCII_SPACE                          ; $20 = 32 = ' '
+                sta [TFB],y
+            else_end                                        ; L2447:
+
+            jmp _end                                        ; L247A
+        else                                                ; L244A:
+            pha
+            lda L24E5
+            if_ne_then
+                ;beq L2464
+                pla
+                cmp #PETSCII_F3                             ; $86 = 134
+                if_eq_then
+                    ;bne L2459
+                    sta V378E,x
+                    rts
+                else_end                                    ; L2459:
+
+                cmp #PETSCII_F4                             ; $8A = 138
+                if_eq_then
+                    ;bne L2461
+                    sta V378E,x
+                    rts
+                else_end                                    ; L2461:
+
+                jmp L246C
+            else_end                                        ; L2464:
+
+            pla
+            cmp #PETSCII_RETURN
+            if_eq_then
+                ;bne L246C
+                jmp L249D
+            else_end                                        ;
+
+    L246C:
+
+            cpy #VIC_CHAR_COLUMNS - 1                       ; $27 = 39
+            if_ne_then
+                ;beq L247A
+                sta V378E,x
+                jsr L240D                                   ; A+, V378D+
+                sta [TFB],y
+                inx
+                iny
+            else_end                                        ; L247A:
+        end
+    next
+        jmp _loop                                           ; L2433
+    end                                                     ;
+    
+    
+    L247D:
+
+    tya
+    pha
+    ldy #$00
+    cpx #$00
+    if_ne_then
+        ;beq L2497
+        lda V378E
+        cmp #PETSCII_LATIN_LETTER_A                 ; $41 = 65 = 'a'
+        if_cc_then
+            ;bcs L2491
+            ldy #$01
+            jmp L2497
+        else_end                                            ; L2491:
+
+        cmp #PETSCII_LATIN_LETTER_Z + 1             ; $5B = 91 = '['
+        if_cs_then
+            ;bcc L2497
+            ldy #$01
+        else_end                                            ; L2497:
+    else_end
+
+    L2497:
+    sty L24E5
+    pla
+    tay
+    rts
+
+    L249D:
+    cpx #$00
+    if_ne_then
+        ;beq L24AE
+        from_loop                                           ; L24A1:
+            dex
+            lda V378E,x
+            cmp #PETSCII_QUOTATION_MARK                     ; $22 = 34 = '"'
+            beq L24AE
+        next
+            cmp #PETSCII_SPACE                              ; $20 = 32 = ' '
+            beq _loop                                       ; L24A1
+        end
+
+        inx
+    else_end                                                ;
+    
+    L24AE:
+    lda #$00
+    sta V378E,x
+    sta V37B1
+    from
+        ldx #$FF
+    loop                                                    ; L24B8:
+        inx
+        lda V378E,x
+        if_eq_then
+            ;bne L24BF
+            rts
+        else_end                                            ; L24BF:
+
+        cmp #PETSCII_SPACE                                  ; $20 = 32 = ' '
+        bne _loop                                           ; L24B8
+    end
+
+    lda #$00
+    sta V378E,x
+    from_loop                                               ; L24C8:
+        inx
+        lda V378E,x
+        bne L24CF
+        rts
+        L24CF:
+
+        cmp #PETSCII_QUOTATION_MARK                         ; $22 = 34 = '"'
+        beq L24D8
+        cmp #PETSCII_SPACE                                  ; $20 = 32 = ' '
+        beq _loop                                           ; L24C8
+    end
+
+    dex
+    L24D8:
+    from
+        ldy #$FF
+    loop                                                    ; L24DA:
+        inx
+        iny
+        lda V378E,x
+        sta V37B1,y
+    next
+        bne _loop                                           ; L24DA
+    end
+
+    rts
+.endproc
+
+;;; summary: ?
+;;; changed: ...
+.proc L24E6
+    stx L251F
+    jsr L2521
+    try
+        from_loop                                           ; L24EC:
+            tya
+            pha
+            jsr KERNAL_GETIN                                ; $FFE4
+            if_ne_then
+                ;beq L24FC
+                cmp #PETSCII_SPACE                          ; $20 = 32 = ' '
+                bne _catch                                  ; L250E
+                ldx L251F
+                bne _catch                                  ; L250E
+            else_end                                        ; L24FC:
+
+            pla
+            tay
+            lda ZPKERNAL_TIME_2                             ; $A2
+            sec
+            sbc L251E
+            cmp #CURSOR_BLINK_DELAY                         ; $14 = 20
+            if_pl_then
+                ;bmi L250B
+                jsr L2521
+            else_end                                        ; L250B:
+        next
+            jmp _loop                                       ; L24EC
+        end
+    catch_finally_end                                       ; L250E:
+
+    sta L2520
+    pla
+    tay
+    ldx L251F
+    lda #PETSCII_SPACE                          ; $20 = 32 = ' '
+    sta [TFB],y
+    lda L2520
+    rts
+.endproc
+
+;;; summary: ?
+;;; changed: ...
+.proc L2521
+    lda [TFB],y
+    eor #$80                                                ; ?
+    sta [TFB],y
+    lda ZPKERNAL_TIME_2                                     ; $A2
+    sta L251E
+    rts
+.endproc
+
+;;; summary: Show X#Y on command/status line 
+;;; changed: TFB, TFC
+.proc PRINT_STATUS_LINE                                     ; L252D:
+    lda #<COMMAND_PANEL_FIRST_LINE_START_VM                 ; $C0
+    sta TFB
+    lda #>COMMAND_PANEL_FIRST_LINE_START_VM                 ; $77
+    sta TFC
+    jsr PRINT_FILL_LINE                                     ; L2361 A+ X- Y+
+    jsr KERNAL_CLRCHN                                       ; $FFCC
+    from_loop                                               ; L253B:
+        jsr L24E6
+    next
+        cmp #PETSCII_RETURN                                 ; $0D
+        bne _loop                                           ; L253B
+    end
+
+    ;>>
+    ;jmp L2545
+    jsr L2545
+    rts
+    ;<<
+.endproc
+
+;;; summary: ?
+;;; changed: ...
+.proc L2545
+    from
+        lda ZPKERNAL_CMP0                                   ; $B0
+        ; A := 8 * A
+        asl
+        asl
+        asl
+        tay
+        ldx #$00
+    loop                                                    ; L254D:
+        lda BUFFER_NAME_TABLE,y                             ; L281C
+        beq _end                                            ; break L2559
+        sta L259D,x
+    next
+        iny
+        inx
+        bne _loop                                           ; L254D
+    end                                                     ; L2559:
+
+    from
+        lda #PETSCII_SPACE                                  ; $20 = 32 = ' '
+    loop                                                    ; L255B:
+        sta L259D,x
+    next
+        inx
+        cpx #BUFFER_NAME_TABLE_ENTRY_SIZE                  ; $08 = 8
+        bne _loop                                           ; L255B
+    end
+
+    ldx P38
+    ldy P39
+    inx
+    if_eq_then
+        ;bne L256B
+        iny
+    else_end                                                ; L256B:
+
+    jsr INT_TO_STRING                                       ; L25C2
+    from
+        ldx #$03
+    loop                                                    ; L2570:
+        lda L2623,x
+        sta L25B1,x
+    next
+        dex
+        bpl _loop                                           ; L2570
+    end
+
+    ldx     P35
+    inx
+    ldy     #$00
+    jsr     INT_TO_STRING                                   ; L25C2
+    from
+        ldx     #$02
+    loop                                                    ; L2583:
+        lda     L2623,x
+        sta     L25BE,x
+    next
+        dex
+        bpl _loop                                           ; L2583
+    end
+
+    lda #<COMMAND_PANEL_FIRST_LINE_START_VM                 ; $C0
+    sta TFB
+    lda #>COMMAND_PANEL_FIRST_LINE_START_VM                 ; $77
+    sta TFC
+    ; Show/update status line
+    ldx #<STATUS_LINE_CONTENT                               ; <_259B = $9B
+    ldy #>STATUS_LINE_CONTENT                               ; >_259B = $25
+    ;>>
+    ;jmp PRINT_FILL_LINE                                     ; L2361
+    jsr PRINT_FILL_LINE                                     ; L2361 A+ X- Y+
+    rts
+    ;<<
+.endproc
+
+;;; summary: X#Y (assuming in [0,9999] to string at INT_TO_STRING_RESULT
+;;; notes:
+;;;    If X#Y == 10.000 then you get ":000" etc
+;;; changed: ...
+.proc INT_TO_STRING                                         ; L25C2:
+    stx BL                                                  ; L261F
+    sty BH                                                  ; L2620
+    ; Clear INT_TO_STRING_RESULT
+    from
+        ldx #INT_TO_STRING_DIGIT_COUNT - 1                  ; $03
+        lda #PETSCII_SPACE                                  ; $20 = 32 = ' '
+    loop                                                    ; L25CC:
+        sta INT_TO_STRING_RESULT,x                          ; L2623
+    next
+        dex
+        bpl _loop                                           ; L25CC
+    end
+
+    from
+        ldx #$00
+        ldy #INT_TO_STRING_DIGIT_COUNT - 1                  ; $03
+    loop                                                    ; L25D6:
+        from
+            lda #$00
+            sta CH                                          ; L2622
+        loop                                                ; L25DB:
+            sec
+            lda BL                                          ; L261F
+            sbc TABLE_POWER_OF_10_LO,y                      ; L2617
+            sta CL                                          ; L2621
+            lda BH                                          ; L2620
+            sbc TABLE_POWER_OF_10_HI,y                      ; L261B
+            bcc _end                                        ; break L25FB
+            sta BH                                          ; L2620
+            lda CL                                          ; L2621
+            sta BL                                          ; L261F
+        next
+            inc CH                                          ; L2622
+            bne _loop                                       ; L25DB
+        end                                                 ; L25FB:
+
+        lda CH                                              ; L2622
+        bne L2604
+        cpx #$00
+        beq L260B
+        L2604:
+        clc
+        adc #PETSCII_DIGIT_ZERO                             ; $30 = '0'
+        sta INT_TO_STRING_RESULT,x                          ; L2623
+        inx
+        L260B:
+    next
+        dey
+        bpl _loop                                           ;; L25D6
+    end
+
+    txa
+    if_eq_then
+        ;bne L2616
+        lda #PETSCII_DIGIT_ZERO                             ; $30 = '0'
+        sta INT_TO_STRING_RESULT                            ; L2623
+    else_end                                                ; L2616:
+
+    rts
+.endproc
+
+;;; summary: ?
+;;; changed: ...
+.proc L2627
+    jsr L1BCB
+    lda V37D4
+    sta T4F
+    lda V37D5
+    sta T50
+    jsr L1982
+    if_cs_then
+        ;bcc L263C
+        dec V37D6
+    else_end                                                ; L263C:
+
+    lda T4F
+    sta V37D4
+    lda T50
+    sta V37D5
+    ;>>
+    ;jmp L1BD6
+    jsr L1BD6
+    rts
+    ;<<
+.endproc
+
+;;; summary: ?
+;;; changed: ...
+.proc L2649
+    lda V37D6
+    cmp #EDIT_PANEL_LAST_LINE                           ; $17=23
+    if_ne_then
+        ;beq L2654
+        inc V37D6
+        rts
+    else_end                                            ; L2654:
+
+    jsr L1BCB
+    lda V37D4
+    sta T4F
+    lda V37D5
+    sta T50
+    jsr L19DD
+    lda T4F
+    sta V37D4
+    lda T50
+    sta V37D5
+    ;>>
+    ;jmp L1BD6
+    jsr L1BD6
+    rts
+    ;<<
+.endproc
+
+;;; summary: ?
+;;; changed: ...
+.proc L2671
+    jsr L1BCB
+    lda V37D7
+    sta T4F
+    lda V37D8
+    sta T50
+    jsr L1982
+    lda T4F
+    sta V37D7
+    lda T50
+    sta V37D8
+    ;>>
+    ;jmp L1BD6
+    jsr L1BD6
+    rts
+    ;<<
+.endproc
+
+;;; summary: ?
+;;; changed: ...
+.proc L268E
+    jsr L1BCB
+    lda V37D7
+    sta T4F
+    lda V37D8
+    sta T50
+    jsr L19DD
+    lda T4F
+    sta V37D7
+    lda T50
+    sta V37D8
+    ;>>
+    ;jmp L1BD6
+    jsr L1BD6
+    rts
+    ;<<
+.endproc
+
+;;; summary: ?
+;;; changed: ...
+.proc L26AB
+    tax
+    lda L272B
+    sta V37D9,x
+    sta V37E3,x
+    sta TFC
+    lda #$00
+    sta TFB
+    tay
+    lda [TFB],y
+    sta ZP_0E
+    tya
+    sta [TFB],y
+    iny
+    sta [TFB],y
+    lda #$03
+    iny
+    sta [TFB],y
+    sta V37ED,x
+    lda #$00
+    sta V37F7,x
+    sta V3801,x
+    iny
+    sta [TFB],y
+    rts
+.endproc
+
+;;; summary: ?
+;;; changed: ...
+.proc L26DA
+    tax
+    lda V37D9,x
+    if_eq_then
+        ;bne L26E1
+        rts
+    else_end                                                ; L26E1:
+
+    sta TFC
+    lda #$00
+    sta TFB
+    sta V37D9,x
+    tay
+
+    from_loop                                                    ; L26EB:
+        lda [TFB],y
+        pha
+        lda ZP_0E
+        sta [TFB],y
+        lda TFC
+        sta ZP_0E
+        pla
+        sta TFC
+    next
+        bne _loop                                           ; L26EB
+    end
+
+    cpx ZPKERNAL_CMP0                                       ; $B0
+    if_eq_then
+        ;bne L272A
+        jsr L1B77
+        sta L272B
+        lda ZPKERNAL_CMP0                                   ; $B0
+        jsr L26AB
+        ldx ZPKERNAL_CMP0                                   ; $B0
+        lda V37D9,x
+        sta ZPBASIC_VALTYP                                  ; $0D
+        lda V37E3,x
+        sta T4F
+        lda V37ED,x
+        sta T50
+        lda V37F7,x
+        sta P38
+        lda V3801,x
+        sta P39
+        lda #$00
+        sta a:T5A                                           ; $5A
+    else_end                                                ; L272A:
+
+    rts
+.endproc
+
+;;; summary: ?
+;;; changed: ...
+.proc L272C
+    pha
+    tax
+    lda V37D9,x
+    if_eq_then
+        ;bne L273D
+        jsr L1B77
+        if_cs_then
+            ;bcc L273A
+            pla
+            rts
+        else_end                                            ; L273A:
+
+        sta L272B
+    else_end                                                ; L273D:
+
+    ldx ZPKERNAL_CMP0                                       ; $B0
+    if_pl_then
+        ;bmi L275A
+        lda ZPBASIC_VALTYP                                  ; $0D
+        sta V37D9,x
+        lda T4F
+        sta V37E3,x
+        lda T50
+        sta V37ED,x
+        lda P38
+        sta V37F7,x
+        lda P39
+        sta V3801,x
+    else_end                                                ; L275A:
+
+    pla
+    sta ZPKERNAL_CMP0                           ; $B0
+    tax
+    lda V37D9,x
+    if_eq_then
+        ;bne L276D
+        txa
+        pha
+        jsr L26AB
+        pla
+        tax
+        lda V37D9,x
+    else_end                                                ; L276D:
+
+    sta ZPBASIC_VALTYP                                      ; $0D
+    lda V37E3,x
+    sta T4F
+    lda V37ED,x
+    sta T50
+    lda V37F7,x
+    sta P38
+    lda V3801,x
+    sta P39
+    rts
+.endproc
+
+;;; summary: ?
+;;; changed: ...
+.proc L2784
+    sta     L2808
+    from
+        lda #<V37B1                                         ; $B1
+        sta TFB
+        lda #>V37B1                                         ; $37
+        sta TFC
+        lda #<BUFFER_NAME_TABLE                             ; <L281C = $1C
+        sta PFD
+        lda #>BUFFER_NAME_TABLE                             ; >L281C = $28
+        sta PFE
+        ldx #$00
+    loop                                                    ; L2799:
+        stx L2807
+        lda #$FF
+        jsr STRING_COMPARE_SIGNIFICANT                      ; L2C02
+        bne L27B2
+        ldx L2807
+        cpx #$02
+        bcs L27AD
+        L27AA:
+        txa
+        clc
+        rts
+        L27AD:
+        lda V37D9,x
+        bne L27AA
+        L27B2:
+        lda PFD
+        clc
+        adc #$08                                    ; zzz
+        sta PFD
+        bcc L27BD
+        inc PFE
+        L27BD:
+    next
+        ldx L2807
+        inx
+        cpx #$0A                                            ; zzz
+        bne _loop                                           ; L2799
+    end
+
+    lda L2808
+    if_eq_then
+        ;bne L27CC
+        sec
+        rts
+    else_end                                                ; L27CC:
+
+    from
+        ldx #$02
+    loop                                                    ; L27CE:
+        lda V37D9,x
+        beq L27E1
+        inx
+        cpx #$0A                                            ; ?
+        bne _loop                                           ; L27CE
+    end
+
+    ; Show "no more free files"
+    ldx #<RESOURCE_STRING_NO_MORE_FREE_FILES                ; <_2809 = $09
+    ldy #>RESOURCE_STRING_NO_MORE_FREE_FILES                ; >_2809 = $28
+    jsr PRINT_STATUS_LINE                                   ; L252D
+    sec
+    rts
+
+    L27E1:
+    stx L2807
+    from
+        txa
+        ; A := 8 * A
+        asl
+        asl
+        asl
+        adc #<BUFFER_NAME_TABLE                             ; $1C
+        sta TFB
+        lda #$00
+        adc #>BUFFER_NAME_TABLE                             ; $28
+        sta TFC
+        ldy #$00
+    loop                                                    ; L27F4:
+        lda V37B1,y
+        sta [TFB],y
+    next
+        iny
+        cpy #BUFFER_NAME_TABLE_ENTRY_SIZE - 1               ; $07 = 7 ; -1 because of '\0'
+        bne _loop                                           ; L27F4
+    end
+
+    lda     #$00
+    sta     [TFB],y
+    lda     L2807
+    clc
+    rts
+.endproc
+
+;;; summary: Command: List buffers
+;;; changed: ...
+.proc CMD_LIST                                              ; L286C:
+    lda #PETSCII_CLR                                        ; $93
+    jsr KERNAL_CHROUT
+    jsr L1A89
+    ;>>
+    ;--lda #PETSCII_BLACK                                   ; $90
+    ;nop
+    ;nop
+    ;<<
+    ;>>
+    ;--jsr KERNAL_CHROUT
+    ;nop
+    ;nop
+    ;nop
+    ;<<
+    ; Show header
+    ldx #<RESOURCE_STRING_LIST_HEADER                       ; <_28FC = $FC
+    ldy #>RESOURCE_STRING_LIST_HEADER                       ; >_28FC = $28
+    jsr L293D
+    from
+        lda #<BUFFER_NAME_TABLE                             ; <L281C = $1C
+        sta T5C
+        lda #>BUFFER_NAME_TABLE                             ; >L281C = $28
+        sta T5D
+        ldx #$00
+    loop                                                    ; L288A:
+        stx L2807
+        cpx ZPKERNAL_CMP0                                   ; $B0
+        if_eq_then
+            ;bne L2896
+            lda ZPBASIC_VALTYP                              ; $0D
+            jmp _end                                        ; L2899
+        else                                                ; L2896:
+            lda V37D9,x
+        end                                                 ; L2899:
+
+        if_ne_then
+            ;beq L28C4
+            pha
+            ldx T5C
+            ldy T5D
+            jsr L293D
+            from_loop                                       ; L28A3:
+                lda #PETSCII_SPACE                          ; $20 = 32 = ' '
+                jsr KERNAL_CHROUT                           ; $FFD2
+            next
+                iny
+                cpy #PETSCII_RETURN
+                bne _loop                                   ; L28A3
+            end
+
+            pla
+            jsr L1FFE
+            jsr A_TO_DECIMAL_3_A_X_Y                        ; L294E
+            jsr KERNAL_CHROUT                               ; $FFD2
+            txa
+            jsr KERNAL_CHROUT                               ; $FFD2
+            tya
+            jsr KERNAL_CHROUT                               ; $FFD2
+            lda #PETSCII_RETURN
+            jsr KERNAL_CHROUT                               ; $FFD2
+        else_end                                            ; L28C4:
+
+        lda T5C
+        clc
+        adc #BUFFER_NAME_TABLE_ENTRY_SIZE                   ; $08 = 8
+        sta T5C
+        if_cs_then
+            ;bcc L28CF
+            inc T5D
+        else_end                                            ; L28CF:
+    next
+        ldx L2807
+        inx
+        cpx #BUFFER_NAME_TABLE_ENTRY_COUNT                  ; $0A = 10
+        bne _loop                                           ; L288A
+    end
+
+    ; Show footer
+    ldx #<RESOURCE_STRING_LIST_FOOTER                       ; <_2916 = $16
+    ldy #>RESOURCE_STRING_LIST_FOOTER                       ; >_2916 = $29
+    jsr L293D
+    lda ZP_0E
+    jsr L1FFE
+    jsr A_TO_DECIMAL_3_A_X_Y                                ; L294E
+    jsr KERNAL_CHROUT                                       ; $FFD2
+    txa
+    jsr KERNAL_CHROUT                                       ; $FFD2
+    tya
+    jsr KERNAL_CHROUT                                       ; $FFD2
+    ; Show "hit return to continue"
+    ldx #<RESOURCE_STRING_HIT_RETURN_TO_CONTINUE            ; <_2926 = $26
+    ldy #>RESOURCE_STRING_HIT_RETURN_TO_CONTINUE            ; >_2926 = $29
+    jsr PRINT_STATUS_LINE                                   ; L252D
+    ;>>
+    ;jmp L1A89
+    jsr L1A89
+    rts
+    ;<<
+.endproc
+
+;;; summary: ?
+;;; changed: ...
+.proc L293D
+    from
+        stx T5E
+        sty T5F
+        ldy #$00
+    loop                                                    ; L2943:
+        lda [T5E],y
+        beq _end                                            ; break L294D
+        jsr KERNAL_CHROUT                                   ; $FFD2
+    next
+        iny
+        bne _loop                                           ; L2943
+    end                                                     ; L294D:
+
+    rts
+.endproc
+
+;;; summary: A to decimal string representation in A (10^2) X (10^1) Y (10^0)
+;;; parameters: A
+;;; return: A, X, Y
+.proc A_TO_DECIMAL_3_A_X_Y                                  ; L294E
+    from
+        ldx #PETSCII_SPACE                                  ; $20 = 32 = ' '
+        ldy #PETSCII_SPACE                                  ; $20 = 32 = ' '
+    loop                                                    ; L2952:
+        sec
+        sbc #100                                            ; $64 = 100
+        bcc _end                                            ; break L2963
+        cpx #PETSCII_SPACE                                  ; $20 = 32 = ' '
+        if_eq_then
+            ;bne L295F
+            ldx #PETSCII_DIGIT_ZERO                         ; $30 = 48 = '0'
+            ldy #PETSCII_DIGIT_ZERO                         ; $30 = 48 = '0'
+        else_end                                            ; L295F:
+    next
+        inx
+        jmp _loop                                           ; L2952
+    end                                                     ; L2963:
+
+    adc #100                                                ; $64 = 100
+    from_loop                                               ; L2965:
+        sec
+        sbc #10                                             ; $0A = 10
+        bcc _end                                            ; break L2974
+        cpy #PETSCII_SPACE                                  ; $20 = 32 = ' '
+        if_eq_then
+            ;bne L2970
+            ldy #PETSCII_DIGIT_ZERO                         ; $30 = 48 = '0'
+        else_end                                            ; L2970:
+    next
+        iny
+        jmp _loop                                           ; L2965
+    end                                                     ; L2974:
+
+    adc #10 + PETSCII_DIGIT_ZERO                            ; $3A = 58
+    sty L297F
+    tay
+    txa
+    ldx L297F
+    rts
+.endproc
+
+;;; summary: Command: Enter command mode
+;;; changed: ...
+.proc CMD_COMMAND_MODE                                      ; L2980:
+    from_loop
+        ; Show "cmd: " on command line
+        ldx #<RESOURCE_STRING_COMMAND_PROMPT                ; <_2A54 = $54
+        ldy #>RESOURCE_STRING_COMMAND_PROMPT                ; >_2A54 = $2A
+        jsr L2426
+        lda V378E
+        if_eq_then
+            ;bne L298F
+            ;>>
+            ;jmp L2545
+            jsr L2545
+            rts
+            ;<<
+        else_end                                            ; L298F:
+
+        if
+            cmp #PETSCII_LATIN_LETTER_A                         ; $41 = 65 = 'a'
+            bcc _then                                           ; L2997
+            cmp #PETSCII_LATIN_LETTER_Z + 1                     ; $5B = "[" = "Z" + 1
+            bcc _end                                            ; L299A
+        then                                                    ; L2997:
+            ;>>
+            ;jmp L2D74
+            jsr L2D74
+            rts
+            ;<<
+        else_end                                                ; L299A:
+
+        from
+            lda #<COMMAND_NAME_TABLE                        ; <_2A0C = $0C
+            sta TFB
+            lda #>COMMAND_NAME_TABLE                        ; >_2A0C = $2A
+            sta TFC
+            lda #<V378E                                     ; $8E
+            sta PFD
+            lda #>V378E                                     ; $37
+            sta PFE
+            ldx #0
+        loop                                                ; L29AC:
+            stx T_COMMAND_INDEX                             ; L29D4
+            lda COMMAND_NAME_SIGNIFICANT_CHAR_COUNT,x       ; L2A4B
+            jsr STRING_COMPARE_SIGNIFICANT                  ; L2C02
+            beq EXECUTE_COMMAND                             ; L29D5
+            lda TFB
+            clc
+            adc #COMMAND_NAME_LENGTH                        ; $07
+            sta TFB
+            if_cs_then
+                ;bcc L29C2
+                inc TFC
+            else_end                                        ; L29C2:
+        next
+            ldx T_COMMAND_INDEX                             ; L29D4
+            inx
+            cpx #COMMAND_COUNT                              ; $09
+            bne _loop                                       ; L29AC
+        end
+
+        ; Command not found
+        ; Show "invalid command"
+        ldx #<RESOURCE_STRING_INVALID_COMMAND               ; <_2A5A = $5A
+        ldy #>RESOURCE_STRING_INVALID_COMMAND               ; >_2A5A = $2A
+        jsr PRINT_STATUS_LINE                               ; L252D
+    next
+        jmp _loop                                           ; L2980
+    end
+.endproc
+
+;;; summary: execute command with index in T_COMMAND_INDEX
+;;; changed: ...
+.proc EXECUTE_COMMAND                                       ; L29D5:
+    ; A := 3 * T_COMMAND_INDEX                              ; L29D4
+    ; --lda     T_COMMAND_INDEX                             ; L29D4
+    ; --asl     a
+    ; >>
+    ; --adc     T_COMMAND_INDEX                             ; L29D4
+    ; --adc     #<COMMAND_JUMP_TABLE                        ; $F1 = <_29F1
+    ; --sta     L29E9
+    ; --lda     #$00
+    ; --adc     #>COMMAND_JUMP_TABLE                        ; $29 = >_29F1
+    ; --sta     L29EA
+    ; <<
+    ; >>
+    ; .byte   OPCODE_JSR_AB                                 ; $20 jsr $FFFF
+    ; L29E9:  .byte   $FF                                   ;            FF
+    ; L29EA:  .byte   $FF                                   ;          FF
+    ldx T_COMMAND_INDEX
+    lda COMMAND_ADDR_TABLE_LO,x
+    sta DL
+    lda COMMAND_ADDR_TABLE_HI,x
+    sta DH
+    jsr JSR_INDIRECT_DX
+    ;<<
+    jsr L21A2
+    ;>>
+    ; Need jmp here else CMD_QUIT will not work after another command
+    jmp CMD_COMMAND_MODE                                    ; L2980
+    ;jsr CMD_COMMAND_MODE                                    ; L2980
+    ;rts
+    ;<<
+.endproc
+
+;;; summary: Command: Clear current buffer
+.proc CMD_CLEAR                                             ; L2A6A:
+    lda #MODE_EDIT                                          ; $00
+    sta G_MODE                                              ; L1CE4
+    lda V37B1
+    if_eq_then
+        ;bne L2A7D
+        sta P38
+        sta P39
+        lda ZPKERNAL_CMP0                                   ; $B0
+        jmp _end                                            ; L2A8A
+    else                                                    ; L2A7D:
+        lda #$00
+        jsr L2784
+        if_cs_then
+            ;bcc L2A85
+            rts
+        else_end                                            ; L2A85:
+        cmp #$01
+        if_eq_then
+            ;bne L2A8A
+            rts
+        else_end                                            ; L2A8A:
+    end
+
+    ;>>
+    ;jmp L26DA
+    jsr L26DA
+    rts
+    ;<<
+.endproc
+
+;;; summary: Command: Goto buffer
+;;; changed: ...
+.proc CMD_GOTO                                              ; L2A8D:
+    lda V37B1
+    if_eq_then
+        ;bne L2A93
+        rts
+    else_end                                                ; L2A93:
+
+    lda #$01
+    jsr L2784
+    if_cs_then
+        ;bcc L2A9B
+        rts
+    else_end                                                ; L2A9B:
+
+    cmp ZPKERNAL_CMP0
+    if_eq_then
+        ;bne L2AA0
+        rts
+    else_end                                                ; L2AA0:
+
+    cmp #BUFFER_INDEX_PASTE                                 ; $01 = 1
+    if_eq_then
+        ;bne L2AA5
+        ; User may not go to "paste" edit buffer.
+        rts
+    else_end                                                ; L2AA5:
+
+    jsr L272C
+    lda #MODE_EDIT                                          ; $00
+    sta G_MODE                                              ; L1CE4
+    lda #$0C                                                ; ?
+    sta T5A
+    lda #$27                                                ; ?
+    sta T5B                                                 ; Was a:
+    rts
+.endproc
+
+;;; summary: ?
+;;; changed: ...
+.proc L2AB7
+    pha
+    ; Close disk command channel
+    lda #DISK_CMD_FH                                        ; $0F
+    jsr KERNAL_CLOSE
+    ; Open disk command channel
+    lda #DISK_CMD_FH                                        ; $0F
+    ;>>
+    ;--ldx $17FC
+    ldx ZPKERNAL_FA                                         ; Last used serial device
+    ;<<
+    ldy #DISK_CMD_SA                                        ; $0F
+    jsr KERNAL_SETLFS
+    lda #$00
+    jsr KERNAL_SETNAM                                       ; Disk command has no name
+    jsr KERNAL_OPEN
+    ; Open disk data
+    lda #SERIAL_DATA_FH                                     ; $01
+    ldx ZPKERNAL_FA
+    ldy #SERIAL_DATA_DOC_SA                                 ; $02
+    jsr KERNAL_SETLFS
+
+    from
+        ldy #$00
+    loop                                                    ; L2ADB:
+        lda V37B1,y
+        beq _end                                            ; break L2AE4
+    next
+        iny
+        jmp _loop                                           ; L2ADB
+    end                                                     ; L2AE4:
+
+    pla
+    if_ne_then
+        ;beq L2B0A
+        dey
+        dey
+        lda V37B1,y
+        iny
+        iny
+        cmp #PETSCII_COMMA                                  ; $2C = ','
+        if_ne_then
+            ;beq L2AFE
+            lda #PETSCII_COMMA                              ; $2C = ','
+            sta V37B1,y
+            iny
+            lda #PETSCII_LATIN_LETTER_S                     ; $53 = 's'
+            sta V37B1,y
+            iny
+        else_end                                            ; L2AFE:
+
+        lda #PETSCII_COMMA                                  ; $2C = ','
+        sta V37B1,y
+        iny
+        lda #PETSCII_LATIN_LETTER_W                         ; $57 = 'w'
+        sta V37B1,y
+        iny
+    else_end                                                ; L2B0A:
+
+    tya
+    ldx #<V37B1                                             ; $B1
+    ldy #>V37B1                                             ; $37
+    jsr KERNAL_SETNAM
+    jsr KERNAL_OPEN
+    if_cs_then
+        ;bcc L2B2A                                          ; OK
+        lda #SERIAL_DATA_FH                                 ; $01
+        jsr KERNAL_CLOSE
+        lda #DISK_CMD_FH                                    ; $0F
+        jsr KERNAL_CLOSE
+        ldx #<RESOURCE_STRING_DRIVE_NOT_PRESENT             ; <_2B2D = $2D
+        ldy #>RESOURCE_STRING_DRIVE_NOT_PRESENT             ; >_2B2D = $2B
+        pla
+        pla
+        ;>>
+        ;jmp PRINT_STATUS_LINE                               ; L252D
+        jsr PRINT_STATUS_LINE                               ; L252D
+        rts
+        ;<<
+    else_end                                                ; L2B2A:
+
+    ;>>
+    ;jmp L2C15
+    jsr READ_DISK_STATUS                                    ; L2C15
+    rts
+    ;<<
+.endproc
+
+;;; summary: Command: Get (load) file
+;;; changed: ...
+.proc CMD_GET                                               ; L2B3F:
+    lda #MODE_EDIT                                          ; $00
+    sta G_MODE                                              ; L1CE4
+    lda V37B1
+    if_eq_then
+        ;bne L2B4A
+        rts
+    else_end                                                ; L2B4A:
+
+    lda #$00
+    jsr L2AB7
+    if_cs_then
+        ;bcc L2B61
+        ; Error
+        lda #SERIAL_DATA_FH                                 ; $01
+        jsr KERNAL_CLOSE
+        lda #SERIAL_DATA_FH                                 ; $0F
+        jsr KERNAL_CLOSE
+        jsr KERNAL_CLRCHN
+        ;>>
+        ;jmp L2C3F
+        jsr L2C3F
+        rts
+        ;<<
+    else_end                                                ; L2B61:
+
+    jsr L1BCB
+    ldx #SERIAL_DATA_FH                                     ; $01
+    jsr KERNAL_CHKIN
+    try
+        from_loop                                           ; L2B69:
+            jsr KERNAL_CHRIN
+            jsr L1AE4
+            if_cs_then
+                ;bcc L2B88
+                jsr L1C99                                   ; A- X- Y-
+                if_cc_then
+                    ;bcs L2B85
+                    jsr L1BBC
+                    cmp #PETSCII_RETURN
+                    if_ne_then
+                        ;beq L2B85
+                        jsr L1BF7
+                        lda #PETSCII_RETURN
+                        jsr L1AE4
+                    else_end                                ; L2B85:
+                else_end
+
+                jmp _catch                                  ; L2B92
+            else_end                                        ; L2B88:
+
+            jsr L1B9C
+        next
+            jsr KERNAL_READST
+            and #KERNAL_IO_EOI                              ; $40
+            beq _loop                                       ; L2B69
+        end
+    catch_finally_end                                       ; L2B92:
+
+    ; End of input
+    lda #SERIAL_DATA_FH                                     ; $01
+    jsr KERNAL_CLOSE
+    lda #DISK_CMD_FH                                        ; $0F
+    jsr KERNAL_CLOSE
+    jsr KERNAL_CLRCHN
+    jsr L1C99                                               ; A- X- Y-
+    if_cc_then
+        ;bcs L2BB3
+        jsr L1BBC
+        cmp #PETSCII_RETURN
+        if_ne_then
+            ;beq L2BB3
+            jsr L1B9C
+            lda #PETSCII_RETURN
+            jsr L1AE4
+        else_end                                            ; L2BB3:
+    else_end
+
+    ;>>
+    ;jmp L1BD6
+    jsr L1BD6
+    rts
+    ;<<
+.endproc
+
+;;; summary: Command: Put (save) file
+;;; changed: ...
+.proc CMD_PUT                                               ; L2BB6:
+    lda V37B1
+    if_eq_then
+        ;bne L2BBC
+        rts
+    else_end                                                ; L2BBC:
+
+    lda #$01
+    jsr L2AB7
+    if_cs_then
+        ;bcc L2BD3
+        lda #SERIAL_DATA_FH                                 ; $01
+        jsr KERNAL_CLOSE
+        lda #DISK_CMD_FH                                    ; $0F
+        jsr KERNAL_CLOSE
+        jsr KERNAL_CLRCHN
+        ;>>
+        ;jmp L2C3F
+        jsr L2C3F
+        rts
+        ;<<
+    else_end                                                ; L2BD3:
+
+    jsr L1BCB
+    lda ZPBASIC_VALTYP
+    sta T4F
+    lda #$03
+    sta T50
+    ldx #SERIAL_DATA_FH                                     ; $01
+    jsr KERNAL_CHKOUT
+    from_loop                                               ; L2BE3:
+        jsr L1BBC
+        bcs _end                                            ; L2BF1
+        jsr KERNAL_CHROUT
+        jsr L1B9C
+    next
+        jmp _loop                                           ; L2BE3
+    end                                                     ; L2BF1:
+
+    jsr L1BD6
+    lda #SERIAL_DATA_FH                                     ; $01
+    jsr KERNAL_CLOSE
+    lda #DISK_CMD_FH                                        ; $0F
+    jsr KERNAL_CLOSE
+    jsr KERNAL_CLRCHN
+    rts
+.endproc
+
+;;; summary compare [TFB] with [PFD] with A significant characters
+;;; changed: ...
+.proc STRING_COMPARE_SIGNIFICANT                            ; L2C02:
+    tax
+    from
+        ldy #$00
+    loop                                                    ; L2C05:
+        lda [TFB],y
+        cmp [PFD],y
+        if_ne_then
+            ;beq L2C0C
+            rts
+        else_end                                            ; L2C0C:
+
+        iny
+        cmp #$00
+        beq _end                                            ; break L2C14
+    next
+        dex
+        bne _loop                                           ; L2C05
+    end                                                     ; L2C14:
+
+    rts
+.endproc
+
+;;; summary: Read disk status line to V380B
+;;; return: CC=OK , CS=FAIL
+;;; changed: A+ X+ Y+
+.proc READ_DISK_STATUS                                      ; L2C15
+    ldx #DISK_CMD_FH                                        ; $0F
+    jsr KERNAL_CHKIN
+    from
+        ldy #$00
+    loop                                                    ; L2C1C:
+        jsr KERNAL_CHRIN
+        cmp #PETSCII_RETURN
+        beq _end                                            ; break L2C2A
+        sta V380B,y
+    next
+        iny
+        jmp _loop                                           ; L2C1C
+    end                                                     ; L2C2A:
+
+    lda #$00
+    sta V380B,y
+    lda V380B
+    ora V380B + 1
+    cmp #PETSCII_DIGIT_ZERO                                 ; $30 = "0"
+    if_eq_then
+        ;bne L2C3D
+        ; OK (no error)
+        clc
+        jmp _end                                            ; L2C3E
+    else                                                    ; L2C3D:
+        ; ERROR
+        sec
+    end                                                     ; L2C3E:
+
+    rts
+.endproc
+
+;;; summary: ?
+;;; changed: ...
+.proc L2C3F
+    ldx #<V380B                                             ; $0B
+    ldy #>V380B                                             ; $38
+    ;>>
+    ;jmp PRINT_STATUS_LINE                                   ; L252D
+    jsr PRINT_STATUS_LINE                                   ; L252D
+    rts
+    ;<<
+.endproc
+
+;;; summary: Command: Show disk directory
+;;; changed: ...
+.proc CMD_DIR                                               ; L2C46:
+    ; Close disk command channel
+    lda #DISK_CMD_FH                                        ; $0F
+    jsr KERNAL_CLOSE
+    ; Open disk command channel
+    lda #DISK_CMD_FH                                        ; $0F
+    ;>>
+    ;--ldx $17FC
+    ldx ZPKERNAL_FA
+    ;nop
+    ;<<
+    ldy #DISK_CMD_SA                                        ; $0F
+    jsr KERNAL_SETLFS
+    lda #$00
+    jsr KERNAL_SETNAM                                       ; Disk command does not have a name
+    jsr KERNAL_OPEN
+    ; open disk data
+    lda #SERIAL_DATA_FH                                     ; $01
+    ;>>
+    ;--ldx $17FC
+    ldx ZPKERNAL_FA
+    ;nop
+    ;<<
+    ldy #$00
+    jsr KERNAL_SETLFS
+    lda #$01                                    ; Length of directory "$"
+    ldx #<RESOURCE_STRING_DIR_NAME              ; <_2D26 = $26
+    ldy #>RESOURCE_STRING_DIR_NAME              ; >_2D26 = $2D
+    jsr KERNAL_SETNAM
+    jsr KERNAL_OPEN
+    jsr READ_DISK_STATUS                                    ; L2C15
+    if_cs_then
+        ;bcc L2C85
+        lda #SERIAL_DATA_FH                                 ; $01
+        jsr KERNAL_CLOSE
+        lda #DISK_CMD_FH                                    ; $0F
+        jsr KERNAL_CLOSE
+        ;>>
+        ;jmp L2C3F
+        jsr L2C3F
+        rts
+        ;<<
+    else_end                                                ; L2C85:
+
+    lda #PETSCII_CLR                                        ; $93
+    jsr KERNAL_CHROUT
+    jsr L1A89
+    ;>>
+    ;--lda #PETSCII_BLACK                                   ; $90
+    ;nop
+    ;nop
+    ;--jsr KERNAL_CHROUT
+    ;nop
+    ;nop
+    ;nop
+    ;<<
+    ldx #SERIAL_DATA_FH                                     ; $01
+    jsr KERNAL_CHKIN
+    jsr KERNAL_CHRIN
+    jsr KERNAL_CHRIN
+
+    try
+        from_loop                                           ; L2C9D:
+            jsr L2D27
+            bcs _end                                        ; break L2CEC
+            jsr L2D27
+            bcs _end                                        ; break L2CEC
+            jsr L2D27
+            bcs _end                                        ; break L2CEC
+            pha
+            jsr L2D27
+            tay
+            pla
+            tax
+            jsr INT_TO_STRING                               ; L25C2
+            from
+                ldx #$00
+            loop                                            ; L2CB8:
+                lda L2623,x
+                cmp #PETSCII_SPACE                          ; $20 = 32 = ' '
+                beq _end                                    ; break L2CC7
+                jsr KERNAL_CHROUT
+            next
+                inx
+                cpx #$03
+                bne _loop                                   ; L2CB8
+            end                                             ; L2CC7:
+
+            lda #PETSCII_SPACE                              ; $20 = 32 = ' '
+            jsr KERNAL_CHROUT
+
+            from_loop                                       ; L2CCC:
+                jsr L2D27
+                bcs _catch                                  ; throw L2CEC
+                cmp #$00
+                beq _end                                    ; break L2CDB
+                jsr KERNAL_CHROUT
+            next
+                jmp _loop                                   ; L2CCC
+            end                                             ; L2CDB:
+
+            lda #PETSCII_RETURN
+            jsr KERNAL_CHROUT
+            from_loop                                       ; L2CE0:
+                lda ZPKERNAL_SFDX                           ; $CB Matrix code of key currently being pressed. Values: $00-$3F: Keyboard matrix code. $40: No key is currently pressed.
+                eor #$40
+                ora KVAR_SHFLAG                             ; Shift key indicator. Bits: Bit #0: 1 = One or more of left Shift, right Shift or Shift Lock is currently being pressed or locked. Bit #1: 1 = Commodore is currently being pressed. Bit #2: 1 = Control is currently being pressed.
+            next
+                bne _loop                                   ; L2CE0
+            end
+        next
+            jmp _loop                                       ; L2C9D
+        end                                                 ; L2CEC:
+    catch_finally_end
+
+    lda #PETSCII_RETURN
+    jsr KERNAL_CHROUT
+    jsr KERNAL_CLRCHN
+    lda #SERIAL_DATA_FH                                     ; $01
+    jsr KERNAL_CLOSE
+    lda #DISK_CMD_FH                                        ; $0F
+    jsr KERNAL_CLOSE
+    ; Clear keyboard buffer
+    lda #$00
+    sta ZPKERNAL_NDX                                        ; $C6 Length of keyboard buffer. Values: $00, 0: Buffer is empty. $01-$0A, 1-10: Buffer length.
+    jsr L1A7F
+    ; Show "hit return to continue"
+    ldx #<RESOURCE_STRING_HIT_RETURN_TO_CONTINUE            ; <_2D0F = $0F
+    ldy #>RESOURCE_STRING_HIT_RETURN_TO_CONTINUE            ; >_2D0F = $2D
+    jsr PRINT_STATUS_LINE                                   ; L252D
+    ;>>
+    ;jmp L1A89
+    jsr L1A89
+    rts
+    ;<<
+.endproc
+
+;;; summary: read byte from IN
+;;; return:
+;;;    C: 0=OK , 1=FAIL
+;;;    A: byte if CC
+.proc L2D27
+    jsr KERNAL_READST
+    cmp #$00
+    if_ne_then
+        ;beq L2D30
+        sec
+        rts
+    else_end                                                ; L2D30:
+
+    jsr KERNAL_CHRIN
+    clc
+    rts
+.endproc
+
+;;; summary: Send disk command
+;;; changed: ...
+.proc CMD_DISK                                              ; L2D35:
+    lda #DISK_CMD_FH                                        ; $0F
+    ;>>
+    ;--ldx $17FC
+    ldx ZPKERNAL_FA
+    ;nop
+    ;<<
+    ldy #DISK_CMD_SA                                        ; $0F
+    jsr KERNAL_SETLFS
+    lda #$00                                                ; Disk command has no name
+    jsr KERNAL_SETNAM
+    jsr KERNAL_OPEN
+    lda V37B1
+    if_ne_then
+        ;beq L2D61
+        ldx #DISK_CMD_FH                                    ; $0F
+        jsr KERNAL_CHKOUT
+        from
+            ldx #$00
+        loop                                                ; L2D53:
+            lda V37B1,x
+            beq _end                                        ; break L2D5E
+            jsr KERNAL_CHROUT
+        next
+            inx
+            bne _loop                                       ; L2D53
+        end                                                 ; L2D5E:
+
+        jsr KERNAL_CLRCHN
+    else_end                                                ; L2D61:
+
+    jsr READ_DISK_STATUS                                    ; L2C15
+    php
+    jsr KERNAL_CLRCHN
+    lda #DISK_CMD_FH                                        ; $0F
+    jsr KERNAL_CLOSE
+    plp
+    if_cs_then
+        ;bcc L2D73
+        ;>>
+        ;jmp L2C3F
+        jsr L2C3F
+        rts
+        ;<<
+    else_end                                                ; L2D73:
+
+    rts
+.endproc
+
+;;; summary: ?
+;;; changed: ...
+.proc L2D74
+    from
+        lda #$00
+        sta V38AF
+        sta V38AD
+        ldy #$01
+        ldx #$00
+    loop                                                    ; L2D80:
+        lda V378E,y
+        cmp #PETSCII_F3                                     ; $86
+        if_eq_then
+            ;bne L2D8D
+            stx V38AB
+            ;>>
+            ;jmp L2DE9
+            jsr CMD_SEARCH_DOWN                             ; L2DE9
+            rts
+            ;<<
+        else_end                                            ; L2D8D:
+
+        cmp #PETSCII_F4                                     ; $8A
+        if_eq_then
+            ;bne L2D97
+            stx V38AB
+            ;>>
+            ;jmp L2DEF
+            jsr CMD_SEARCH_UP                               ; L2DEF
+            rts
+            ;<<
+        else_end                                            ; L2D97:
+    next
+        cmp V378E
+        beq _end                                            ; L2DA3
+        sta V386F,x
+        iny
+        inx
+        bne _loop                                           ; L2D80
+    end                                                     ; L2DA3:
+
+    from
+        inc V38AF
+        stx V38AB
+        iny
+        ldx #$00
+    loop                                                    ; L2DAC:
+        lda V378E,y
+        cmp #PETSCII_F3                                     ; $86
+        if_eq_then
+            ;bne L2DB9
+            stx V38AC
+            ;>>
+            ;jmp L2DE9
+            jsr CMD_SEARCH_DOWN                             ; L2DE9
+            rts
+            ;<<
+        else_end                                            ; L2DB9:
+
+        cmp #PETSCII_F4                                     ; $8A
+        if_eq_then
+            ;bne L2DC3
+            stx V38AC
+            ;>>
+            ;jmp L2DEF
+            jsr CMD_SEARCH_UP                               ; L2DEF
+            rts
+            ;<<
+        else_end                                            ; L2DC3:
+
+        cmp V378E
+        beq _end                                            ; break L2DCF
+        sta V388D,x
+    next
+        iny
+        inx
+        bne _loop                                           ; L2DAC
+    end                                                     ; L2DCF:
+
+    from
+        inc V38AD
+        stx V38AC
+    loop                                                    ; L2DD5:
+        iny
+        lda V378E,y
+        cmp #PETSCII_F3                                     ; $86
+        if_eq_then
+            ;bne L2DE0
+            ;>>
+            ;jmp L2DE9
+            jsr CMD_SEARCH_DOWN                             ; L2DE9
+            rts
+            ;<<
+        else_end                                            ; L2DE0:
+
+        cmp #PETSCII_F4                                     ; $8A
+        if_eq_then
+            ;bne L2DE7
+            ;>>
+            ;jmp L2DEF
+            jsr CMD_SEARCH_UP                               ; L2DEF
+            rts
+            ;<<
+        else_end                                            ; L2DE7:
+    next
+        bne _loop                                           ; L2DD5
+    end
+.endproc
+
+;;; summary: Command: Search downward <F3>
+;;; changed: ...
+.proc CMD_SEARCH_DOWN                                       ; L2DE9:
+    ldx #<DO_SEARCH_DOWN                                    ; <_2E74 = $74
+    ldy #>DO_SEARCH_DOWN                                    ; >_2E74 = $2E
+    bne DO_SEARCH                                           ; bra L2DF3
+.endproc
+
+;;; summary: Command: Search upward <F4>
+;;; changed: ...
+.proc CMD_SEARCH_UP                                         ; L2DEF:
+    ldx #<DO_SEARCH_UP                                      ; <_2F03 = $03
+    ldy #>DO_SEARCH_UP                                      ; >_2F03 = $2F
+.endproc
+
+;;; summary: ?
+;;; changed: ...
+.proc DO_SEARCH                                             ; L2DF3:
+    ;>>
+    ;--stx L2E05
+    ;--sty L2E06
+    stx DL
+    sty DH
+    ;<<
+    lda V38AB
+    if_eq_then
+        ;bne L2DFF
+        rts
+    else_end                                                ; L2DFF:
+
+    from
+        lda #$00
+        sta V38AE
+    loop                                                    ; L2E04:
+        ;>>
+        ;--.byte OPCODE_JSR_AB                              ; $20 jsr $
+        ;--L2E05:  .byte   $FF                              ;            FF
+        ;--L2E06:  .byte   $FF                              ;          FF
+        jsr JSR_INDIRECT_DX
+        ;<<
+        bcc _end                                            ; break L2E22
+        lda #$01
+        sta V38AE
+        lda V38AF
+        beq _end                                            ; break L2E22
+        lda G_MODE                                          ; L1CE4
+        bne _end                                            ; break L2E22 Mode is select mode
+        ; Mode is edit mode
+        jsr L2E4D
+        bcs _end                                            ; break L2E22
+    next
+        lda V38AD
+        bne _loop                                           ; L2E04
+    end                                                     ; L2E22:
+
+    lda V38AE
+    if_eq_then
+        ;bne L2E2A
+        ;>>
+        ;jmp L2F91
+        jsr L2F91
+        rts
+        ;<<
+    else_end                                                ; L2E2A:
+
+    lda V38AF
+    if_ne_then
+        ;beq L2E42
+        lda G_MODE                                          ; L1CE4
+        if_eq_then
+            ;bne L2E42
+            ; Mode is edit mode
+            ldx V38AC
+            if_ne_then
+                ;beq L2E42
+                from_loop                                   ; L2E39:
+                    dex
+                    beq _end                                ; L2E42
+                    jsr L1C99                               ; A- X- Y-
+                next
+                    jmp _loop                               ; L2E39
+                end                                         ; L2E42:
+            else_end
+        else_end
+    else_end
+
+    lda #$0C                                                ; ?
+    sta T5A
+    lda #$23                                                ; $23 = 35 = ? zzz
+    sta T5B
+    ;>>
+    ;jmp L21A2
+    jsr L21A2
+    rts
+    ;<<
+.endproc
+
+;;; summary: ?
+;;; changed: ...
+.proc L2E4D
+    from
+        ldx V38AB
+    loop                                                    ; L2E50:
+        jsr L1BF7
+    next
+        dex
+        bne _loop                                           ; L2E50
+    end
+
+    lda V38AC
+    if_ne_then
+        ;beq L2E72
+        from
+            ldx #$00
+        loop                                                ; L2E5D:
+            lda V388D,x
+            jsr L1AE4
+            if_cs_then
+                ;bcc L2E66
+                rts
+            else_end                                        ; L2E66:
+
+            jsr L1B9C
+        next
+            inx
+            cpx V38AC
+            bne _loop                                       ; L2E5D
+        end
+
+        jsr L1C99                                           ; A- X- Y-
+    else_end                                                ; L2E72:
+
+    clc
+    rts
+.endproc
+
+;;; summary: ?
+;;; changed: ...
+.proc DO_SEARCH_DOWN                                        ; _2E74:
+    lda L1CE7
+    pha
+    lda L1CE8
+    pha
+    lda P38
+    pha
+    lda P39
+    pha
+
+    try
+        from
+            jsr L1BCB
+            ldy #$00
+        loop                                                ; L2E87:
+            jsr L1BBC
+            cmp #PETSCII_RETURN
+            if_eq_then
+                ;bne L2EA1
+                ldx G_MODE                                  ; L1CE4
+                if_ne_then
+                    ;beq L2E9B
+                    ; Mode is select mode
+                    inc L1CE7
+                    if_eq_then
+                        ;bne L2E9B
+                        inc L1CE8
+                    else_end                                ; L2E9B:
+                else_end
+
+                inc P38
+                if_eq_then
+                    ;bne L2EA1
+                    inc P39
+                else_end                                    ; L2EA1:
+            else_end
+
+            jsr L1B9C
+            cpy V38AB
+            if_eq_then
+                ;bne L2EB2
+                pla
+                pla
+                pla
+                pla
+                jsr L2EDD
+                sec
+                rts
+            else_end                                        ; L2EB2:
+
+            jsr L1BBC
+            bcs _catch                                      ; L2ECA
+            cmp V386F,y
+            if_eq_then
+                ;bne L2EC0
+                iny
+                jmp _end                                    ; L2EC7
+            else                                            ; L2EC0:
+                cpy #$00
+                if_ne_then
+                    ;beq L2EC7
+                    jsr L2EDD
+                else_end
+            end                                             ; L2EC7:
+        next
+            jmp _loop                                       ; L2E87
+        end
+    catch_finally_end                                       ; L2ECA:
+
+    pla
+    sta P39
+    pla
+    sta P38
+    pla
+    sta L1CE8
+    pla
+    sta L1CE7
+    jsr L1BD6
+    clc
+    rts
+.endproc
+
+;;; summary: ?
+;;; changed: ...
+.proc L2EDD
+    from_loop                                               ; L2EDD 
+        jsr L1C99                                           ; A- X- Y-
+        jsr L1BBC
+        cmp #PETSCII_RETURN
+        if_eq_then
+            ;bne L2EFF
+            lda G_MODE                                      ; L1CE4
+            if_ne_then
+                ;beq L2EF7
+                ; Select mode
+                lda L1CE7
+                if_eq_then
+                    ;bne L2EF4
+                    dec L1CE8
+                else_end                                    ; L2EF4:
+
+                dec L1CE7
+            else_end                                        ; L2EF7:
+
+            lda P38
+            if_eq_then
+                ;bne L2EFD
+                dec P39
+            else_end                                        ; L2EFD:
+
+            dec P38
+        else_end                                            ; L2EFF:
+    next
+        dey
+        bne _loop                                           ; L2EDD
+    end
+
+    rts
+.endproc
+
+;;; summary: ?
+;;; changed: ...
+.proc DO_SEARCH_UP                                          ; _2F03:
+    ldy V38AB
+    dey
+    jsr L1BCB
+    lda L1CE7
+    pha
+    lda L1CE8
+    pha
+    lda P38
+    pha
+    lda P39
+    pha
+
+    try
+        from_loop                                           ; L2F18:
+            jsr L1C99                                       ; A- X- Y-
+            bcs _catch                                      ; L2F5A
+            jsr L1BBC
+            cmp #PETSCII_RETURN
+            if_eq_then
+                ;bne L2F3C
+                ldx G_MODE                                  ; L1CE4
+                if_ne_then
+                    ;beq L2F34
+                    ; Select mode
+                    lda L1CE7
+                    if_eq_then
+                        ;bne L2F31
+                        dec L1CE8
+                    else_end                                                ; L2F31:
+
+                    dec L1CE7
+                else_end                                    ; L2F34:
+
+                lda P38
+                if_eq_then
+                    ;bne L2F3A
+                    dec P39
+                else_end                                    ; L2F3A:
+
+                dec P38
+            else_end                                        ; L2F3C:
+
+            cmp V386F,y
+            if_eq_then
+                ;bne L2F4D
+                dey
+                if_mi_then
+                    ;bpl L2F4A
+                    pla
+                    pla
+                    pla
+                    pla
+                    sec
+                    rts
+                else_end                                    ; L2F4A:
+
+                jmp _end                                    ; L2F57
+            else                                            ; L2F4D:
+                iny
+                cpy V38AB
+                if_ne_then
+                    ;beq L2F56
+                    jsr L2F6D
+                else_end                                    ; L2F56:
+
+                dey
+            end                                             ; L2F57:
+        next
+            jmp _loop                                       ; L2F18
+        end
+    catch_finally_end                                       ; L2F5A:
+
+    pla
+    sta P39
+    pla
+    sta P38
+    pla
+    sta L1CE8
+    pla
+    sta L1CE7
+    jsr L1BD6
+    clc
+    rts
+.endproc
+
+;;; summary: ?
+;;; changed: ...
+.proc L2F6D
+    from_loop                                               ; L2F6D
+        jsr L1BBC
+        cmp #PETSCII_RETURN
+        if_eq_then
+            ;bne L2F87
+            lda G_MODE                                      ; L1CE4
+            if_ne_then
+                ;beq L2F81
+                ; Select mode
+                inc L1CE7
+                if_eq_then
+                    ;bne L2F81
+                    inc L1CE8
+                else_end                                    ; L2F81:
+            else_end
+
+            inc P38
+            if_eq_then
+                ;bne L2F87
+                inc P39
+            else_end                                        ; L2F87:
+        else_end
+
+        jsr L1B9C
+    next
+        iny
+        cpy V38AB
+        bne _loop                                           ; L2F6D
+    end
+
+    rts
+.endproc
+
+;;; summary: ?
+;;; changed: ...
+.proc L2F91
+    ldx #<RESOURCE_STRING_SEARCH_STRING_NOT_FOUND           ; <_2F98 = $98
+    ldy #>RESOURCE_STRING_SEARCH_STRING_NOT_FOUND           ; >_2F98 = $2F
+    ;>>
+    ;jmp PRINT_STATUS_LINE                                   ; L252D
+    jsr PRINT_STATUS_LINE                                   ; L252D
+    rts
+    ;<<
+.endproc
+
+;;; summary: Initialize
+;;; changed: A, X, Y, ...
+.proc INITIALIZE                                            ; L2FB0:
+;    ; Disable CBM+SHIFT
+;    lda #PETSCII_DISABLE_CBM_SHIFT
+;    jsr KERNAL_CHROUT
+    ;>>
+    ;--lda #COLOR_DGY
+    ;--sta VIC_EC
+    ;<<
+    ;
+;    ; Hide screen
+;    lda VIC_CONTROL_1
+;    and #VIC_CONTROL_1_DEN_CLR                              ; $EF
+;    sta VIC_CONTROL_1
+;    ;
+;    jsr SETUP_FONT_AND_TEXT_SCREEN                          ; L305A
+;    ;
+;    ; Show screen
+;    lda VIC_CONTROL_1
+;    ora #VIC_CONTROL_1_DEN_SET                              ; $10
+;    sta VIC_CONTROL_1
+    ;
+    ; Backup S
+    ; Why +2? Else it crashes with KERNAL is RAM. How come?
+;    tsx
+;    inx
+;    inx
+;    stx S_BACKUP                                            ; L312E
+
+    ; A = ? , X = ? Y = ?
+    ;
+    ; Set all keys repeat
+    lda #$80                                                ; All keys repeat
+    sta KVAR_RPTFLG                                         ; Keyboard repeat switch. Bits: Bits #6-#7: %00 = Only cursor up/down, cursor left/right, Insert/Delete and Space repeat; %01 = No key repeats; %1x = All keys repeat.
+    ; A = $80 , X = ? Y = ?
+    ;
+    ldy #$00                                                ; 0 / MODE_EDIT
+    ; A = $80 , X = ? Y = $00
+    sty G_MODE                                              ; L1CE4 G_MODE = 0 = MODE_EDIT
+    sty V38AB
+    sty T22
+    sty T26
+    sty P38
+    sty P39
+    sty L1CE9
+    sty L1CEA
+    sty T4E
+    sty T5A
+    sty T5B
+
+    ;clc
+    ;lda #EDIT_BUFFERS_1_FIRST_PAGE - 1
+    ;adc #$01
+    ;lda #EDIT_BUFFERS_1_FIRST_PAGE
+    ;sta ZPBASIC_INTFLG                                      ; $0E Current numerical expression type. Bits: Bit #7: 0 = Floating point; 1 = Integer.
+    ;
+    ; Initialize edit buffers: First byte of page points to page of next block.
+    ;
+    ; $2700..$27FF : $28 $__ ... $__ 
+    ; $2800..$28FF : $29 $__ ... $__ 
+    ; ...
+    ; $CF00..$CFFF : $D0 $__ ... $__
+    ; 
+    ; $D000..$D0FF : $D1 $__ ... $__
+    ; $D100..$D1FF : $D2 $__ ... $__
+    ; ...
+    ; $FE00..$FEFF : $FF $__ ... $__
+    ; $FF00..$FFFF : $00 $__ ... $__
+    ;
+    ; A = EDIT_BUFFERS_1_FIRST_PAGE
+    ; Y = 0
+    ; [T4E] = 0
+    ;
+    sei
+        lda CPU_PORT_DATA
+        and # CPU_PORT_MEMORY_CONFIGURATION_MASK
+        ora # CPU_PORT_MEMORY_CONFIGURATION_DATA_SET_BASIC_RAM_IO_RAM_KERNAL_RAM
+        sta CPU_PORT_DATA
+        ; A = ? , X = ? Y = $00
+            from
+                lda # EDIT_BUFFERS_1_FIRST_PAGE
+                ; A = EDIT_BUFFERS_1_FIRST_PAGE , X = ? Y = $00
+                sta ZP_0E
+                ; [ZP_0E] = EDIT_BUFFERS_1_FIRST_PAGE
+            loop                                               ; L2FF7:
+                sta T4F
+                clc
+                adc # 1
+                cmp # EDIT_BUFFERS_1_LAST_PAGE + 1
+                if_eq_then
+                    ; A = EDIT_BUFFERS_1_LAST_PAGE + 1
+                    ;bne L3002
+                    lda # EDIT_BUFFERS_2_FIRST_PAGE
+                    ; A = EDIT_BUFFERS_2_FIRST_PAGE
+                else_end                                            ; L3002:
+                sta [T4E],y
+            next
+                cmp # EDIT_BUFFERS_2_LAST_PAGE
+                bne _loop                                           ; L2FF7
+            end
+            ; A = EDIT_BUFFERS_2_LAST_PAGE , X = ? , Y = 0
+        lda CPU_PORT_DATA
+        and # CPU_PORT_MEMORY_CONFIGURATION_MASK
+        ora # CPU_PORT_MEMORY_CONFIGURATION_DATA_SET_BASIC_RAM_IO_AREA_KERNAL_ROM
+        sta CPU_PORT_DATA
+    cli
+    ; A = ? , X = ? , Y = 0
+    ; T4E = $00
+    ; T4F = EDIT_BUFFERS_2_LAST_PAGE
+    ; Set last page in edit buffer 2 next page pointer to 0
+    ;sty VBF00
+    tya
+    ; A = 0 , X = ? , Y = 0
+    sta [T4E],y
+    ; [EDIT_BUFFERS_2_LAST_PAGE#0] = 0
+    ;
+    from
+        ;lda #$00
+        ldx # EDIT_BUFFER_COUNT - 1                         ; 9
+    loop                                                    ; L300F:
+        sta V37D9,x
+    next
+        dex
+        bpl _loop                                           ; L300F
+    end
+    ; A = $00 , X = $FF , Y = $00
+    ;
+    stx ZPKERNAL_CMP0
+    ;
+;    lda #$00
+;    sta T5A
+;    sta T5B
+    ;
+    jsr L272C
+    jsr L1A89
+    jsr L21A2
+    ;
+    .if ::FEATURE_ARG = 1
+        ; Process arguments, if any: load file.
+        lda SHELL_ARGC                                      ; V033C
+        cmp #2
+        if_eq_then
+            ;bne L3059
+            ; argc == 2, i.e. argv = [ "ED" , "FILE" ]
+            ; T5C#T5D := SHELL_ARGV[1]
+            clc
+            lda SHELL_ARGV_LO                               ; V033E
+            adc #SIZEOF_ADDR                                ; get argv[1] 
+            sta T5C
+            lda SHELL_ARGV_HI                               ; V033F
+            adc #$00
+            sta T5D
+            ; T5C#T5D := *argv[1]
+            ldy #$00                                        ; Y = 0
+            lda [T5C],y
+            tax
+            iny                                             ; Y = 1
+            lda [T5C],y
+            sta T5D
+            stx T5C
+            dey                                             ; Y = 0
+            from_loop                                       ; L3049:
+                lda [T5C],y
+                sta V37B1,y
+            next
+                iny
+                cmp #$00
+                bne _loop                                   ; L3049
+            end
+            ;
+            ; Load
+            jsr CMD_GET                                     ; L2B3F
+            ;
+            jsr L21A2
+        else_end
+    .endif
+    ;                                                       ; L3059:
+    rts
+.endproc
+
+;;; summary: Command: Quit
+;;; changed: ...
+.proc CMD_QUIT                                              ; L30D4:
+;    ; Select BASIC ROM
+;    lda CIA_2_PRA
+;    ora #CPU_PORT_DATA_LORAM_SET_ROM                        ; Was $03 ; BASIC ROM / KERNAL ROM
+;    sta CIA_2_PRA
+;    ; Screen at $0400 (standard)
+;    lda #$15
+;    sta VIC_MP
+;    lda #>SCREEN_TEXT_RAM_BASE                              ; $04
+;    sta KVAR_HIBASE                                         ; $0288 High byte of pointer to screen memory for screen input/output.
+;    ;
+;    ;>>
+;    ;--lda     #PETSCII_BLACK                               ; $90
+;    lda #PETSCII_ENABLE_CBM_SHIFT                           ; $09 Fix: re-enable disabled CBM+SHIFT
+;    ;<<
+;    jsr KERNAL_CHROUT
+    ; Set correct S for return to BASIC/Shell
+;    ldx S_BACKUP                                            ; L312E
+;    txs
+    ;>>
+    ;jmp L183D
+    ;jsr RESTORE_ZP_BASIC_ROM                                ; L183D
+    ;
+;    .if ::FEATURE_BACKUP_ZP = 1
+;        jsr RESTORE_ZP                                      ; L185E
+;    .endif
+
+    ; Select BASIC ROM
+    lda CPU_PORT_DATA
+    ora #CPU_PORT_DATA_LORAM_SET_ROM                        ; BASIC ROM
+    sta CPU_PORT_DATA
+    ;
+    ; Because entrypoint and main return addresses are on the stack.
+    pla
+    pla
+    pla
+    pla
+    ;
+    rts
+    ;<<
+.endproc
+
+;;;; summary: ?
+;;;; changed: ...
+;.proc L31CA
+;    lda #$3C                                                ; $3C = PETSCII_LESS_THAN_SIGN = '<'
+;    sta V38B0
+;    from_loop                                               ; L31CF:
+;        lda #PETSCII_RETURN                                 ; $0D
+;        jsr KERNAL_CHROUT
+;    next
+;        dex
+;        bne _loop                                           ; L31CF
+;    end
+;
+;    rts
+;.endproc
+
+;;; summary: ?
+;;; changed: A+ X+ Y+
+.proc SCROLL_RIGHT                                          ; L31EC
+    from
+        lda #<OUR_VIDEO_MATRIX_BASE                         ; $00
+        sta TFB
+        lda #>OUR_VIDEO_MATRIX_BASE                         ; $74
+        sta TFC
+
+        lda P36
+        clc
+        adc #VIC_CHAR_COLUMNS - 1                           ; $27 = 39
+        ;>>
+        ;sta L323F
+        sta ZAB                                             ; [L323F] = [ZAB]
+        ;<<
+
+        lda #$00
+        ;>>
+        ;sta L322E
+        ;sta L3223
+        sta Z9E
+        ;<<
+        sta T5C
+
+        lda V37D7
+        ;>>
+        ;sta L322F
+        ;sta L3224
+        sta Z9F
+        ;<<
+        sta T5D
+
+        ; [Z9E=$00,Z9F] = [L322E=$00,L322F] = [L3223=$00,L3224]
+
+        ldy #$02
+        lda [T5C],y
+        sta V38B1
+        jsr L333B                                           ; A+ L3380+ L337F+
+
+        lda #EDIT_PANEL_FIRST_LINE                          ; $00
+        sta PFD                                             ; Screen line index
+
+        ldx V37D8
+        ;>>
+        stx ZA8                                             ; X = [ZA8]
+        ;<<
+    loop                                                    ; L3222:
+        ;>>
+        ;         .byte OPCODE_LDA_AX                       ; $BD lda, $FFFF,x
+        ; L3223:  .byte $FF                                 ;             FF
+        ; L3224:  .byte $FF                                 ;           FF
+        ldy ZA8
+        lda [Z9E],y
+        ;<<
+        if_eq_then
+            ;bne L3228
+            rts
+        else_end                                            ; L3228:
+
+        from
+            ldy #$00
+            ;sty L3235
+            ;>>
+            sty ZA9                                         ; Y = [ZA9]
+            sty ZAA                                         ; [L3235] = [ZAA]
+            ;<<
+        loop                                                ; L322D:
+            ;>>
+            ;         .byte OPCODE_LDA_AX                   ; $BD lda $FFFF,x
+            ; L322E:  .byte $FF                             ;            FF
+            ; L322F:  .byte $FF                             ;          FF
+            ldy ZA8
+            lda [Z9E],y
+            ;<<
+            cmp #PETSCII_RETURN
+            if_eq_then
+                ;bne L323E
+                ;>>
+                ; .byte OPCODE_LDA_IT                       ; $A9 lda #
+                ; L3235: .byte $00                          ;          $00
+                lda ZAA
+                ;<<
+                if_eq_then
+                    ;bne L323B
+                    lda #PETSCII_SPACE                      ; $20
+                    pha
+                else_end                                    ; L323B:
+                
+                jmp _end                                    ; L3256
+            else                                            ; L323E:
+
+                ;>>
+                ; .byte OPCODE_CPY_IT                       ; $C0 cpy #$00
+                ; L323F: .byte $00                          ;          $00
+                ldy ZA9
+                cpy ZAB
+                ;<<
+
+                if_eq_then
+                    ;bne L3249
+                    jsr L240D                               ; A+, V378D+
+                    pha
+                    ;>>
+                    ;inc L3235
+                    ;<<
+                    ;>>
+                    inc ZAA
+                    ;<<
+                else_end                                    ; L3249:
+
+                ;>>
+                ;ldx ZA8
+                ;<<
+                cpx V38B1
+                if_eq_then
+                    ;bne L3251
+                    jsr L3287                               ; A+ X=2 Y-
+                    ;>>
+                    stx ZA8
+                    ;<<
+                else_end                                    ; L3251:
+            next
+                inx
+                ;>>
+                inc ZA8
+                ;ldx ZA8
+                ;<<
+
+                iny
+                ;>>
+                inc ZA9
+                ;ldy ZA9
+                ;<<
+                jmp _loop                                   ; L322D
+            end
+        end                                                 ; L3256:
+
+        ;>>
+        ;ldx ZA8
+        ;<<
+        cpx V38B1
+        if_eq_then
+            ;bne L325E
+            jsr L3287                                       ; A+ X=2 Y-
+            ;>>
+            stx ZA8
+            ;<<
+        else_end                                            ; L325E:
+
+        from
+            ;>>
+            inx
+            inc ZA8
+            ;ldx ZA8
+            ;<<
+            ldy #$01
+        loop                                                ; L3261:
+            lda [TFB],y
+            dey
+            sta [TFB],y
+        next
+            iny
+            iny
+            cpy #VIC_CHAR_COLUMNS                           ; $28 = 40
+            bne _loop                                       ; L3261
+        end
+
+        pla
+        jsr L3381                                           ; A- X- Y-
+        dey
+        sta [TFB],y
+        lda TFB
+        clc
+        adc #VIC_CHAR_COLUMNS                               ; $28 = 40
+        sta TFB
+        if_cs_then
+            ;bcc L327E
+            inc TFC
+        else_end                                            ; L327E:
+    next
+        inc PFD
+        lda PFD
+        cmp #EDIT_PANEL_LAST_LINE + 1                       ; $18 = 24 = ?
+        bne _loop                                           ; L3222
+    end
+
+    rts
+.endproc
+
+;;; summary: ?
+;;; changed: A+ X=2 Y-
+.proc L3287
+    tya
+    pha
+        ldy #$00
+        lda [T5C],y
+        ;>>
+        ;sta L322F
+        ;sta L32E2
+        ;sta L3224
+        ;sta L32D7
+        sta Z9F
+        sta ZB1
+        ;<<
+        sta T5D
+        ldy #$02
+        lda [T5C],y
+        sta V38B1
+        ldx #$02
+    pla
+    tay
+    rts
+.endproc
+
+;;; summary: Scroll to the left
+;;; changed: A+ X+ Y+
+.proc SCROLL_LEFT                                           ; L32A7:
+    from OUTER_LOOP
+        lda #<OUR_VIDEO_MATRIX_BASE                         ; $00
+        sta TFB
+        lda #>OUR_VIDEO_MATRIX_BASE                         ; $74
+        sta TFC
+
+        lda #$00
+        ;>>
+        ;sta L32E1
+        ;sta L32D6
+        sta ZB0
+        ;<<
+        sta T5C
+        lda V37D7
+        ;>>
+        ;sta L32E2
+        ;sta L32D7
+        sta ZB1
+        ;<<
+        sta T5D
+        ldy #$02
+        lda [T5C],y
+        sta V38B1
+        jsr L333B                                           ; A+ L3380+ L337F+
+        lda #$00
+        sta PFD
+        ldx V37D8
+        ;>>
+        stx Z9C
+        ;<<
+    loop                                                    ; L32D5:
+        ;>>
+        ;ldx Z9C
+        ;        .byte   OPCODE_LDA_AX                       ; $BD lda $FFFF,x
+        ;L32D6:  .byte   $FF                                 ;            FF
+        ;L32D7:  .byte   $FF                                 ;          FF
+        ldy Z9C
+        lda [ZB0],y
+        ;<<
+
+        if_eq_then
+            ;bne L32DB
+            rts
+        else_end                                            ; L32DB:
+
+        from INNER_LOOP
+            ldy #$00
+            ;>>
+            ;sty L32E8
+            sty ZB2
+            sty ZB3
+            ;<<
+        loop                                                ; L32E0:
+            ;>>
+            ;        .byte   OPCODE_LDA_AX                   ; $BD lda $FFFF,x
+            ;L32E1:  .byte   $FF                             ;            FF
+            ;L32E2:  .byte   $FF                             ;          FF
+            ldy Z9C
+            lda [ZB0],y
+            ;<<            
+            cmp #PETSCII_RETURN
+            if_eq_then
+                ;bne L32F1
+                ;>>
+                ;        .byte   OPCODE_LDA_IT               ; $A9 lda #$00
+                ;L32E8:  .byte   $00                         ;          $00
+                lda ZB2
+                ;<<
+                if_eq_then
+                    ;bne L32EE
+                    lda #PETSCII_SPACE                      ; $20
+                    pha
+                else_end                                    ; L32EE:
+
+                jmp INNER_LOOP::_end                        ; break L3309
+            else_end                                        ; L32F1:
+
+            ;>>
+            ldy ZB3
+            ;<<
+            cpy P36
+            if_eq_then
+                ;bne L32FC
+                jsr L240D                                   ; A+, V378D+
+                pha
+                ;>>
+                ;inc L32E8
+                inc ZB2
+                ;<<
+            else_end                                        ; L32FC:
+
+            cpx V38B1
+            if_eq_then
+                ;bne L3304
+                jsr L3287                                   ; A+ X=2 Y-
+                ;>>
+                stx Z9C
+                ;<<
+            else_end                                        ; L3304:
+        next
+            inx
+            ;>>
+            inc Z9C
+            ;<<
+            iny
+            ;>>
+            inc ZB3
+            ;<<
+            jmp _loop                                       ; L32E0
+        end                                                 ; L3309:
+    
+        ;>>
+        ldx Z9C
+        ;<<
+        cpx V38B1
+        if_eq_then
+            ;bne L3311
+            jsr L3287                                       ; A+ X=2 Y-
+            ;>>
+            stx Z9C
+            ;<<
+        else_end                                            ; L3311:
+
+        inx
+        ;>>
+        inc Z9C
+        ;<<
+        from
+            ldy #VIC_CHAR_COLUMNS                               ; $28 = 40
+        loop                                                    ; L3314:
+            dey
+            dey
+            bmi _end                                            ; break L3320
+            lda [TFB],y
+            iny
+            sta [TFB],y
+        next
+            jmp _loop                                           ; L3314
+        end                                                     ; L3320:
+
+        pla
+        jsr L3381                                               ; A- X- Y-
+        iny
+        sta [TFB],y
+        lda TFB
+        clc
+        adc #VIC_CHAR_COLUMNS                                   ; $28 = 40
+        sta TFB
+        if_cs_then
+            ;bcc L3332
+            inc TFC
+        else_end                                                ; L3332:
+
+    next
+        inc PFD
+        lda PFD
+        cmp #EDIT_PANEL_LAST_LINE + 1                           ; $18 = 24 = ?
+        bne _loop                                               ; L32D5
+    end
+
+    rts
+.endproc
+
+;;; summary: ?
+;;; changed: A+ L3380+ L337F+
+.proc L333B
+    lda G_MODE                                              ; L1CE4
+    if_ne_then
+        ;beq L337E
+        ; Select mode
+        lda L1CE8
+        if_pl_then
+            ;bmi L3360
+            lda T5A
+            sta L3380
+            sec
+            sbc L1CE7
+            sta L337F
+            lda #$00
+            sbc L1CE8
+            if_mi_then
+                ;bpl L335D
+                lda #$00
+                sta L337F
+            else_end                                        ; L335D:
+
+            jmp _end                                        ; L337E
+        else                                                ; L3360:
+            lda T5A
+            sta L337F
+            inc L337F
+            sec
+            sbc L1CE7
+            sta L3380
+            inc L3380
+            lda #$FF
+            sbc L1CE8
+            if_pl_then
+                ;bmi L337E
+                lda #$19                                    ; $19 = 25 = ?
+                sta L3380
+            else_end                                        ; L337E:
+        end
+    else_end
+
+    rts
+.endproc
+
+;;; summary: ?
+;;; changed: A- X- Y-
+.proc L3381
+    pha
+        lda G_MODE                                          ; L1CE4
+        if_ne_then
+            ;beq L3397
+            ; Select mode
+            lda PFD
+            cmp L337F
+            if_cs_then
+                ;bcc L3397
+                cmp L3380
+                if_cc_then
+                    ;bcs L3397
+                    pla
+                    eor #$80                                ; Reverse?
+                    pha
+                else_end                                    ; L3397:
+            else_end                                        ; L3397:
+        else_end                                            ; L3397:
+
+    pla
+    rts
+.endproc
+
+;;; summary: process char in A
+;;; in:
+;;;   A: character to process (!= 0)
+;;; changed: ...
+.proc PROCESS_CHAR                                          ; L3399:
+BREAK1:
+    ; available: X, Y
+    ;
+    ; $00 - $1F Control characters
+    ; $20 - $7F Printable characters
+    ; $80 - $9F Control characters
+    ; $A0 - $FF Printable characters
+    cmp # $80
+    if_lt_then
+        ; A < $80
+        cmp # $20
+        if_lt_then
+            ; A < $20
+            jsr PROCESS_CONTROL_CHAR
+            clc
+            bcc _end
+        else
+            ; $20 <= A < 80
+            jsr ADD_CHAR
+        end
+        clc
+        bcc _end
+    else
+        ; A >= $80
+        cmp # $A0
+        if_lt_then
+            ; $80 <= A < $A0
+            jsr PROCESS_CONTROL_CHAR
+            clc
+            bcc _end
+        else
+            ; $A0 <= A <= $FF
+            jsr ADD_CHAR
+        end
+    end
+    ;
+    rts
+.endproc
+
+;;; summary: Process control character
+;;; in:
+;;;   A: character to process (A >= $01 and A <= $1D) or (A >= $80 and A <= $9F)
+;;; changed:
+;;;    X , Y
+.proc PROCESS_CONTROL_CHAR
+    from THE_LOOP
+        ldx # 0
+    loop
+        cmp MAP_KEY_TO_EDIT_CMD,x
+        if_lt_then
+            ; C=0 , A < MAP_KEY_TO_EDIT_CMD[X]
+            ; Not in table
+            bcc THE_LOOP::_end                              ; break
+        else_end
+        ;
+        ; C=1 , A >= MAP_KEY_TO_EDIT_CMD[X]
+        if_eq_then
+            ; C=1 , Z=1 , A = MAP_KEY_TO_EDIT_CMD[X]
+            ; Found: X is command index
+            ldy CMD_ADDR_TABLE_LO,x
+            sty DL
+            ldy CMD_ADDR_TABLE_HI,x
+            sty DH
+            jsr JSR_INDIRECT_DX
+            ; A=? X=? Y=? C=? N=? V=? Z=?
+            clc
+            bcc THE_LOOP::_end                              ; break
+        else_end
+        ;
+        ; C=1 , A != MAP_KEY_TO_EDIT_CMD[X]
+        ; continue
+    next
+        inx
+        ldy MAP_KEY_TO_EDIT_CMD,x
+        bne _loop
+    end
+    ;
+    rts
+.endproc
+
+.proc CMD_NOP
+    rts
+.endproc
+
+.proc CMD_F7
+    rts
+.endproc
+
+.proc CMD_F8
+    rts
+.endproc
+
+;;; summary: Command: Cursor right
+;;; changed: ...
+.proc CMD_CURSOR_RIGHT                                      ; L342E:
+    lda P35
+    cmp Z92
+    if_ne_then
+        ;beq L3451
+        ldx P35
+        inx
+        stx P35
+        stx P19
+        jsr L1B9C
+        lda T5B
+        cmp #BUMP_RIGHT                                     ; $23 = 35
+        if_cs_then
+            ;bcc L344C
+            inc P36
+            jsr SCROLL_RIGHT                                ; L31EC
+            jmp L2545
+        else_end                                            ; L344C:
+
+        inc T5B
+        jsr L2545
+    else_end                                                ; L3451:
+
+    rts
+.endproc
+
+;;; summary Command: Cursor left
+;;; changed: ...
+.proc CMD_CURSOR_LEFT                                       ; L3452:
+    ldx P35
+    cpx P36
+    if_cc_then
+        ;bcs L345F
+        stx P19
+        dec P36
+        jsr SCROLL_LEFT                                     ; L32A7
+        rts
+    else_end                                                ; L345F:
+
+    cpx #$00
+    if_ne_then
+        ;beq L3486
+        dex
+        stx P35
+        stx P19
+        jsr L1C99                                           ; A- X- Y-
+        lda T5B
+        cmp #BUMP_LEFT                                      ; $05 = 5
+        if_cc_then
+            ;bcs L3481
+            jsr L19D0
+            inx
+            cpx T5B
+            if_ne_then
+                ;beq L3481
+                dec P36
+                jsr SCROLL_LEFT                             ; L32A7
+                jmp L2545
+            else_end                                        ; L3481:
+        else_end
+
+        dec T5B
+        jsr L2545
+    else_end                                                ; L3486:
+
+    rts
+.endproc
+
+;;; summary: Command: Cursor up
+;;; changed: ...
+.proc CMD_CURSOR_UP                                         ; L3487:
+    lda T5A
+    cmp #BUMP_TOP                                           ; $07 = 7
+    if_cs_then
+        ;bcc L3493
+        jsr MOVE_CURSOR_UP                                  ; L1AC2: A+ X- Y- ZPKERNAL_PNT_LO+ ZPKERNAL_PNT_HI+ T5A+
+        jmp _end                                            ; L34AC:
+    else                                                    ; L3493:
+        jsr L268E
+        if_cs_then
+            ;bcc L34A3
+            lda T5A
+            if_eq_then
+                ;bne L349D
+                rts
+            else_end                                        ; L349D:
+
+            jsr MOVE_CURSOR_UP                              ; L1AC2: A+ X- Y- ZPKERNAL_PNT_LO+ ZPKERNAL_PNT_HI+ T5A+
+            jmp _end                                        ; L34AC:
+        else                                                ; L34A3:
+            jsr L2649
+            jsr L23DF
+            jsr L351B
+        end                                                 ; L34AC:
+    end
+
+    jsr L1BEC
+    jsr L19DD
+    jsr L1BE1
+    ldx P19
+    jsr L1A2A
+    lda G_MODE                                              ; L1CE4
+    if_ne_then
+        ;beq L34E8
+        ; Select mode
+        lda L1CE7
+        if_eq_then
+            ;bne L34C7
+            dec L1CE8
+        else_end                                            ; L34C7:
+
+        dec L1CE7
+        lda ZPKERNAL_PNT_HI
+        sta TFC
+        lda L1CE8
+        if_pl_then
+            ;bmi L34DA
+            lda ZPKERNAL_PNT_LO
+            sta TFB
+            jmp _end                                        ; L34E5
+        else                                                ; L34DA:
+            lda ZPKERNAL_PNT_LO
+            clc
+            adc #VIC_CHAR_COLUMNS                           ; $28 = 40
+            sta TFB
+            if_cs_then
+                ;bcc L34E5
+                inc TFC
+            else_end                                        ; L34E5:
+        end
+
+        jsr L34F3
+    else_end                                                ; L34E8:
+
+    lda P38
+    if_eq_then
+        ;bne L34EE
+        dec P39
+    else_end                                                ; L34EE:
+ 
+    dec P38
+    jmp L2545
+.endproc
+
+;;; summary: Reverse line @TFB
+;;; changed: ...
+.proc L34F3
+    ldy #VIC_CHAR_COLUMNS - 1                               ; $27 = 39
+    from_loop                                               ; L34F5:
+        lda [TFB],y
+        eor #$80
+        sta [TFB],y
+    next
+        dey
+        bpl _loop                                           ; L34F5
+    end
+    rts
+.endproc
+
+;;; summary: ?
+;;; changed: ...
+.proc L34FF
+    ldy #$00
+    from_loop                                               ; L3501:
+        cpy T5A
+        beq _end                                            ; break L350E
+        jsr L19DD
+        bcs _end                                            ; break L350E
+    next
+        iny
+        jmp _loop                                           ; L3501
+    end                                                     ; L350E:
+
+    sty T5A
+    lda T4F
+    sta V37D7
+    lda T50
+    sta V37D8
+    rts
+.endproc
+
+;;; summary: ?
+;;; changed: ...
+.proc L351B
+    lda #<OUR_VIDEO_MATRIX_BASE                             ; $00
+    sta TFB
+    lda #>OUR_VIDEO_MATRIX_BASE                             ; $74
+    sta TFC
+    lda G_MODE                                              ; L1CE4
+    if_ne_then
+        ;beq L353F
+        ; Select mode
+        lda L1CE8
+        if_pl_then
+            ;bmi L353F
+            lda T5A
+            sec
+            sbc L1CE7
+            lda #$00
+            sbc L1CE8
+            if_mi_then
+                ;bpl L353F
+                lda #$80                                        ; ?
+                sta L2340
+            else_end                                            ; L353F:
+        else_end
+    else_end
+
+    ldx V37D7
+    ldy V37D8
+    jsr L2290
+    ;>>
+    ;jmp L22B8
+    jsr L22B8
+    rts
+    ;<<
+.endproc
+
+;;; summary: Command: Cursor down
+;;; changed: ...
+.proc CMD_CURSOR_DOWN                                       ; L354B:
+    jsr L1BBC
+    if_cs_then
+        ;bcc L3551
+        rts
+    else_end                                                ; L3551:
+
+    lda T5A
+    cmp #BUMP_BOTTOM                                        ; $11 = 17
+    if_cc_then
+        ;bcs L355D
+        jsr MOVE_CURSOR_DOWN                                ; L1AB2: A+ X- Y- ZPKERNAL_PNT_LO+ ZPKERNAL_PNT_HI+ T5A+
+        jmp _end                                            ; L3571:
+    else                                                    ; L355D:  
+        jsr L23B1
+        jsr L2671
+        jsr L2627
+        if_cc_then
+            ;bcs L356E
+            jsr L199D
+            jmp _end                                        ; L3571
+        else                                                ; L356E:
+            jsr CLEAR_EDIT_PANEL_LAST_LINE                  ; L1AD2
+        end                                                 ; L3571:
+    end
+
+    jsr L1982
+    jsr L1BE1
+    ldx P19
+    jsr L1A2A
+    lda G_MODE                                              ; L1CE4
+    if_ne_then
+        ;beq L35A7
+        ; Select mode
+        lda ZPKERNAL_PNT_HI
+        sta TFC
+        lda L1CE8
+        if_pl_then
+            ;bmi L3598
+            lda ZPKERNAL_PNT_LO
+            sec
+            sbc #VIC_CHAR_COLUMNS                       ; $28 = 40
+            sta TFB
+            if_cc_then
+                ;bcs L3595
+                dec TFC
+            else_end                                        ; L3595:
+
+            jmp _end                                        ; L359C
+        else                                                ; L3598:
+            lda ZPKERNAL_PNT_LO
+            sta TFB
+        end                                                 ; L359C:
+
+        jsr L34F3
+        inc L1CE7
+        if_eq_then
+            ;bne L35A7
+            inc L1CE8
+        else_end                                            ; L35A7:
+    else_end
+
+    inc P38
+    if_eq_then
+        ;bne L35AD
+        inc P39
+    else_end                                                ; L35AD:
+
+    jmp L2545
+.endproc
+
+;;; summary: Command: Page down
+;;; changed: ...
+.proc CMD_PAGE_DOWN                                         ; L35B0:
+    lda #PAGE_LINE_COUNT                                    ; $14 = 20
+    sta V38B3
+    from_loop                                               ; L35B5:
+        jsr L1982
+        if_cc_then
+            ;bcs L35CD
+            lda G_MODE                                      ; L1CE4
+            if_ne_then
+                ;beq L35C7
+                ; Select mode
+                inc L1CE7
+                if_eq_then
+                    ;bne L35C7
+                    inc L1CE8
+                else_end                                    ; L35C7:
+            else_end
+
+            inc P38
+            if_eq_then
+                ;bne L35CD
+                inc P39
+            else_end                                        ; L35CD:
+        else_end
+    next
+        dec V38B3
+        bne _loop                                           ; L35B5
+    end
+
+    lda #BUMP_BOTTOM                                        ; $11 = 17
+    sta T5A
+    ;>>
+    ;jmp L21A2
+    jsr L21A2
+    rts
+    ;<<
+.endproc
+
+;;; summary: Command: Page up
+;;; changed: ...
+.proc CMD_PAGE_UP                                           ; L35D9:
+    lda #PAGE_LINE_COUNT                                    ; $14 = 20
+    sta V38B3
+    jsr L1BEC
+    from_loop                                               ; L35E1:
+        jsr L19DD
+        if_cc_then
+            ;bcs L35FE
+            lda G_MODE                                      ; L1CE4
+            if_ne_then
+                ;beq L35F6
+                ; Select mode
+                lda L1CE7
+                if_eq_then
+                    ;bne L35F3
+                    dec L1CE8
+                else_end                                    ; L35F3:
+                dec L1CE7
+            else_end                                        ; L35F6:
+            
+            lda P38
+            if_eq_then
+                ;bne L35FC
+                dec P39
+            else_end                                        ; L35FC:
+            dec P38
+        else_end                                            ; L35FE:
+    next
+        dec V38B3
+        bne _loop                                           ; L35E1
+    end
+
+    lda #BUMP_TOP - 1                                       ; $06 = 6
+    sta T5A
+    ;>>
+    ;jmp L21A2
+    jsr L21A2
+    rts
+    ;<<
+.endproc
+
+;;; summary: Command: Go top
+;;; changed: ...
+.proc CMD_GO_TOP                                            ; L360A:
+    lda ZPBASIC_VALTYP
+    sta T4F
+    lda #$03
+    sta T50
+    lda G_MODE                                              ; L1CE4
+    if_ne_then
+        ;beq L3628
+        ; Select mode
+        sec
+        lda L1CE7
+        sbc P38
+        sta L1CE7
+        lda L1CE8
+        sbc P39
+        sta L1CE8
+    else_end                                                ; L3628:
+
+    lda #$00
+    sta P38
+    sta P39
+    jmp L21A2
+.endproc
+
+;;; summary: Command: Go bottom
+;;; changed: ...
+.proc CMD_GO_BOTTOM                                         ; L3631
+    from_loop                                               ; L3631:
+        jsr L1982
+        bcs _end                                            ; break L364B
+
+        lda G_MODE                                          ; L1CE4
+        if_ne_then
+            ;beq L3643
+            ; Select mode
+            inc L1CE7
+            if_eq_then
+                ;bne L3643
+                inc L1CE8
+            else_end                                        ; L3643:
+        else_end
+
+        inc P38
+        if_eq_then
+            ;bne L3649
+            inc P39
+        else_end                                            ; L3649:
+    next
+        bne _loop                                           ; L3631
+    end                                                     ; L364B:
+
+    lda #BUMP_BOTTOM                                        ; $11 = 17
+    sta T5A
+    jmp L21A2
+.endproc
+
+;;; summary: Command: Go to end of line
+;;; changed: ...
+.proc CMD_GO_END_LINE                                       ; L3652:
+    jsr L1982
+    if_cc_then
+        ;bcs L365A
+        jsr L1C99                                           ; A- X- Y-
+    else_end                                                ; L365A:
+    
+    lda #BUMP_RIGHT                                         ; $23 = 35
+    sta T5B
+    ;>>
+    ;jmp L219D
+    jsr L219D
+    rts
+    ;<<
+.endproc
+
+;;; summary: Command: Go to begin of line
+;;; changed: ...
+.proc CMD_GO_BEGIN_LINE                                     ; L3661:
+    jsr L1982
+    if_cc_then
+        ;bcs L3669
+        jsr L19DD
+    else_end                                                ; L3669:
+
+    ;>>
+    ;jmp L219D
+    jsr L219D
+    rts
+    ;<<
+.endproc
+
+;;; summary: Command: Insert (NOP)
+;;; changed: ...
+.proc CMD_INSERT
+    L366C:  rts
+.endproc
+
+;;; summary: Command: Open line
+;;; changed: A+ ...
+.proc CMD_ADD_LINE                                         ; L366D:
+    lda G_MODE                                              ; L1CE4
+    if_ne_then
+        ;beq L3673
+        ; Select mode: NOP
+        rts
+    else_end                                                ; L3673:
+    
+    ; Edit mode
+    jsr L1982
+    if_cc_then
+        ;bcs L367B
+        jsr L1C99                                           ; A- X- Y-
+    else_end                                                ; L367B:
+    
+    lda #PETSCII_RETURN
+    ;>>
+    ;jmp CMD_SPLIT_LINE                                     ; L2383
+    jsr CMD_SPLIT_LINE                                      ; L2383
+    rts
+    ;<<
+.endproc
+
+;;; summary: JSR indirect to [DX]
+;;; changed: A- X- Y-
+.proc JSR_INDIRECT_DX
+    jmp [DX]
+    rts
+.endproc

@@ -1,0 +1,13 @@
+;;; x64sc.break
+;;;
+;;; summary: x64sc breakpoints
+;;;
+;;; break [load|store|exec] [address [address] [if <cond_expr>]]
+;;; default is exec
+;;; Example:
+;;;   break .MY_BREAK_POINT
+
+;break .BREAK1
+;break .BREAK2
+;break .BREAK3
+;break .BREAK4

@@ -1,0 +1,43 @@
+;    PEDSCII: Editor for the Commodore.
+;    Copyright (C) 2025  C64PECTRE
+;
+;    This program is free software: you can redistribute it and/or modify
+;    it under the terms of the GNU General Public License as published by
+;    the Free Software Foundation, either version 3 of the License, or
+;    (at your option) any later version.
+;
+;    This program is distributed in the hope that it will be useful,
+;    but WITHOUT ANY WARRANTY; without even the implied warranty of
+;    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;    GNU General Public License for more details.
+;
+;    You should have received a copy of the GNU General Public License
+;    along with this program.  If not, see https://www.gnu.org/licenses/.
+;
+;    Contact: https://github.com/c64pectre/pedscii/ create an issue
+
+basic_begin:
+    ; line 1
+line_1:
+    .word line_2
+    .word  1                            ; Line number
+    .byte BASIC_TOKEN_SYS
+    .byte ' '
+    .byte < (((entrypoint / 1000) .mod 10) + '0')
+    .byte < (((entrypoint /  100) .mod 10) + '0')
+    .byte < (((entrypoint /   10) .mod 10) + '0')
+    .byte < (((entrypoint /    1) .mod 10) + '0')
+    .byte BASIC_TOKEN_EOL
+    ;
+    ; line 2
+line_2:
+    .word line_end
+    .word  2                            ; Line number
+    .byte BASIC_TOKEN_REM
+    .byte ' '
+    .byte "pedscii"
+    .byte BASIC_TOKEN_EOL
+    ;
+line_end:
+    .word BASIC_NEXT_LINE_END_MARKER
+basic_end:

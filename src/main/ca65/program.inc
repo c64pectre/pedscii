@@ -1,0 +1,151 @@
+;    PEDSCII: Editor for the Commodore.
+;    Copyright (C) 2025  C64PECTRE
+;
+;    This program is free software: you can redistribute it and/or modify
+;    it under the terms of the GNU General Public License as published by
+;    the Free Software Foundation, either version 3 of the License, or
+;    (at your option) any later version.
+;
+;    This program is distributed in the hope that it will be useful,
+;    but WITHOUT ANY WARRANTY; without even the implied warranty of
+;    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;    GNU General Public License for more details.
+;
+;    You should have received a copy of the GNU General Public License
+;    along with this program.  If not, see https://www.gnu.org/licenses/.
+;
+;    Contact: https://github.com/c64pectre/pedscii/ create an issue
+
+; notes:
+;   original memory layout:
+;     $1800-$367F CODE
+;     $3680-$38FF DATA
+;     $3900-$73FF EDIT BUFFERS 1
+;     $7400-$74ff OUR TEXT SCREEN
+;     $7500-$7FFF ?
+;     $8000-$BFFF EDIT BUFFERS 2
+;     $C000-$CFFF ?
+;     $D000-$DFFF IO
+;     $E000-$FFFF KERNAL ROM
+;
+; New memory layout:
+; +----------------+------------+-----------------------------------------------------------------+--------------------------------------+
+; | From .. To     | Size       | Labels From .. To                                               | Description                          |
+; +----------------+------------+-----------------------------------------------------------------+--------------------------------------+
+; | $0000 .. $00FF | $100 = 256 | __ZEROPAGE_START__    .. __ZEROPAGE_START__ + __ZEROPAGE_SIZE__ | Zero page                            |
+; | $0801 .. $27DD |            | __PROGRAM_MEM_START__ .. __PROGRAM_MEM_LAST__                   | Program                              |
+; | $2800 .. $CFFF |            | EDIT_BUFFERS_1_FIRST_PAGE<<8 .. EDIT_BUFFERS_2_LAST_PAGE<<8+$FF | EDIT BUFFERS 1                       |
+; | $D000 .. $FFFF |            | EDIT_BUFFERS_1_FIRST_PAGE<<8 .. EDIT_BUFFERS_2_LAST_PAGE<<8+$FF | EDIT BUFFERS 2 under IO & KERNAL ROM |
+; +----------------+------------+-----------------------------------------------------------------+--------------------------------------+
+
+; We have got 10 edit buffers:
+; 0   Main
+; 1   Paste
+; 2-9 User defined
+EDIT_BUFFER_COUNT = 10
+
+BUFFER_INDEX_MAIN = 0
+BUFFER_INDEX_PASTE = 1
+
+;;; summary: Maximum length of buffer name (including nul terminator)
+EDIT_BUFFER_NAME_MAX_LENGTH = 8
+
+EDIT_BUFFERS_1_FIRST_PAGE = >(__PROGRAM_MEM_LAST__ + $FF)   ; $27
+EDIT_BUFFERS_1_LAST_PAGE  = $CE
+
+EDIT_BUFFERS_2_FIRST_PAGE = $CF
+EDIT_BUFFERS_2_LAST_PAGE  = $CF
+
+PAGE_LINE_COUNT = 20
+
+MARGIN_LEFT   = 4
+MARGIN_RIGHT  = 4
+MARGIN_TOP    = 6
+MARGIN_BOTTOM = 6
+
+BUMP_LEFT   = 5
+BUMP_RIGHT  = 35
+BUMP_TOP    = 7
+BUMP_BOTTOM = 17
+
+BUFFER_NAME_TABLE_ENTRY_SIZE = 8;
+BUFFER_NAME_MAX_LENGTH = BUFFER_NAME_TABLE_ENTRY_SIZE - 1
+BUFFER_NAME_TABLE_ENTRY_COUNT = 10;
+
+COMMAND_COUNT = 8
+COMMAND_NAME_LENGTH = 7
+
+MAX_LINE_LENGTH = 240                                       ; $F0
+
+CURSOR_BLINK_DELAY = 20                                     ; $14
+
+;
+; Screen (Video Matrix), Character Base, Color RAM
+;
+
+OUR_TEXT_SCREEN_FIRST_PAGE = >SCREEN_TEXT_RAM_BASE          ; $04
+OUR_TEXT_SCREEN_LAST_PAGE  = OUR_TEXT_SCREEN_FIRST_PAGE + 3 ; $07
+;OUR_TEXT_SCREEN_PAGE_COUNT = 4
+;SCREEN_PAGE_COUNT = 4
+
+COLOR_RAM_BASE := SCREEN_COLOR_RAM_BASE
+
+; VIC Bank
+;
+;   CIA_2_PRA $DD00
+;     Bit 0..1: Select the position of the VIC-memory
+;       %00, 0: Bank 3: $C000-$FFFF, 49152-65535
+;       %01, 1: Bank 2: $8000-$BFFF, 32768-49151
+;       %10, 2: Bank 1: $4000-$7FFF, 16384-32767
+;       %11, 3: Bank 0: $0000-$3FFF, 0-16383 (standard)
+
+OUR_VIC_BANK_BASE := VIC_BANK_0_BASE                        ; $0000
+
+OUR_VIDEO_MATRIX_BASE := OUR_TEXT_SCREEN_FIRST_PAGE << 8
+
+;;; summary: Our Video Memory
+OUR_VM = $15
+
+; V17FC := $17FC                                              ; SHELL work drive. Replaced by ZPKERNAL_FA (last used serial device)
+
+; DISK_CMD_FA File Address we take from ZPKERNAL_FA
+DISK_CMD_FH = $0F                       ; Disk command: File Handle
+DISK_CMD_SA = $0F                       ; Disk command: Secondary Address (channel)
+
+; SERIAL_DATA_FA take from ZPKERNAL_FA
+SERIAL_DATA_FH = $01                    ; File Handle for disk/printer data
+SERIAL_DATA_DOC_SA = $02                ; SA for loading and saving document
+SERIAL_DATA_DIR_SA = $00                ; SA for loading directory
+SERIAL_DATA_PRINT_SA = $07              ; SA for printing
+
+EDIT_PANEL_FIRST_LINE = 0  ; $00
+EDIT_PANEL_LAST_LINE  = 23 ; $17
+EDIT_PANEL_LAST_LINE_START_VM := OUR_VIDEO_MATRIX_BASE + EDIT_PANEL_LAST_LINE * VIC_CHAR_COLUMNS ; $7798
+
+EDIT_PANEL_BEFORE_LAST_LINE = EDIT_PANEL_LAST_LINE - 1
+EDIT_PANEL_BEFORE_LAST_LINE_START_VM := OUR_VIDEO_MATRIX_BASE + EDIT_PANEL_BEFORE_LAST_LINE * VIC_CHAR_COLUMNS ; $7770
+
+COMMAND_PANEL_FIRST_LINE = 24
+COMMAND_PANEL_LAST_LINE = 24
+; Ptr to start command line in Video Memory $77C0
+COMMAND_PANEL_FIRST_LINE_START_VM := OUR_VIDEO_MATRIX_BASE + COMMAND_PANEL_FIRST_LINE * VIC_CHAR_COLUMNS
+; Ptr to start command line in Color Ram $DBC0
+COMMAND_PANEL_FIRST_LINE_START_CR := COLOR_RAM_BASE        + COMMAND_PANEL_FIRST_LINE * VIC_CHAR_COLUMNS
+
+TABLE_POWER_OF_10_LENGTH = 4
+
+SIZEOF_BYTE = 1
+SIZEOF_WORD = 2
+SIZEOF_ADDR = 2
+
+;;; summary: Number of digits handled by INT_TO_STRING / INT_TO_STRING_RESULT [0,9999]
+INT_TO_STRING_DIGIT_COUNT = 4
+; INT_TO_STRING_RESULT = L2623
+
+MODE_EDIT   = $00
+MODE_SELECT = $01
+
+FALSE = 0
+TRUE  = 1
+
+CMD_COUNT = 21
