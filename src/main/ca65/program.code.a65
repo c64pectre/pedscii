@@ -81,10 +81,13 @@
 ;;; throws: EXCEPTION_OUT_OF_MEMORY
 ;;; changed: A, X
 .proc ADD_CHAR
-    ldx G_MODE
-    if_ne_then
+    bit G_MODE
+    if_mi_then
+        ; G_MODE = MODE_SELECT
         rts
     else_end
+
+    ; G_MODE = MODE_EDIT
 
     cmp # PETSCII_NO_BREAK_SPACE
     if_eq_then
@@ -158,8 +161,8 @@
 ;;; summary: Command: Delete (BACKSPACE)
 ;;; summary: A+ ...
 .proc CMD_DELETE
-    lda G_MODE
-    if_ne_then
+    bit G_MODE
+    if_mi_then
         ; G_MODE = MODE_SELECT
         rts
     else_end
@@ -306,8 +309,9 @@
     sta TFB
     lda # >EDIT_PANEL_LAST_LINE_START_VM
     sta TFC
-    lda G_MODE
-    if_ne_then
+    bit G_MODE
+    if_mi_then
+        ; G_MODE = MODE_SELECT
         lda L1CE8
         if_mi_then
             lda # EDIT_PANEL_LAST_LINE
@@ -961,19 +965,23 @@
 ;;; summary: Command: Enter select mode for cut <SHIFT + STOP_RUN>
 ;;; changed: ...
 .proc CMD_SELECT_MODE
-    lda G_MODE
-    if_ne_then
-        dec G_MODE                                          ; G_MODE == 0 == MODE_EDIT
+    bit G_MODE
+    if_mi_then
+        ; G_MODE = MODE_SELECT
+        ; End select mode, back to edit mode
+        inc G_MODE
+        ; G_MODE = MODE_EDIT
         jsr L219D
 
         rts
     else_end
 
-    ; check G_MODE == 0
+    ; check G_MODE = MODE_EDIT
 
     jsr L1BBC
     if_cc_then
-        inc G_MODE                                          ; G_MODE == 1 == MODE_SELECT
+        dec G_MODE
+        ; G_MODE = MODE_SELECT
         lda T58
         sta L1CE5
         lda T59
@@ -990,17 +998,16 @@
 ;;; throws: EXCEPTION_OUT_OF_MEMORY
 ;;; changed: ...
 .proc CMD_CUT
-    lda G_MODE
-    if_eq_then
-        ; G_MODE = $00
-        ; NOP if not in select mode
+    bit G_MODE
+    if_pl_then
+        ; G_MODE = MODE_EDIT
         rts
     else_end
 
-    ; Mode is select mode
-    ; check G_MODE = $01
-    dec G_MODE                                              ; G_MODE = 0 = MODE_EDIT
-    ; Mode is edit mode
+    ; G_MODE = MODE_SELECT
+
+    inc G_MODE
+    ; G_MODE = MODE_EDIT
 
     lda # 1
     jsr L26DA
@@ -1286,13 +1293,13 @@
 ;;; throws: EXCEPTION_OUT_OF_MEMORY, EXCEPTION_NOT_ENOUGH_MEMORY
 ;;; changed: ...
 .proc CMD_PASTE
-    lda G_MODE
-    if_ne_then
-        ; NOP in select mode
+    bit G_MODE
+    if_mi_then
+        ; G_MODE = MODE_SELECT
         rts
     else_end
 
-    ; Mode is edit mode
+    ; G_MODE = MODE_EDIT
 
     ldx # 1
     lda V37D9,x
@@ -1769,9 +1776,9 @@
             else_end
 
             inc PFE
-            lda G_MODE
-            if_ne_then
-                ; Mode is select mode
+            bit G_MODE
+            if_mi_then
+                ; G_MODE = MODE_SELECT
                 lda PFE
                 cmp L337F
                 if_cs_then
@@ -2079,13 +2086,13 @@
 ;;; throws: EXCEPTION_OUT_OF_MEMORY
 ;;; changed: ...
 .proc CMD_SPLIT_LINE
-    ldx G_MODE
-    if_ne_then
-        ; Mode is select mode
+    bit G_MODE
+    if_mi_then
+        ; G_MODE = MODE_SELECT
         rts
     else_end
 
-    ; Mode is edit mode
+    ; G_MODE = MODE_EDIT
 
     jsr L1AE4                                               ; May throw EXCEPTION_OUT_OF_MEMORY
     if_cs_then
@@ -3793,9 +3800,9 @@
         sta V38AE
         lda V38AF
         beq _end                                            ; break
-        lda G_MODE
-        bne _end                                            ; break Mode is select mode
-        ; Mode is edit mode
+        bit G_MODE
+        bmi _end                                            ; G_MODE = MODE_SELECT -> break
+        ; G_MODE = MODE_EDIT
         jsr L2E4D
         bcs _end                                            ; break
     next
@@ -3811,9 +3818,9 @@
 
     lda V38AF
     if_ne_then
-        lda G_MODE
-        if_eq_then
-            ; Mode is edit mode
+        bit G_MODE
+        if_pl_then
+            ; G_MODE = MODE_EDIT
             ldx V38AC
             if_ne_then
                 from_loop
@@ -3895,9 +3902,9 @@
             jsr L1BBC
             cmp # PETSCII_RETURN
             if_eq_then
-                ldx G_MODE
-                if_ne_then
-                    ; Mode is select mode
+                bit G_MODE
+                if_mi_then
+                    ; G_MODE = MODE_SELECT
                     inc L1CE7
                     if_eq_then
                         inc L1CE8
@@ -3961,9 +3968,9 @@
         jsr L1BBC
         cmp # PETSCII_RETURN
         if_eq_then
-            lda G_MODE
-            if_ne_then
-                ; Select mode
+            bit G_MODE
+            if_mi_then
+                ; G_MODE = MODE_SELECT
                 lda L1CE7
                 if_eq_then
                     dec L1CE8
@@ -4009,9 +4016,9 @@
             jsr L1BBC
             cmp # PETSCII_RETURN
             if_eq_then
-                ldx G_MODE
-                if_ne_then
-                    ; Select mode
+                bit G_MODE
+                if_mi_then
+                    ; G_MODE = MODE_SELECT
                     lda L1CE7
                     if_eq_then
                         dec L1CE8
@@ -4076,9 +4083,9 @@
         jsr L1BBC
         cmp # PETSCII_RETURN
         if_eq_then
-            lda G_MODE
-            if_ne_then
-                ; Select mode
+            bit G_MODE
+            if_mi_then
+                ; G_MODE = MODE_SELECT
                 inc L1CE7
                 if_eq_then
                     inc L1CE8
@@ -4127,7 +4134,7 @@
     sta KVAR_RPTFLG                                         ; Keyboard repeat switch. Bits: Bits #6-#7: %00 = Only cursor up/down, cursor left/right, Insert/Delete and Space repeat; %01 = No key repeats; %1x = All keys repeat.
     ; A = $80 , X = ? Y = ?
     ;
-    ldy # 0                                                 ; MODE_EDIT
+    ldy # 0
     sty ZP_EXCEPTION_CODE                                   ; EXCEPTION_NONE
     sty G_MODE                                              ; MODE_EDIT
     sty T22
@@ -4510,9 +4517,9 @@
 ;;; summary: ?
 ;;; changed: A+ L3380+ L337F+
 .proc L333B
-    lda G_MODE
-    if_ne_then
-        ; Select mode
+    bit G_MODE
+    if_mi_then
+        ; G_MODE = MODE_SELECT
         lda L1CE8
         if_pl_then
             lda T5A
@@ -4552,9 +4559,9 @@
 ;;; changed: A- X- Y-
 .proc L3381
     pha
-        lda G_MODE
-        if_ne_then
-            ; Select mode
+        bit G_MODE
+        if_mi_then
+            ; G_MODE = MODE_SELECT
             lda PFD
             cmp L337F
             if_cs_then
@@ -4750,9 +4757,9 @@ BREAK1:
     jsr L1BE1
     ldx P19
     jsr L1A2A
-    lda G_MODE
-    if_ne_then
-        ; Select mode
+    bit G_MODE
+    if_mi_then
+        ; G_MODE = MODE_SELECT
         lda L1CE7
         if_eq_then
             dec L1CE8
@@ -4836,9 +4843,9 @@ BREAK1:
     sta TFB
     lda # >OUR_VIDEO_MATRIX_BASE
     sta TFC
-    lda G_MODE
-    if_ne_then
-        ; Select mode
+    bit G_MODE
+    if_mi_then
+        ; G_MODE = MODE_SELECT
         lda L1CE8
         if_pl_then
             lda T5A
@@ -4890,9 +4897,9 @@ BREAK1:
     jsr L1BE1
     ldx P19
     jsr L1A2A
-    lda G_MODE
-    if_ne_then
-        ; Select mode
+    bit G_MODE
+    if_mi_then
+        ; G_MODE = MODE_SELECT
         lda ZPKERNAL_PNT_HI
         sta TFC
         lda L1CE8
@@ -4936,9 +4943,9 @@ BREAK1:
     from_loop
         jsr L1982
         if_cc_then
-            lda G_MODE
-            if_ne_then
-                ; Select mode
+            bit G_MODE
+            if_mi_then
+                ; G_MODE = MODE_SELECT
                 inc L1CE7
                 if_eq_then
                     inc L1CE8
@@ -4971,9 +4978,9 @@ BREAK1:
     from_loop
         jsr L19DD
         if_cc_then
-            lda G_MODE
-            if_ne_then
-                ; Select mode
+            bit G_MODE
+            if_mi_then
+                ; G_MODE = MODE_SELECT
                 lda L1CE7
                 if_eq_then
                     dec L1CE8
@@ -5006,9 +5013,9 @@ BREAK1:
     sta T4F
     lda # 3
     sta T50
-    lda G_MODE
-    if_ne_then
-        ; Select mode
+    bit G_MODE
+    if_mi_then
+        ; G_MODE = MODE_SELECT
         sec
         lda L1CE7
         sbc P38
@@ -5033,9 +5040,9 @@ BREAK1:
         jsr L1982
         bcs _end                                            ; break
 
-        lda G_MODE
-        if_ne_then
-            ; Select mode
+        bit G_MODE
+        if_mi_then
+            ; G_MODE = MODE_SELECT
             inc L1CE7
             if_eq_then
                 inc L1CE8
@@ -5088,13 +5095,14 @@ BREAK1:
 ;;; summary: Command: Open line
 ;;; changed: A+ ...
 .proc CMD_ADD_LINE
-    lda G_MODE
-    if_ne_then
-        ; Select mode
+    bit G_MODE
+    if_mi_then
+        ; G_MODE = MODE_SELECT
         rts
     else_end
     
-    ; Edit mode
+    ; G_MODE = MODE_EDIT
+
     jsr L1982
     if_cc_then
         jsr L1C99                                           ; A- X- Y-
