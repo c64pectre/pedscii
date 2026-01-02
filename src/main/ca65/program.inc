@@ -140,10 +140,26 @@ SIZEOF_ADDR = 2
 
 ;;; summary: Number of digits handled by INT_TO_STRING / INT_TO_STRING_RESULT [0,9999]
 INT_TO_STRING_DIGIT_COUNT = 4
-; INT_TO_STRING_RESULT = L2623
 
-MODE_EDIT   = $00
-MODE_SELECT = $01
+;;; summary: Modes
+;;; see-also: `G_MODE`.
+;;; notes:
+;;;   We use these values because:
+;;;     1. We can use `bit` to check the value without changing any register:
+;;;          bit G_MODE
+;;;          bpl EDIT_BRANCH
+;;;          bmi SELECT_BRANCH
+;;;     2. We can change the value without changing any register:
+;;;          From edit mode to select mode:
+;;;            dec G_MODE
+;;;          From select mode to edit mode:
+;;;            inc G_MODE
+MODE_EDIT   = 0
+MODE_SELECT = $FF
+
+;
+; Boolean values
+;
 
 FALSE = 0
 TRUE  = 1
