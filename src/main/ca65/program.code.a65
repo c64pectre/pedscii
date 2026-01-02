@@ -2485,7 +2485,7 @@
     from
         ldx # 3
     loop
-        lda L2623,x
+        lda INT_TO_STRING_RESULT,x
         sta L25B1,x
     next
         dex
@@ -2499,7 +2499,7 @@
     from
         ldx # 2
     loop
-        lda L2623,x
+        lda INT_TO_STRING_RESULT,x
         sta L25BE,x
     next
         dex
@@ -3533,7 +3533,7 @@
             from
                 ldx # 0
             loop
-                lda L2623,x
+                lda INT_TO_STRING_RESULT,x
                 cmp # PETSCII_SPACE
                 beq _end                                    ; break
                 jsr KERNAL_CHROUT
