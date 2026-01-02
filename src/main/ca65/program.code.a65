@@ -69,7 +69,7 @@
 ;;; changed: A
 .proc REVERSE_CURSOR_CHAR
     lda [ZPKERNAL_PNT],y
-    eor #$80
+    eor # $80
     sta [ZPKERNAL_PNT],y
     lda ZPKERNAL_TIME_2
     sta PREVIOUS_ZPKERNAL_TIME_2
@@ -87,11 +87,11 @@
 
     cmp # PETSCII_NO_BREAK_SPACE
     if_eq_then
-        lda #PETSCII_SPACE
+        lda # PETSCII_SPACE
     else_end
 
     ldx Z92
-    cpx #MAX_LINE_LENGTH - 1
+    cpx # MAX_LINE_LENGTH - 1
     if_eq_then
         rts
     else_end
@@ -115,7 +115,7 @@
     inc Z92
     jsr L1BBC
     if_cs_then
-        lda #PETSCII_RETURN
+        lda # PETSCII_RETURN
         jsr L1AE4
         if_cs_then
             jsr L1C99                                       ; A- X- Y-
@@ -137,7 +137,7 @@
         end
     else
         lda T5B
-        cmp #BUMP_RIGHT
+        cmp # BUMP_RIGHT
         if_cs_then
             inc P36
             jsr SCROLL_RIGHT
@@ -177,7 +177,7 @@
     else_end
     
     jsr L1BBC
-    cmp #PETSCII_RETURN
+    cmp # PETSCII_RETURN
     if_ne_then
         jsr L1BF7
         dec P35
@@ -214,7 +214,7 @@
         rts
     else_end
 
-    cmp #MAX_LINE_LENGTH
+    cmp # MAX_LINE_LENGTH
     if_cs_then
         jsr L1B9C
         rts
@@ -227,7 +227,7 @@
         jsr L1C99                                           ; A- X- Y-
         if_cc_then
             jsr L1BBC
-            cmp #PETSCII_RETURN
+            cmp # PETSCII_RETURN
             if_ne_then
                 jsr L1B9C
                 jsr L1B9C                                   ; TODO Why twice?
@@ -249,10 +249,10 @@
 
     dec P38
     jsr L1BF7
-    lda #BUMP_RIGHT
+    lda # BUMP_RIGHT
     sta T5B
     lda T5A
-    cmp #PETSCII_RETURN
+    cmp # PETSCII_RETURN
     if_cs_then
         jsr L2627
         jsr MOVE_CURSOR_UP                                  ; A+ X- Y- ZPKERNAL_PNT_LO+ ZPKERNAL_PNT_HI+ T5A+
@@ -276,14 +276,14 @@
 ;;;   CS: CC:
 ;;; changed: X+ ...
 .proc L1982
-    ldx #$00
+    ldx # 0
     jsr L1BBC
     if_cs_then
         rts
     else_end
 
     from_loop
-        cmp #PETSCII_RETURN
+        cmp # PETSCII_RETURN
         beq _end                                            ; break
         inx
         jsr L1B9C
@@ -301,23 +301,23 @@
 ;;; summary: ?
 ;;; changed: A+ X+ Y+ ...
 .proc L199D
-    lda #<EDIT_PANEL_LAST_LINE_START_VM
+    lda # <EDIT_PANEL_LAST_LINE_START_VM
     sta TFB
-    lda #>EDIT_PANEL_LAST_LINE_START_VM
+    lda # >EDIT_PANEL_LAST_LINE_START_VM
     sta TFC
     lda G_MODE
     if_ne_then
         lda L1CE8
         if_mi_then
-            lda #EDIT_PANEL_LAST_LINE
+            lda # EDIT_PANEL_LAST_LINE
             sec
             sbc T5A
             clc
             adc L1CE7
-            lda #$00
+            lda # 0
             adc L1CE8
             if_mi_then
-                lda #$80
+                lda # $80
                 sta L2340
             else_end
         else_end
@@ -346,7 +346,7 @@
 ;;; summary: ?
 ;;; changed: ...
 .proc L19DD
-    ldx #$00
+    ldx # 0
     jsr L1C99                                               ; A- X- Y-
     if_cs_then
         rts
@@ -361,7 +361,7 @@
         else_end
 
         jsr L1BBC
-        cmp #PETSCII_RETURN
+        cmp # PETSCII_RETURN
         beq _end                                            ; break
     next
         inx
@@ -383,7 +383,7 @@
             jsr L1C99                                       ; A- X- Y-
             bcs _catch                                      ; throw
             jsr L1BBC
-            cmp #PETSCII_RETURN
+            cmp # PETSCII_RETURN
         next
             bne _loop
         end
@@ -417,11 +417,11 @@
 ;;; changed: ...
 .proc L1A2A
     try
-        lda #$00
+        lda # 0
         sta T5B
         sta P35
         jsr L1BEC
-        ldy #$00
+        ldy # 0
         inx
         from_loop
             cpy P36
@@ -430,7 +430,7 @@
             beq _catch
             jsr L1BBC
             bcs _catch
-            cmp #PETSCII_RETURN
+            cmp # PETSCII_RETURN
             beq _catch
             iny
             jsr L1B9C
@@ -444,7 +444,7 @@
             beq _end
             jsr L1BBC
             bcs _catch
-            cmp #PETSCII_RETURN
+            cmp # PETSCII_RETURN
             beq _catch
             iny
             jsr L1B9C
@@ -458,7 +458,7 @@
         from_loop
             jsr L1BBC
             bcs _end                                        ; break
-            cmp #PETSCII_RETURN
+            cmp # PETSCII_RETURN
             beq _end                                        ; break
             iny
             jsr L1B9C
@@ -477,10 +477,10 @@
 ;;; summary: ?
 ;;; changed: ...
 .proc L1A7F
-    lda #$00
+    lda # 0
     sta T5C
-    ldx #>COMMAND_PANEL_FIRST_LINE_START_CR
-    ldy #<COMMAND_PANEL_FIRST_LINE_START_CR
+    ldx # >COMMAND_PANEL_FIRST_LINE_START_CR
+    ldy # <COMMAND_PANEL_FIRST_LINE_START_CR
     bne L1A9B                                               ; bra
 .endproc
 
@@ -493,8 +493,8 @@
     ;--lda #COLOR_GRY
     ;--sta VIC_B0C
     ;<<
-    ldx #>COLOR_RAM_BASE
-    ldy #<COLOR_RAM_BASE
+    ldx # >COLOR_RAM_BASE
+    ldy # <COLOR_RAM_BASE
     sty T5C
     ;--lda #COLOR_WHT
     lda KVAR_COLOR
@@ -506,11 +506,11 @@
     from_loop
         stx T5D
         from_loop
-            cpy #<COMMAND_PANEL_FIRST_LINE_START_CR
+            cpy # <COMMAND_PANEL_FIRST_LINE_START_CR
             if_eq_then
-                cpx #>COMMAND_PANEL_FIRST_LINE_START_CR
+                cpx # >COMMAND_PANEL_FIRST_LINE_START_CR
                 if_eq_then
-                    ;--lda #COLOR_BLK               ; $00 command color
+                    ;--lda # COLOR_BLK               ; Command color
                 else_end
             else_end
             sta [T5C],y
@@ -520,7 +520,7 @@
         end
     next
         inx
-        cpx #>(SCREEN_COLOR_RAM_BASE + SCREEN_COLOR_RAM_SIZE)
+        cpx # >(SCREEN_COLOR_RAM_BASE + SCREEN_COLOR_RAM_SIZE)
         bne _loop
     end
 
@@ -532,10 +532,10 @@
 .proc MOVE_CURSOR_DOWN
     lda ZPKERNAL_PNT_LO
     clc
-    adc #VIC_CHAR_COLUMNS
+    adc # VIC_CHAR_COLUMNS
     sta ZPKERNAL_PNT_LO
     lda ZPKERNAL_PNT_HI
-    adc #$00
+    adc # 0
     sta ZPKERNAL_PNT_HI
     inc T5A
 
@@ -547,10 +547,10 @@
 .proc MOVE_CURSOR_UP
     lda ZPKERNAL_PNT_LO
     sec
-    sbc #VIC_CHAR_COLUMNS
+    sbc # VIC_CHAR_COLUMNS
     sta ZPKERNAL_PNT_LO
     lda ZPKERNAL_PNT_HI
-    sbc #$00
+    sbc # 0
     sta ZPKERNAL_PNT_HI
     dec T5A
 
@@ -560,13 +560,13 @@
 ;;; summary: Clear the last edit panel line
 ;;; changed: ...
 .proc CLEAR_EDIT_PANEL_LAST_LINE
-    ldx #<EDIT_PANEL_LAST_LINE_START_VM
-    ldy #>EDIT_PANEL_LAST_LINE_START_VM
+    ldx # <EDIT_PANEL_LAST_LINE_START_VM
+    ldy # >EDIT_PANEL_LAST_LINE_START_VM
     stx T5C
     sty T5D
     from
-        lda #PETSCII_SPACE
-        ldy #VIC_CHAR_COLUMNS - 1
+        lda # PETSCII_SPACE
+        ldy # VIC_CHAR_COLUMNS - 1
     loop
         sta [T5C],y
     next
@@ -583,9 +583,9 @@
     sta L1B46
     tya
     pha
-    ldy #$02                                                ; ?
+    ldy # 2                                                ; ?
     lda [T4E],y
-    cmp #$FF                                                ; ?
+    cmp # $FF                                                ; ?
     if_eq_then
         jsr L1B77
         if_cs_then
@@ -601,7 +601,7 @@
         inc V37D5
     else_end
 
-    ldy #$02                                                ; ?
+    ldy # 2                                                ; ?
     lda [T4E],y
     tay
     iny
@@ -615,11 +615,11 @@
             if_eq_then
                 lda T23
                 sta V37D4
-                lda #$03
+                lda # 3
                 sta V37D5
             else_end
 
-            ldy #$00
+            ldy # 0
             jmp _end
         else
             sta [T4E],y
@@ -632,10 +632,10 @@
 
     lda L1B46
     sta [T4E],y
-    ldy #$02                                                ; ?
+    ldy # 2                                                ; ?
     lda [T4E],y
     clc
-    adc #$01
+    adc # 1
     if_ne_then
         sta [T4E],y
     else_end
@@ -674,7 +674,7 @@
     lda T4F
     iny
     sta [T22],y
-    lda #$03                                                ; ?
+    lda # 3                                                ; ?
     iny
     sta [T22],y
     pla
@@ -699,8 +699,8 @@
         lda ZP_0E
         if_eq_then
             ; Show "out of memory"
-            ldx #<RESOURCE_STRING_OUT_OF_MEMORY
-            ldy #>RESOURCE_STRING_OUT_OF_MEMORY
+            ldx # <RESOURCE_STRING_OUT_OF_MEMORY
+            ldy # >RESOURCE_STRING_OUT_OF_MEMORY
             jsr PRINT_STATUS_LINE
             sec
         else_end
@@ -716,14 +716,14 @@
     tya
     pha
     lda T50
-    ldy #$02
+    ldy # 2
     cmp [T4E],y
     if_cs_then
-        ldy #$00
+        ldy # 0
         lda [T4E],y
         if_ne_then
             sta T4F
-            lda #$03
+            lda # 3
             sta T50
         else_end
         jmp _end
@@ -757,11 +757,12 @@
 ;;; changed: A- X- Y- T52:=T4F T53:=T50
 .proc L1BCB
     pha
-    lda T4F
-    sta T52
-    lda T50
-    sta T53
+        lda T4F
+        sta T52
+        lda T50
+        sta T53
     pla
+
     rts
 .endproc
 
@@ -769,10 +770,10 @@
 ;;; changed: A- X- Y-
 .proc L1BD6
     pha
-    lda T52
-    sta T4F
-    lda T53
-    sta T50
+        lda T52
+        sta T4F
+        lda T53
+        sta T50
     pla
 
     rts
@@ -782,10 +783,10 @@
 ;;; changed: A- X- Y-
 .proc L1BE1
     pha
-    lda T4F
-    sta T58
-    lda T50
-    sta T59
+        lda T4F
+        sta T58
+        lda T50
+        sta T59
     pla
 
     rts
@@ -795,10 +796,10 @@
 ;;; changed: A- X- Y-
 .proc L1BEC
     pha
-    lda T58
-    sta T4F
-    lda T59
-    sta T50
+        lda T58
+        sta T4F
+        lda T59
+        sta T50
     pla
 
     rts
@@ -808,68 +809,67 @@
 ;;; changed: A- X- Y-
 .proc L1BF7
     pha
-    txa
-    pha
-    tya
-    pha
-    lda V37D4
-    cmp T4F
-    if_eq_then
-        dec V37D5
-    else_end
-
-    ldy #$02                                                ; ?
-    lda [T4E],y
-    tax
-    cmp T50
-    if_eq_then
-        lda [T4E],y
-        sec
-        sbc #$01                                            ; ?
-        sta [T4E],y
-        ldy T4F
-        jsr L1B9C
         txa
-        cmp #$03                                            ; ?
-        bne L1C27
-        tya
-        jsr L1C55
-        jmp L1C39
-        L1C27:
-        ldy #$02                                            ; ?
-        lda [T57],y
-        cmp T59
-        bcs L1C39
-        ldy #$00                                            ; ?
-        lda [T57],y
-        sta T58
-        lda #$03                                            ; ?
-        sta T59
-        L1C39:
-        jmp _end
-    else
-        lda [T4E],y
-        sec
-        sbc #$01
-        sta [T4E],y
-        from
-            ldy T50
-            iny
-        loop
-            lda [T4E],y
-            dey
-            sta [T4E],y
-        next
-            iny
-            iny
-            bne _loop
-        end
-    end
+        pha
+            tya
+            pha
+                lda V37D4
+                cmp T4F
+                if_eq_then
+                    dec V37D5
+                else_end
 
-    pla
-    tay
-    pla
-    tax
+                ldy # 2
+                lda [T4E],y
+                tax
+                cmp T50
+                if_eq_then
+                    lda [T4E],y
+                    sec
+                    sbc # 1
+                    sta [T4E],y
+                    ldy T4F
+                    jsr L1B9C
+                    txa
+                    cmp # 3
+                    bne L1C27
+                    tya
+                    jsr L1C55
+                    jmp L1C39
+                    L1C27:
+                    ldy # 2
+                    lda [T57],y
+                    cmp T59
+                    bcs L1C39
+                    ldy # 0
+                    lda [T57],y
+                    sta T58
+                    lda # 3
+                    sta T59
+                    L1C39:
+                    jmp _end
+                else
+                    lda [T4E],y
+                    sec
+                    sbc # 1
+                    sta [T4E],y
+                    from
+                        ldy T50
+                        iny
+                    loop
+                        lda [T4E],y
+                        dey
+                        sta [T4E],y
+                    next
+                        iny
+                        iny
+                        bne _loop
+                    end
+                end
+            pla
+            tay
+        pla
+        tax
     pla
 
     rts
@@ -878,14 +878,13 @@
 ;;; summary: ?
 ;;; changed: A- X+ Y+
 .proc L1C55
-    ldy #$00
+    ldy # 0
     sta T23
     cmp V37D7
     if_eq_then
-        ;bne L1C68
         lda [T22],y
         sta V37D7
-        lda #$03                                            ; ?
+        lda # 3
         sta V37D8
     else_end
 
@@ -915,7 +914,7 @@
     end
 
     lda ZP_0E
-    ldy #$00
+    ldy # 0
     sta [T22],y
     lda T23
     sta ZP_0E
@@ -927,31 +926,30 @@
 ;;; changed: A- X- Y-
 .proc L1C99
     pha
-    tya
-    pha
-    lda T50
-    cmp #$03                                                ; ?
-    if_eq_then
-        ldy #$01                                            ; ?
-        lda [T4E],y
-        if_eq_then
-            sec
-            jmp _end
-        else
-            sta T4F
-            iny
-            lda [T4E],y
-            sta T50
-            clc
-        end
-        jmp _end
-    else
-        dec T50
-        clc
-    end
-
-    pla
-    tay
+        tya
+        pha
+            lda T50
+            cmp # 3
+            if_eq_then
+                ldy # 1
+                lda [T4E],y
+                if_eq_then
+                    sec
+                    jmp _end
+                else
+                    sta T4F
+                    iny
+                    lda [T4E],y
+                    sta T50
+                    clc
+                end
+                jmp _end
+            else
+                dec T50
+                clc
+            end
+        pla
+        tay
     pla
 
     rts
@@ -1000,9 +998,9 @@
     dec G_MODE                                              ; G_MODE = 0 = MODE_EDIT
     ; Mode is edit mode
 
-    lda #$01                                                ; ?
+    lda # 1
     jsr L26DA
-    lda #$00
+    lda # 0
     sta TFB
     sta PFD
     jsr L1B77
@@ -1012,7 +1010,7 @@
     
     sta L1EE6
     sta TFC
-    ldy #$00
+    ldy # 0
     lda [TFB],y
     sta ZP_0E
     jsr L1B77
@@ -1039,10 +1037,10 @@
         sta V37D5
         jmp _end
     else
-        eor #$FF                                            ; ?
+        eor # $FF
         sta L1CEA
         lda L1CE7
-        eor #$FF                                            ; ?
+        eor # $FF
         sta L1CE9
         inc L1CE9
         if_eq_then
@@ -1081,10 +1079,10 @@
 
     lda L1EE6
     sta TFC
-    ldx #$01                                                ; ?
+    ldx # 1
     sta V37D9,x
     sta V37E3,x
-    lda #$03                                                ; ?
+    lda # 3
     sta V37ED,x
     lda T4F
     cmp V37D4
@@ -1093,7 +1091,7 @@
         rts
     else_end
 
-    ldy #$00                                                ; ?
+    ldy # 0
     lda L1EE7
     sta PFE
     lda [PFD],y
@@ -1111,12 +1109,12 @@
     sec
     sbc T50
     clc
-    adc #$03                                                ; ?
+    adc # 3
     sta [TFB],y
     ldy T50
     dey
     sty L1EE3
-    ldy #$02                                                ; ?
+    ldy # 2
     sty L1EE4
     from_loop
         inc L1EE3
@@ -1125,7 +1123,7 @@
         lda [T4E],y
         ldy L1EE4
         sta [TFB],y
-        ldy #$02                                            ; ?
+        ldy # 2
         lda [T4E],y
         cmp L1EE3
     next
@@ -1136,20 +1134,20 @@
     sta PFE
     lda V37D4
     sta TFC
-    ldy #$00                    ; ?
+    ldy # 0
     lda [TFB],y
     sta [PFD],y
-    ldy #$02                    ; ?
+    ldy # 2
     lda [TFB],y
     sec
     sbc V37D5
     clc
-    adc #$03                    ; ?
+    adc # 3
     sta [PFD],y
     ldy V37D5
     dey
     sty L1EE3
-    ldy #$02                                                ; ?
+    ldy # 2
     sty L1EE4
     from_loop
         inc L1EE3
@@ -1159,21 +1157,21 @@
         ldy L1EE4
         sta [PFD],y
     next
-        ldy #$02                                            ; ?
+        ldy # 2
         lda [TFB],y
         cmp L1EE3
         bne _loop
     end
 
-    ldy #$02                                                ; ?
+    ldy # 2
     lda V37D5
     sta [TFB],y
     tay
-    lda #$00
+    lda # 0
     sta [TFB],y
     tay
     sta [TFB],y
-    ldy #$01                                                ; ?
+    ldy # 1
     lda T4F
     sta [PFD],y
     dey
@@ -1188,21 +1186,21 @@
     else_end
 
     lda T50
-    cmp #$03                                                ; ?
+    cmp # 3
     if_eq_then
         lda T4F
         jsr L1C55
         jmp _end
     else
         sec
-        sbc #$01
-        ldy #$02                                            ; ?
+        sbc # 1
+        ldy # 2
         sta [T4E],y
     end
 
     lda PFE
     sta T4F
-    lda #$03                                                ; ?
+    lda # 3
     sta T50
     jsr L21A2
 
@@ -1227,7 +1225,7 @@
     from
         ldy T50
         sty L1EE3
-        ldy #$03                                            ; ?
+        ldy # 3
         sty L1EE4
     loop
         ldy L1EE3
@@ -1241,7 +1239,7 @@
         bne _loop
     end
 
-    lda #$00
+    lda # 0
     tay
     sta [TFB],y
     iny
@@ -1250,7 +1248,7 @@
     iny
     sta [TFB],y
     tay
-    lda #$00
+    lda # 0
     sta [TFB],y
 
     from
@@ -1267,7 +1265,7 @@
         lda [T4E],y
         ldy L1EE4
         sta [T4E],y
-        ldy #$02                                            ; ?
+        ldy # 2
         lda [T4E],y
         cmp L1EE3
         bne _loop
@@ -1291,7 +1289,7 @@
 
     ; Mode is edit mode
 
-    ldx #$01
+    ldx # 1
     lda V37D9,x
     jsr L1FFE
     sta L1EE5
@@ -1301,8 +1299,8 @@
     cmp L1EE5
     if_cc_then
         ; Show "not enough memory"
-        ldx #<RESOURCE_STRING_NOT_ENOUGH_MEMORY
-        ldy #>RESOURCE_STRING_NOT_ENOUGH_MEMORY
+        ldx # <RESOURCE_STRING_NOT_ENOUGH_MEMORY
+        ldy # >RESOURCE_STRING_NOT_ENOUGH_MEMORY
         jsr PRINT_STATUS_LINE
         rts
     else_end
@@ -1315,7 +1313,7 @@
     lda P39
     adc L1CEA
     sta P39
-    lda #$00
+    lda # 0
     sta TFB
     sta PFD
     tay
@@ -1323,7 +1321,7 @@
     pha
     lda T4F
     sta TFC
-    ldx #$01
+    ldx # 1
     lda V37D9,x
     if_eq_then
         pla
@@ -1335,7 +1333,7 @@
         lda TFC
         pha
         jsr L1B77
-        ldy #$00
+        ldy # 0
         sta [TFB],y
         sta TFC
         lda [TFB],y
@@ -1359,7 +1357,7 @@
     lda TFC
     sta L1EE5
     jsr L1B77
-    ldy #$00
+    ldy # 0
     sta [TFB],y
     sta TFC
     lda [TFB],y
@@ -1370,7 +1368,7 @@
     pla
     dey
     sta [TFB],y
-    cmp #$00
+    cmp # 0
     if_ne_then
         sta PFE
         lda TFC
@@ -1382,7 +1380,7 @@
         ldy T50
         dey
         sty L1EE3
-        ldy #$02
+        ldy # 2
         sty L1EE4
     loop
         inc L1EE3
@@ -1392,7 +1390,7 @@
         ldy L1EE4
         sta [TFB],y
     next
-        ldy #$02
+        ldy # 2
         lda [T4E],y
         cmp L1EE3
         bne _loop
@@ -1401,41 +1399,41 @@
     lda L1EE4
     sta [TFB],y
     lda T50
-    cmp #$03
+    cmp # 3
     if_eq_then
         lda T4F
         jsr L1C55
         jmp _end
     else
         sec
-        sbc #$01
-        ldy #$02
+        sbc # 1
+        ldy # 2
         sta [T4E],y
     end
 
     lda TFC
     sta T4F
-    lda #$03
+    lda # 3
     sta T50
     lda L1EE5
     sta PFE
-    ldy #$02
+    ldy # 2
     lda [PFD],y
-    cmp #$03
+    cmp # 3
     if_eq_then
         lda PFE
         jsr L1C55
         jmp _end
     else
         sec
-        sbc #$01
+        sbc # 1
         sta [PFD],y
     end
 
     lda T5A
-    cmp #BUMP_TOP - 1
+    cmp # BUMP_TOP - 1
     if_cc_then
-        lda #BUMP_TOP - 1
+        lda # BUMP_TOP - 1
         sta T5A
     else_end
 
@@ -1447,13 +1445,13 @@
 ;;; summary: ?
 ;;; changed: ...
 .proc L1FFE
-    cmp #$00
+    cmp # 0
     if_eq_then
         rts
     else_end
 
     sta TFC
-    lda #$00
+    lda # 0
     sta TFB
     tax
     tay
@@ -1474,7 +1472,7 @@
 ;;; summary: ?
 ;;; changed: ...
 .proc L2017
-    lda #$00
+    lda # 0
     sta T5C
     sta T5E
     sta V3787
@@ -1488,7 +1486,7 @@
     from_loop
         pla
         sta T5D
-        ldy #$00
+        ldy # 0
         lda [T5C],y
         if_eq_then
             clc
@@ -1496,9 +1494,9 @@
         else_end
     next
         pha
-        ldy #$02
+        ldy # 2
         lda [T5C],y
-        cmp #$FF
+        cmp # $FF
         beq _loop
     end
 
@@ -1532,10 +1530,10 @@
     else_end
 
     from
-        ldy #$02
+        ldy # 2
         lda [T5E],y
         sta V3785
-        ldy #$03
+        ldy # 3
         sty V3784
     loop
         ldy V3784
@@ -1607,7 +1605,7 @@
         if_eq_then
             lda T5F
             jsr L1C55
-            ldy #$02
+            ldy # 2
             lda V3783
             sta [T5C],y
             clc
@@ -1621,14 +1619,14 @@
     end
 
     from
-        lda #$FF
-        ldy #$02
+        lda # $FF
+        ldy # 2
         sta [T5C],y
         iny
         sty V3783
         lda V3784
         sec
-        sbc #$03
+        sbc # 3
         sta V3786
         inc V3785
         ldy V3784
@@ -1687,7 +1685,7 @@
     lda V3785
     clc
     sbc V3786
-    ldy #$02
+    ldy # 2
     sta [T5E],y
     sec
 
@@ -1697,7 +1695,7 @@
 ;;; summary: ?
 ;;; changed: ...
 .proc L219D
-    lda #$00
+    lda # 0
     pha
     beq L21A5                                               ; bra
 .endproc
@@ -1705,7 +1703,7 @@
 ;;; summary: ?
 ;;; changed: ...
 .proc L21A2
-    lda #$01
+    lda # 1
     pha
 .endproc
 
@@ -1715,13 +1713,12 @@
     jsr L1BCB
     jsr L1BBC
     if_cc_then
-        ;bcs L21B7
         jsr L1B9C
         jsr L19DD
         dex
         jmp _end
     else
-        ldx #$00
+        ldx # 0
     end
 
     stx P35
@@ -1732,7 +1729,7 @@
     if_cc_then
         lda P35
         sta T5B
-        lda #$00
+        lda # 0
     else_end
 
     sta P36
@@ -1747,11 +1744,11 @@
     else_end
 
     jsr L333B                                               ; A+ L3380+ L337F+
-    lda #>COLOR_RAM_BASE
+    lda # >COLOR_RAM_BASE
     sta TFB
-    lda #>(OUR_VIDEO_MATRIX_BASE - 1)
+    lda # >(OUR_VIDEO_MATRIX_BASE - 1)
     sta TFC
-    lda #<(OUR_VIDEO_MATRIX_BASE - 1)
+    lda # <(OUR_VIDEO_MATRIX_BASE - 1)
     sta PFE
     ldx V37D7
     ldy V37D8
@@ -1760,7 +1757,7 @@
         from_loop
             lda TFB
             clc
-            adc #VIC_CHAR_COLUMNS
+            adc # VIC_CHAR_COLUMNS
             sta TFB
             if_cs_then
                 inc TFC
@@ -1775,7 +1772,7 @@
                 if_cs_then
                     cmp L3380
                     if_cc_then
-                        lda #$80                            ; ?
+                        lda # $80
                         sta L2340
                     else_end
                 else_end
@@ -1785,7 +1782,7 @@
             bcs _catch
         next
             lda PFE
-            cmp #EDIT_PANEL_LAST_LINE
+            cmp # EDIT_PANEL_LAST_LINE
             bne _loop
         end
 
@@ -1817,18 +1814,18 @@
 
     from_loop
         lda PFE
-        cmp #EDIT_PANEL_LAST_LINE
+        cmp # EDIT_PANEL_LAST_LINE
         beq _end                                            ; break
         clc
         lda TFB
-        adc #VIC_CHAR_COLUMNS
+        adc # VIC_CHAR_COLUMNS
         sta TFB
         if_cs_then
             inc TFC
         else_end
 
-        lda #PETSCII_SPACE
-        ldy #VIC_CHAR_COLUMNS - 1
+        lda # PETSCII_SPACE
+        ldy # VIC_CHAR_COLUMNS - 1
         from_loop
             sta [TFB],y
         next
@@ -1843,7 +1840,7 @@
     jsr L1BD6
     pla
     if_ne_then
-        lda #$00
+        lda # 0
         sta ZPKERNAL_PNT_HI
         lda T5A
         asl
@@ -1856,7 +1853,7 @@
         rol ZPKERNAL_PNT_HI
         sta ZPKERNAL_PNT_LO
         lda ZPKERNAL_PNT_HI
-        adc #>OUR_VIDEO_MATRIX_BASE
+        adc # >OUR_VIDEO_MATRIX_BASE
         sta ZPKERNAL_PNT_HI
     else_end
 
@@ -1868,7 +1865,7 @@
 ;;; summary: ?
 ;;; changed: A+ X=Y' Y=2
 .proc L2290
-    lda #$00
+    lda # 0
     sta T5C
     sta Z96
 
@@ -1877,7 +1874,7 @@
 
     tya
     tax
-    ldy #$02
+    ldy # 2
     lda [T5C],y
     sta V378C
 
@@ -1901,8 +1898,8 @@
         txa
         pha
             ; Show "[bottom]"
-            ldx #<RESOURCE_STRING_BOTTOM
-            ldy #>RESOURCE_STRING_BOTTOM
+            ldx # <RESOURCE_STRING_BOTTOM
+            ldy # >RESOURCE_STRING_BOTTOM
             jsr PRINT_FILL_LINE                             ; A+ X- Y+
         pla
         tax
@@ -1921,9 +1918,9 @@
                 lda [Z96],y
             ldy Z9B
 
-            cmp #PETSCII_RETURN
+            cmp # PETSCII_RETURN
             if_eq_then
-                ldy #$00
+                ldy # 0
                 jmp L2319                                   ; break break
             else_end
 
@@ -1946,9 +1943,9 @@
             lda [Z96],y
         ldy Z9B
 
-        cmp #PETSCII_RETURN
+        cmp # PETSCII_RETURN
         beq L2319                                           ; break
-        cpy #VIC_CHAR_COLUMNS
+        cpy # VIC_CHAR_COLUMNS
         ;if_eq_then
             bne L2304
             ;from_loop
@@ -1965,7 +1962,7 @@
                     lda [Z96],y
                 ldy Z9B
             ;next
-                cmp #PETSCII_RETURN
+                cmp # PETSCII_RETURN
                 bne L22F1
             ;end
 
@@ -1994,10 +1991,10 @@
 
     inx
     from
-        lda #PETSCII_SPACE
+        lda # PETSCII_SPACE
         eor L2340
     loop
-        cpy #VIC_CHAR_COLUMNS
+        cpy # VIC_CHAR_COLUMNS
         beq _end                                            ; break
         sta [TFB],y
     next
@@ -2005,7 +2002,7 @@
         bne _loop
     end
 
-    lda #$00
+    lda # 0
     sta L2340
     clc
 
@@ -2014,21 +2011,21 @@
 
 ;;; summary: ?
 ;;; changed:
-;;;   A+ X:=2 Y-
+;;;   A+  X=2  Y-
 ;;;   L22BA := L22D0 := L22E8 := L22FC := T5D := Z97 := [T5C],0
 ;;;   V378C := [T5C],2
 .proc L2341
     tya
     pha
-        ldy #$00
+        ldy # 0
         lda [T5C],y
         sta T5D
         sta Z97
 
-        ldy #$02
+        ldy # 2
         lda [T5C],y
         sta V378C
-        ldx #$02
+        ldx # 2
     pla
     tay
 
@@ -2043,7 +2040,7 @@
     from
         stx T5C
         sty T5D
-        ldy #$00
+        ldy # 0
     loop
         lda [T5C],y
         beq _end                                            ; break
@@ -2057,9 +2054,9 @@
     tya
     pha
     from
-        lda #PETSCII_SPACE
+        lda # PETSCII_SPACE
     loop
-        cpy #VIC_CHAR_COLUMNS
+        cpy # VIC_CHAR_COLUMNS
         beq _end                                            ; break
         sta [TFB],y
     next
@@ -2091,7 +2088,7 @@
 
     jsr L1B9C
     lda T5A
-    cmp #BUMP_BOTTOM
+    cmp # BUMP_BOTTOM
     if_cc_then
         jsr MOVE_CURSOR_DOWN                                ; A+ X- Y- ZPKERNAL_PNT_LO+ ZPKERNAL_PNT_HI+ T5A+
         jsr L2649
@@ -2100,7 +2097,7 @@
         jsr L2671
     end
 
-    lda #$00
+    lda # 0
     sta T5B
     inc P38
     if_eq_then
@@ -2115,17 +2112,17 @@
 ;;; summary: ?
 ;;; changed: ...
 .proc L23B1
-    lda #>OUR_VIDEO_MATRIX_BASE
+    lda # >OUR_VIDEO_MATRIX_BASE
     sta T5D
     sta T5F
-    lda #<OUR_VIDEO_MATRIX_BASE
+    lda # <OUR_VIDEO_MATRIX_BASE
     sta T5C
-    lda #VIC_CHAR_COLUMNS
+    lda # VIC_CHAR_COLUMNS
     sta T5E
-    ldx #EDIT_PANEL_LAST_LINE
+    ldx # EDIT_PANEL_LAST_LINE
     from_loop
         from
-            ldy #VIC_CHAR_COLUMNS - 1
+            ldy # VIC_CHAR_COLUMNS - 1
         loop
             lda [T5E],y
             sta [T5C],y
@@ -2139,7 +2136,7 @@
         lda T5E
         sta T5C
         clc
-        adc #VIC_CHAR_COLUMNS
+        adc # VIC_CHAR_COLUMNS
         sta T5E
         if_cs_then
             inc T5F
@@ -2156,17 +2153,17 @@
 ;;; changed: ...
 .proc L23DF
     from
-        lda #<EDIT_PANEL_LAST_LINE_START_VM
+        lda # <EDIT_PANEL_LAST_LINE_START_VM
         sta T5C
-        lda #<EDIT_PANEL_BEFORE_LAST_LINE_START_VM
+        lda # <EDIT_PANEL_BEFORE_LAST_LINE_START_VM
         sta T5E
-        lda #>EDIT_PANEL_LAST_LINE_START_VM
+        lda # >EDIT_PANEL_LAST_LINE_START_VM
         sta T5D
         sta T5F
-        ldx #EDIT_PANEL_LAST_LINE
+        ldx # EDIT_PANEL_LAST_LINE
     loop
         from
-            ldy #VIC_CHAR_COLUMNS - 1
+            ldy # VIC_CHAR_COLUMNS - 1
         loop
             lda [T5E],y
             sta [T5C],y
@@ -2180,7 +2177,7 @@
         lda T5E
         sta T5C
         clc
-        adc #>COLOR_RAM_BASE
+        adc # >COLOR_RAM_BASE
         sta T5E
         if_cc_then
             dec T5F
@@ -2197,11 +2194,11 @@
 ;;; changed: A+, V378D+
 .proc L240D
     pha
-    and #$7F                                                ; Clear reverse bit?
-    cmp #PETSCII_SPACE
-    ; A < $20  -> C=0
-    ; A >= $20 -> C=1
-    ror V378D
+        and # $7F                                           ; Clear reverse bit?
+        cmp # PETSCII_SPACE
+        ; A < $20  -> C=0
+        ; A >= $20 -> C=1
+        ror V378D
     pla
     asl
     ror V378D
@@ -2210,30 +2207,30 @@
     ror
     asl V378D
     ror
-    eor #$80                                                ; ?
+    eor # $80
     rts
 .endproc
 
 ;;; summary: ?
 ;;; changed: ...
 .proc L2426
-    lda #<COMMAND_PANEL_FIRST_LINE_START_VM
+    lda # <COMMAND_PANEL_FIRST_LINE_START_VM
     sta TFB
-    lda #>COMMAND_PANEL_FIRST_LINE_START_VM
+    lda # >COMMAND_PANEL_FIRST_LINE_START_VM
     sta TFC
     jsr PRINT_FILL_LINE                                     ; A+ X- Y+
     from
-        ldx #$00
+        ldx # 0
     loop
         jsr L247D
         jsr L24E6
-        cmp #PETSCII_DELETE
+        cmp # PETSCII_DELETE
         if_eq_then
-            cpx #$00
+            cpx # 0
             if_ne_then
                 dex
                 dey
-                lda #PETSCII_SPACE
+                lda # PETSCII_SPACE
                 sta [TFB],y
             else_end
 
@@ -2244,14 +2241,13 @@
             if_ne_then
                 ;beq L2464
                 pla
-                cmp #PETSCII_F3
+                cmp # PETSCII_F3
                 if_eq_then
-                    ;bne L2459
                     sta V378E,x
                     rts
                 else_end
 
-                cmp #PETSCII_F4
+                cmp # PETSCII_F4
                 if_eq_then
                     sta V378E,x
                     rts
@@ -2261,14 +2257,14 @@
             else_end
 
             pla
-            cmp #PETSCII_RETURN
+            cmp # PETSCII_RETURN
             if_eq_then
                 jmp L249D
             else_end
 
     L246C:
 
-            cpy #VIC_CHAR_COLUMNS - 1
+            cpy # VIC_CHAR_COLUMNS - 1
             if_ne_then
                 sta V378E,x
                 jsr L240D                                   ; A+, V378D+
@@ -2286,38 +2282,38 @@
 
     tya
     pha
-    ldy #$00
-    cpx #$00
-    if_ne_then
-        lda V378E
-        cmp #PETSCII_LATIN_LETTER_A
-        if_cc_then
-            ldy #$01
-            jmp L2497
+        ldy # 0
+        cpx # 0
+        if_ne_then
+            lda V378E
+            cmp # PETSCII_LATIN_LETTER_A
+            if_cc_then
+                ldy #$01
+                jmp L2497
+            else_end
+
+            cmp # PETSCII_LATIN_LETTER_Z + 1
+            if_cs_then
+                ldy # 1
+            else_end
         else_end
 
-        cmp #PETSCII_LATIN_LETTER_Z + 1
-        if_cs_then
-            ldy #$01
-        else_end
-    else_end
-
-    L2497:
-    sty L24E5
+        L2497:
+        sty L24E5
     pla
     tay
     rts
 
     L249D:
-    cpx #$00
+    cpx # 0
     if_ne_then
         from_loop
             dex
             lda V378E,x
-            cmp #PETSCII_QUOTATION_MARK
+            cmp # PETSCII_QUOTATION_MARK
             beq L24AE
         next
-            cmp #PETSCII_SPACE
+            cmp # PETSCII_SPACE
             beq _loop
         end
 
@@ -2325,11 +2321,11 @@
     else_end
     
     L24AE:
-    lda #$00
+    lda # 0
     sta V378E,x
     sta V37B1
     from
-        ldx #$FF
+        ldx # $FF
     loop
         inx
         lda V378E,x
@@ -2337,11 +2333,11 @@
             rts
         else_end
 
-        cmp #PETSCII_SPACE
+        cmp # PETSCII_SPACE
         bne _loop
     end
 
-    lda #$00
+    lda # 0
     sta V378E,x
     from_loop
         inx
@@ -2350,16 +2346,16 @@
         rts
         L24CF:
 
-        cmp #PETSCII_QUOTATION_MARK
+        cmp # PETSCII_QUOTATION_MARK
         beq L24D8
-        cmp #PETSCII_SPACE
+        cmp # PETSCII_SPACE
         beq _loop
     end
 
     dex
     L24D8:
     from
-        ldy #$FF
+        ldy # $FF
     loop
         inx
         iny
@@ -2383,7 +2379,7 @@
             pha
             jsr KERNAL_GETIN
             if_ne_then
-                cmp #PETSCII_SPACE
+                cmp # PETSCII_SPACE
                 bne _catch
                 ldx L251F
                 bne _catch
@@ -2394,7 +2390,7 @@
             lda ZPKERNAL_TIME_2
             sec
             sbc L251E
-            cmp #CURSOR_BLINK_DELAY
+            cmp # CURSOR_BLINK_DELAY
             if_pl_then
                 jsr L2521
             else_end
@@ -2407,7 +2403,7 @@
     pla
     tay
     ldx L251F
-    lda #PETSCII_SPACE
+    lda # PETSCII_SPACE
     sta [TFB],y
     lda L2520
 
@@ -2418,7 +2414,7 @@
 ;;; changed: ...
 .proc L2521
     lda [TFB],y
-    eor #$80                                                ; ?
+    eor # $80
     sta [TFB],y
     lda ZPKERNAL_TIME_2
     sta L251E
@@ -2429,16 +2425,16 @@
 ;;; summary: Show X#Y on command/status line 
 ;;; changed: TFB, TFC
 .proc PRINT_STATUS_LINE
-    lda #<COMMAND_PANEL_FIRST_LINE_START_VM
+    lda # <COMMAND_PANEL_FIRST_LINE_START_VM
     sta TFB
-    lda #>COMMAND_PANEL_FIRST_LINE_START_VM
+    lda # >COMMAND_PANEL_FIRST_LINE_START_VM
     sta TFC
     jsr PRINT_FILL_LINE                                     ; A+ X- Y+
     jsr KERNAL_CLRCHN
     from_loop
         jsr L24E6
     next
-        cmp #PETSCII_RETURN
+        cmp # PETSCII_RETURN
         bne _loop
     end
 
@@ -2457,7 +2453,7 @@
         asl
         asl
         tay
-        ldx #$00
+        ldx # 0
     loop
         lda BUFFER_NAME_TABLE,y
         beq _end                                            ; break
@@ -2469,12 +2465,12 @@
     end
 
     from
-        lda #PETSCII_SPACE
+        lda # PETSCII_SPACE
     loop
         sta L259D,x
     next
         inx
-        cpx #BUFFER_NAME_TABLE_ENTRY_SIZE
+        cpx # BUFFER_NAME_TABLE_ENTRY_SIZE
         bne _loop
     end
 
@@ -2487,7 +2483,7 @@
 
     jsr INT_TO_STRING
     from
-        ldx #$03
+        ldx # 3
     loop
         lda L2623,x
         sta L25B1,x
@@ -2498,25 +2494,25 @@
 
     ldx     P35
     inx
-    ldy     #$00
+    ldy     # 0
     jsr     INT_TO_STRING
     from
-        ldx     #$02
+        ldx # 2
     loop
-        lda     L2623,x
-        sta     L25BE,x
+        lda L2623,x
+        sta L25BE,x
     next
         dex
         bpl _loop
     end
 
-    lda #<COMMAND_PANEL_FIRST_LINE_START_VM
+    lda # <COMMAND_PANEL_FIRST_LINE_START_VM
     sta TFB
-    lda #>COMMAND_PANEL_FIRST_LINE_START_VM
+    lda # >COMMAND_PANEL_FIRST_LINE_START_VM
     sta TFC
     ; Show/update status line
-    ldx #<STATUS_LINE_CONTENT
-    ldy #>STATUS_LINE_CONTENT
+    ldx # <STATUS_LINE_CONTENT
+    ldy # >STATUS_LINE_CONTENT
     jsr PRINT_FILL_LINE                                     ; A+ X- Y+
 
     rts
@@ -2531,8 +2527,8 @@
     sty BH
     ; Clear INT_TO_STRING_RESULT
     from
-        ldx #INT_TO_STRING_DIGIT_COUNT - 1
-        lda #PETSCII_SPACE
+        ldx # INT_TO_STRING_DIGIT_COUNT - 1
+        lda # PETSCII_SPACE
     loop
         sta INT_TO_STRING_RESULT,x
     next
@@ -2541,11 +2537,11 @@
     end
 
     from
-        ldx #$00
-        ldy #INT_TO_STRING_DIGIT_COUNT - 1
+        ldx # 0
+        ldy # INT_TO_STRING_DIGIT_COUNT - 1
     loop
         from
-            lda #$00
+            lda # 0
             sta CH
         loop
             sec
@@ -2565,11 +2561,11 @@
 
         lda CH
         bne L2604
-        cpx #$00
+        cpx # 0
         beq L260B
         L2604:
         clc
-        adc #PETSCII_DIGIT_ZERO
+        adc # PETSCII_DIGIT_ZERO
         sta INT_TO_STRING_RESULT,x
         inx
         L260B:
@@ -2580,7 +2576,7 @@
 
     txa
     if_eq_then
-        lda #PETSCII_DIGIT_ZERO
+        lda # PETSCII_DIGIT_ZERO
         sta INT_TO_STRING_RESULT
     else_end
 
@@ -2613,7 +2609,7 @@
 ;;; changed: ...
 .proc L2649
     lda V37D6
-    cmp #EDIT_PANEL_LAST_LINE
+    cmp # EDIT_PANEL_LAST_LINE
     if_ne_then
         inc V37D6
         rts
@@ -2678,7 +2674,7 @@
     sta V37D9,x
     sta V37E3,x
     sta TFC
-    lda #$00
+    lda # 0
     sta TFB
     tay
     lda [TFB],y
@@ -2687,11 +2683,11 @@
     sta [TFB],y
     iny
     sta [TFB],y
-    lda #$03
+    lda # 3
     iny
     sta [TFB],y
     sta V37ED,x
-    lda #$00
+    lda # 0
     sta V37F7,x
     sta V3801,x
     iny
@@ -2710,7 +2706,7 @@
     else_end
 
     sta TFC
-    lda #$00
+    lda # 0
     sta TFB
     sta V37D9,x
     tay
@@ -2745,7 +2741,7 @@
         sta P38
         lda V3801,x
         sta P39
-        lda #$00
+        lda # 0
         sta T5A
     else_end
 
@@ -2812,22 +2808,22 @@
 .proc L2784
     sta L2808
     from
-        lda #<V37B1
+        lda # <V37B1
         sta TFB
-        lda #>V37B1
+        lda # >V37B1
         sta TFC
-        lda #<BUFFER_NAME_TABLE
+        lda # <BUFFER_NAME_TABLE
         sta PFD
-        lda #>BUFFER_NAME_TABLE
+        lda # >BUFFER_NAME_TABLE
         sta PFE
-        ldx #$00
+        ldx # 0
     loop
         stx L2807
-        lda #$FF
+        lda # $FF
         jsr STRING_COMPARE_SIGNIFICANT
         bne L27B2
         ldx L2807
-        cpx #$02
+        cpx # 2
         bcs L27AD
         L27AA:
         txa
@@ -2839,7 +2835,7 @@
         L27B2:
         lda PFD
         clc
-        adc #$08
+        adc # 8
         sta PFD
         bcc L27BD
         inc PFE
@@ -2847,7 +2843,7 @@
     next
         ldx L2807
         inx
-        cpx #$0A
+        cpx # 10
         bne _loop
     end
 
@@ -2858,18 +2854,18 @@
     else_end
 
     from
-        ldx #$02
+        ldx # 2
     loop
         lda V37D9,x
         beq L27E1
         inx
-        cpx #$0A                                            ; ?
+        cpx # 10
         bne _loop
     end
 
     ; Show "no more free files"
-    ldx #<RESOURCE_STRING_NO_MORE_FREE_FILES
-    ldy #>RESOURCE_STRING_NO_MORE_FREE_FILES
+    ldx # <RESOURCE_STRING_NO_MORE_FREE_FILES
+    ldy # >RESOURCE_STRING_NO_MORE_FREE_FILES
     jsr PRINT_STATUS_LINE
     sec
     rts
@@ -2882,22 +2878,22 @@
         asl
         asl
         asl
-        adc #<BUFFER_NAME_TABLE
+        adc # <BUFFER_NAME_TABLE
         sta TFB
-        lda #$00
-        adc #>BUFFER_NAME_TABLE
+        lda # 0
+        adc # >BUFFER_NAME_TABLE
         sta TFC
-        ldy #$00
+        ldy # 0
     loop
         lda V37B1,y
         sta [TFB],y
     next
         iny
-        cpy #BUFFER_NAME_TABLE_ENTRY_SIZE - 1               ; $07 = 7 ; -1 because of '\0'
+        cpy # BUFFER_NAME_TABLE_ENTRY_SIZE - 1               ; -1 because of '\0'
         bne _loop
     end
 
-    lda     #$00
+    lda     # 0
     sta     [TFB],y
     lda     L2807
     clc
@@ -2907,22 +2903,22 @@
 ;;; summary: Command: List buffers
 ;;; changed: ...
 .proc CMD_LIST
-    lda #PETSCII_CLR
+    lda # PETSCII_CLR
     jsr KERNAL_CHROUT
     jsr L1A89
-    ;--lda #PETSCII_BLACK
+    ;--lda # PETSCII_BLACK
     ;--jsr KERNAL_CHROUT
  
     ; Show header
-    ldx #<RESOURCE_STRING_LIST_HEADER
-    ldy #>RESOURCE_STRING_LIST_HEADER
+    ldx # <RESOURCE_STRING_LIST_HEADER
+    ldy # >RESOURCE_STRING_LIST_HEADER
     jsr L293D
     from
-        lda #<BUFFER_NAME_TABLE
+        lda # <BUFFER_NAME_TABLE
         sta T5C
-        lda #>BUFFER_NAME_TABLE
+        lda # >BUFFER_NAME_TABLE
         sta T5D
-        ldx #$00
+        ldx # 0
     loop
         stx L2807
         cpx ZPKERNAL_CMP0
@@ -2939,11 +2935,11 @@
             ldy T5D
             jsr L293D
             from_loop
-                lda #PETSCII_SPACE
+                lda # PETSCII_SPACE
                 jsr KERNAL_CHROUT
             next
                 iny
-                cpy #PETSCII_RETURN
+                cpy # PETSCII_RETURN
                 bne _loop
             end
 
@@ -2955,13 +2951,13 @@
             jsr KERNAL_CHROUT
             tya
             jsr KERNAL_CHROUT
-            lda #PETSCII_RETURN
+            lda # PETSCII_RETURN
             jsr KERNAL_CHROUT
         else_end
 
         lda T5C
         clc
-        adc #BUFFER_NAME_TABLE_ENTRY_SIZE
+        adc # BUFFER_NAME_TABLE_ENTRY_SIZE
         sta T5C
         if_cs_then
             inc T5D
@@ -2969,13 +2965,13 @@
     next
         ldx L2807
         inx
-        cpx #BUFFER_NAME_TABLE_ENTRY_COUNT
+        cpx # BUFFER_NAME_TABLE_ENTRY_COUNT
         bne _loop
     end
 
     ; Show footer
-    ldx #<RESOURCE_STRING_LIST_FOOTER
-    ldy #>RESOURCE_STRING_LIST_FOOTER
+    ldx # <RESOURCE_STRING_LIST_FOOTER
+    ldy # >RESOURCE_STRING_LIST_FOOTER
     jsr L293D
     lda ZP_0E
     jsr L1FFE
@@ -2986,8 +2982,8 @@
     tya
     jsr KERNAL_CHROUT
     ; Show "hit return to continue"
-    ldx #<RESOURCE_STRING_HIT_RETURN_TO_CONTINUE
-    ldy #>RESOURCE_STRING_HIT_RETURN_TO_CONTINUE
+    ldx # <RESOURCE_STRING_HIT_RETURN_TO_CONTINUE
+    ldy # >RESOURCE_STRING_HIT_RETURN_TO_CONTINUE
     jsr PRINT_STATUS_LINE
     jsr L1A89
 
@@ -3000,7 +2996,7 @@
     from
         stx T5E
         sty T5F
-        ldy #$00
+        ldy # 0
     loop
         lda [T5E],y
         beq _end                                            ; break
@@ -3018,16 +3014,16 @@
 ;;; return: A, X, Y
 .proc A_TO_DECIMAL_3_A_X_Y
     from
-        ldx #PETSCII_SPACE
-        ldy #PETSCII_SPACE
+        ldx # PETSCII_SPACE
+        ldy # PETSCII_SPACE
     loop
         sec
         sbc # 100
         bcc _end
-        cpx #PETSCII_SPACE
+        cpx # PETSCII_SPACE
         if_eq_then
-            ldx #PETSCII_DIGIT_ZERO
-            ldy #PETSCII_DIGIT_ZERO
+            ldx # PETSCII_DIGIT_ZERO
+            ldy # PETSCII_DIGIT_ZERO
         else_end
     next
         inx
@@ -3039,10 +3035,9 @@
         sec
         sbc # 10
         bcc _end                                            ; break
-        cpy #PETSCII_SPACE
+        cpy # PETSCII_SPACE
         if_eq_then
-            ;bne L2970
-            ldy #PETSCII_DIGIT_ZERO
+            ldy # PETSCII_DIGIT_ZERO
         else_end
     next
         iny
@@ -3063,8 +3058,8 @@
 .proc CMD_COMMAND_MODE
     from_loop
         ; Show "cmd: " on command line
-        ldx #<RESOURCE_STRING_COMMAND_PROMPT
-        ldy #>RESOURCE_STRING_COMMAND_PROMPT
+        ldx # <RESOURCE_STRING_COMMAND_PROMPT
+        ldy # >RESOURCE_STRING_COMMAND_PROMPT
         jsr L2426
         lda V378E
         if_eq_then
@@ -3073,9 +3068,9 @@
         else_end
 
         if
-            cmp #PETSCII_LATIN_LETTER_A
+            cmp # PETSCII_LATIN_LETTER_A
             bcc _then
-            cmp #PETSCII_LATIN_LETTER_Z + 1
+            cmp # PETSCII_LATIN_LETTER_Z + 1
             bcc _end
         then
             jsr L2D74
@@ -3083,15 +3078,15 @@
         else_end
 
         from
-            lda #<COMMAND_NAME_TABLE
+            lda # <COMMAND_NAME_TABLE
             sta TFB
-            lda #>COMMAND_NAME_TABLE
+            lda # >COMMAND_NAME_TABLE
             sta TFC
-            lda #<V378E
+            lda # <V378E
             sta PFD
-            lda #>V378E
+            lda # >V378E
             sta PFE
-            ldx #0
+            ldx # 0
         loop
             stx T_COMMAND_INDEX
             lda COMMAND_NAME_SIGNIFICANT_CHAR_COUNT,x
@@ -3099,7 +3094,7 @@
             beq EXECUTE_COMMAND
             lda TFB
             clc
-            adc #COMMAND_NAME_LENGTH
+            adc # COMMAND_NAME_LENGTH
             sta TFB
             if_cs_then
                 inc TFC
@@ -3107,14 +3102,14 @@
         next
             ldx T_COMMAND_INDEX
             inx
-            cpx #COMMAND_COUNT
+            cpx # COMMAND_COUNT
             bne _loop
         end
 
         ; Command not found
         ; Show "invalid command"
-        ldx #<RESOURCE_STRING_INVALID_COMMAND
-        ldy #>RESOURCE_STRING_INVALID_COMMAND
+        ldx # <RESOURCE_STRING_INVALID_COMMAND
+        ldy # >RESOURCE_STRING_INVALID_COMMAND
         jsr PRINT_STATUS_LINE
     next
         jmp _loop
@@ -3143,7 +3138,7 @@
 
 ;;; summary: Command: Clear current buffer
 .proc CMD_CLEAR
-    lda #MODE_EDIT
+    lda # MODE_EDIT
     sta G_MODE
     lda V37B1
     if_eq_then
@@ -3152,12 +3147,12 @@
         lda ZPKERNAL_CMP0
         jmp _end
     else
-        lda #$00
+        lda # 0
         jsr L2784
         if_cs_then
             rts
         else_end
-        cmp #$01
+        cmp # 1
         if_eq_then
             rts
         else_end
@@ -3176,7 +3171,7 @@
         rts
     else_end
 
-    lda #$01
+    lda # 1
     jsr L2784
     if_cs_then
         rts
@@ -3187,18 +3182,18 @@
         rts
     else_end
 
-    cmp #BUFFER_INDEX_PASTE
+    cmp # BUFFER_INDEX_PASTE
     if_eq_then
         ; User may not go to "paste" edit buffer.
         rts
     else_end
 
     jsr L272C
-    lda #MODE_EDIT
+    lda # MODE_EDIT
     sta G_MODE
-    lda #$0C                                                ; ?
+    lda # $0C                                                ; ?
     sta T5A
-    lda #$27                                                ; ?
+    lda # $27                                                ; ?
     sta T5B
 
     rts
@@ -3209,24 +3204,24 @@
 .proc L2AB7
     pha
     ; Close disk command channel
-    lda #DISK_CMD_FH
+    lda # DISK_CMD_FH
     jsr KERNAL_CLOSE
     ; Open disk command channel
-    lda #DISK_CMD_FH
+    lda # DISK_CMD_FH
     ldx ZPKERNAL_FA                                         ; Last used serial device
-    ldy #DISK_CMD_SA
+    ldy # DISK_CMD_SA
     jsr KERNAL_SETLFS
-    lda #$00
+    lda # 0
     jsr KERNAL_SETNAM                                       ; Disk command has no name
     jsr KERNAL_OPEN
     ; Open disk data
-    lda #SERIAL_DATA_FH
+    lda # SERIAL_DATA_FH
     ldx ZPKERNAL_FA
-    ldy #SERIAL_DATA_DOC_SA
+    ldy # SERIAL_DATA_DOC_SA
     jsr KERNAL_SETLFS
 
     from
-        ldy #$00
+        ldy # 0
     loop
         lda V37B1,y
         beq _end                                            ; break
@@ -3242,36 +3237,36 @@
         lda V37B1,y
         iny
         iny
-        cmp #PETSCII_COMMA
+        cmp # PETSCII_COMMA
         if_ne_then
-            lda #PETSCII_COMMA
+            lda # PETSCII_COMMA
             sta V37B1,y
             iny
-            lda #PETSCII_LATIN_LETTER_S
+            lda # PETSCII_LATIN_LETTER_S
             sta V37B1,y
             iny
         else_end
 
-        lda #PETSCII_COMMA
+        lda # PETSCII_COMMA
         sta V37B1,y
         iny
-        lda #PETSCII_LATIN_LETTER_W
+        lda # PETSCII_LATIN_LETTER_W
         sta V37B1,y
         iny
     else_end
 
     tya
-    ldx #<V37B1
-    ldy #>V37B1
+    ldx # <V37B1
+    ldy # >V37B1
     jsr KERNAL_SETNAM
     jsr KERNAL_OPEN
     if_cs_then
-        lda #SERIAL_DATA_FH
+        lda # SERIAL_DATA_FH
         jsr KERNAL_CLOSE
-        lda #DISK_CMD_FH
+        lda # DISK_CMD_FH
         jsr KERNAL_CLOSE
-        ldx #<RESOURCE_STRING_DRIVE_NOT_PRESENT
-        ldy #>RESOURCE_STRING_DRIVE_NOT_PRESENT
+        ldx # <RESOURCE_STRING_DRIVE_NOT_PRESENT
+        ldy # >RESOURCE_STRING_DRIVE_NOT_PRESENT
         pla
         pla
         jsr PRINT_STATUS_LINE
@@ -3287,20 +3282,20 @@
 ;;; summary: Command: Get (load) file
 ;;; changed: ...
 .proc CMD_GET
-    lda #MODE_EDIT
+    lda # MODE_EDIT
     sta G_MODE
     lda V37B1
     if_eq_then
         rts
     else_end
 
-    lda #$00
+    lda # 0
     jsr L2AB7
     if_cs_then
         ; Error
-        lda #SERIAL_DATA_FH
+        lda # SERIAL_DATA_FH
         jsr KERNAL_CLOSE
-        lda #SERIAL_DATA_FH
+        lda # SERIAL_DATA_FH
         jsr KERNAL_CLOSE
         jsr KERNAL_CLRCHN
         jsr L2C3F
@@ -3309,7 +3304,7 @@
     else_end
 
     jsr L1BCB
-    ldx #SERIAL_DATA_FH
+    ldx # SERIAL_DATA_FH
     jsr KERNAL_CHKIN
     try
         from_loop
@@ -3319,10 +3314,10 @@
                 jsr L1C99                                   ; A- X- Y-
                 if_cc_then
                     jsr L1BBC
-                    cmp #PETSCII_RETURN
+                    cmp # PETSCII_RETURN
                     if_ne_then
                         jsr L1BF7
-                        lda #PETSCII_RETURN
+                        lda # PETSCII_RETURN
                         jsr L1AE4
                     else_end
                 else_end
@@ -3333,24 +3328,24 @@
             jsr L1B9C
         next
             jsr KERNAL_READST
-            and #KERNAL_IO_EOI
+            and # KERNAL_IO_EOI
             beq _loop
         end
     catch_finally_end
 
     ; End of input
-    lda #SERIAL_DATA_FH
+    lda # SERIAL_DATA_FH
     jsr KERNAL_CLOSE
-    lda #DISK_CMD_FH
+    lda # DISK_CMD_FH
     jsr KERNAL_CLOSE
     jsr KERNAL_CLRCHN
     jsr L1C99                                               ; A- X- Y-
     if_cc_then
         jsr L1BBC
-        cmp #PETSCII_RETURN
+        cmp # PETSCII_RETURN
         if_ne_then
             jsr L1B9C
-            lda #PETSCII_RETURN
+            lda # PETSCII_RETURN
             jsr L1AE4
         else_end
     else_end
@@ -3368,12 +3363,12 @@
         rts
     else_end
 
-    lda #$01
+    lda # 1
     jsr L2AB7
     if_cs_then
-        lda #SERIAL_DATA_FH
+        lda # SERIAL_DATA_FH
         jsr KERNAL_CLOSE
-        lda #DISK_CMD_FH
+        lda # DISK_CMD_FH
         jsr KERNAL_CLOSE
         jsr KERNAL_CLRCHN
         jsr L2C3F
@@ -3384,9 +3379,9 @@
     jsr L1BCB
     lda ZPBASIC_VALTYP
     sta T4F
-    lda #$03
+    lda # 3
     sta T50
-    ldx #SERIAL_DATA_FH
+    ldx # SERIAL_DATA_FH
     jsr KERNAL_CHKOUT
     from_loop
         jsr L1BBC
@@ -3398,9 +3393,9 @@
     end
 
     jsr L1BD6
-    lda #SERIAL_DATA_FH
+    lda # SERIAL_DATA_FH
     jsr KERNAL_CLOSE
-    lda #DISK_CMD_FH
+    lda # DISK_CMD_FH
     jsr KERNAL_CLOSE
     jsr KERNAL_CLRCHN
 
@@ -3412,7 +3407,7 @@
 .proc STRING_COMPARE_SIGNIFICANT
     tax
     from
-        ldy #$00
+        ldy # 0
     loop
         lda [TFB],y
         cmp [PFD],y
@@ -3422,7 +3417,7 @@
         else_end
 
         iny
-        cmp #$00
+        cmp # 0
         beq _end                                            ; break
     next
         dex
@@ -3436,13 +3431,13 @@
 ;;; return: CC=OK , CS=FAIL
 ;;; changed: A+ X+ Y+
 .proc READ_DISK_STATUS
-    ldx #DISK_CMD_FH
+    ldx # DISK_CMD_FH
     jsr KERNAL_CHKIN
     from
-        ldy #$00
+        ldy # 0
     loop
         jsr KERNAL_CHRIN
-        cmp #PETSCII_RETURN
+        cmp # PETSCII_RETURN
         beq _end                                            ; break
         sta V380B,y
     next
@@ -3450,11 +3445,11 @@
         jmp _loop
     end
 
-    lda #$00
+    lda # 0
     sta V380B,y
     lda V380B
     ora V380B + 1
-    cmp #PETSCII_DIGIT_ZERO
+    cmp # PETSCII_DIGIT_ZERO
     if_eq_then
         ; OK (no error)
         clc
@@ -3470,8 +3465,8 @@
 ;;; summary: ?
 ;;; changed: ...
 .proc L2C3F
-    ldx #<V380B
-    ldy #>V380B
+    ldx # <V380B
+    ldy # >V380B
     jsr PRINT_STATUS_LINE
 
     rts
@@ -3481,42 +3476,42 @@
 ;;; changed: ...
 .proc CMD_DIR
     ; Close disk command channel
-    lda #DISK_CMD_FH
+    lda # DISK_CMD_FH
     jsr KERNAL_CLOSE
     ; Open disk command channel
-    lda #DISK_CMD_FH
+    lda # DISK_CMD_FH
     ldx ZPKERNAL_FA
-    ldy #DISK_CMD_SA
+    ldy # DISK_CMD_SA
     jsr KERNAL_SETLFS
-    lda #$00
+    lda # 0
     jsr KERNAL_SETNAM                                       ; Disk command does not have a name
     jsr KERNAL_OPEN
     ; open disk data
-    lda #SERIAL_DATA_FH
+    lda # SERIAL_DATA_FH
     ldx ZPKERNAL_FA
-    ldy #$00
+    ldy # 0
     jsr KERNAL_SETLFS
-    lda #$01                                                ; Length of directory "$"
-    ldx #<RESOURCE_STRING_DIR_NAME
-    ldy #>RESOURCE_STRING_DIR_NAME
+    lda # 1                                                 ; Length of directory "$"
+    ldx # <RESOURCE_STRING_DIR_NAME
+    ldy # >RESOURCE_STRING_DIR_NAME
     jsr KERNAL_SETNAM
     jsr KERNAL_OPEN
     jsr READ_DISK_STATUS
     if_cs_then
-        lda #SERIAL_DATA_FH
+        lda # SERIAL_DATA_FH
         jsr KERNAL_CLOSE
-        lda #DISK_CMD_FH
+        lda # DISK_CMD_FH
         jsr KERNAL_CLOSE
         jsr L2C3F
         rts
     else_end
 
-    lda #PETSCII_CLR
+    lda # PETSCII_CLR
     jsr KERNAL_CHROUT
     jsr L1A89
-    ;--lda #PETSCII_BLACK
+    ;--lda # PETSCII_BLACK
     ;--jsr KERNAL_CHROUT
-    ldx #SERIAL_DATA_FH
+    ldx # SERIAL_DATA_FH
     jsr KERNAL_CHKIN
     jsr KERNAL_CHRIN
     jsr KERNAL_CHRIN
@@ -3536,36 +3531,36 @@
             tax
             jsr INT_TO_STRING
             from
-                ldx #$00
+                ldx # 0
             loop
                 lda L2623,x
-                cmp #PETSCII_SPACE
+                cmp # PETSCII_SPACE
                 beq _end                                    ; break
                 jsr KERNAL_CHROUT
             next
                 inx
-                cpx #$03
+                cpx # 3
                 bne _loop
             end
 
-            lda #PETSCII_SPACE
+            lda # PETSCII_SPACE
             jsr KERNAL_CHROUT
 
             from_loop
                 jsr L2D27
                 bcs _catch                                  ; throw
-                cmp #$00
+                cmp # 0
                 beq _end                                    ; break
                 jsr KERNAL_CHROUT
             next
                 jmp _loop
             end
 
-            lda #PETSCII_RETURN
+            lda # PETSCII_RETURN
             jsr KERNAL_CHROUT
             from_loop
                 lda ZPKERNAL_SFDX                           ; Matrix code of key currently being pressed. Values: $00-$3F: Keyboard matrix code. $40: No key is currently pressed.
-                eor #$40
+                eor # $40
                 ora KVAR_SHFLAG                             ; Shift key indicator. Bits: Bit #0: 1 = One or more of left Shift, right Shift or Shift Lock is currently being pressed or locked. Bit #1: 1 = Commodore is currently being pressed. Bit #2: 1 = Control is currently being pressed.
             next
                 bne _loop
@@ -3578,17 +3573,17 @@
     lda #PETSCII_RETURN
     jsr KERNAL_CHROUT
     jsr KERNAL_CLRCHN
-    lda #SERIAL_DATA_FH
+    lda # SERIAL_DATA_FH
     jsr KERNAL_CLOSE
-    lda #DISK_CMD_FH
+    lda # DISK_CMD_FH
     jsr KERNAL_CLOSE
     ; Clear keyboard buffer
-    lda #$00
+    lda # 0
     sta ZPKERNAL_NDX                                        ; Length of keyboard buffer. Values: $00, 0: Buffer is empty. $01-$0A, 1-10: Buffer length.
     jsr L1A7F
     ; Show "hit return to continue"
-    ldx #<RESOURCE_STRING_HIT_RETURN_TO_CONTINUE
-    ldy #>RESOURCE_STRING_HIT_RETURN_TO_CONTINUE
+    ldx # <RESOURCE_STRING_HIT_RETURN_TO_CONTINUE
+    ldy # >RESOURCE_STRING_HIT_RETURN_TO_CONTINUE
     jsr PRINT_STATUS_LINE
     jsr L1A89
 
@@ -3601,7 +3596,7 @@
 ;;;    A: byte if CC
 .proc L2D27
     jsr KERNAL_READST
-    cmp #$00
+    cmp # 0
     if_ne_then
         sec
         rts
@@ -3616,19 +3611,19 @@
 ;;; summary: Send disk command
 ;;; changed: ...
 .proc CMD_DISK
-    lda #DISK_CMD_FH
+    lda # DISK_CMD_FH
     ldx ZPKERNAL_FA
-    ldy #DISK_CMD_SA
+    ldy # DISK_CMD_SA
     jsr KERNAL_SETLFS
-    lda #$00                                                ; Disk command has no name
+    lda # 0                                                 ; Disk command has no name
     jsr KERNAL_SETNAM
     jsr KERNAL_OPEN
     lda V37B1
     if_ne_then
-        ldx #DISK_CMD_FH
+        ldx # DISK_CMD_FH
         jsr KERNAL_CHKOUT
         from
-            ldx #$00
+            ldx # 0
         loop
             lda V37B1,x
             beq _end                                        ; break
@@ -3644,7 +3639,7 @@
     jsr READ_DISK_STATUS
     php
     jsr KERNAL_CLRCHN
-    lda #DISK_CMD_FH
+    lda # DISK_CMD_FH
     jsr KERNAL_CLOSE
     plp
     if_cs_then
@@ -3659,21 +3654,21 @@
 ;;; changed: ...
 .proc L2D74
     from
-        lda #$00
+        lda # 0
         sta V38AF
         sta V38AD
-        ldy #$01
-        ldx #$00
+        ldy # 1
+        ldx # 0
     loop
         lda V378E,y
-        cmp #PETSCII_F3
+        cmp # PETSCII_F3
         if_eq_then
             stx V38AB
             jsr CMD_SEARCH_DOWN
             rts
         else_end
 
-        cmp #PETSCII_F4
+        cmp # PETSCII_F4
         if_eq_then
             stx V38AB
             jsr CMD_SEARCH_UP
@@ -3692,17 +3687,17 @@
         inc V38AF
         stx V38AB
         iny
-        ldx #$00
+        ldx # 0
     loop
         lda V378E,y
-        cmp #PETSCII_F3
+        cmp # PETSCII_F3
         if_eq_then
             stx V38AC
             jsr CMD_SEARCH_DOWN
             rts
         else_end
 
-        cmp #PETSCII_F4
+        cmp # PETSCII_F4
         if_eq_then
             stx V38AC
             jsr CMD_SEARCH_UP
@@ -3724,13 +3719,13 @@
     loop
         iny
         lda V378E,y
-        cmp #PETSCII_F3
+        cmp # PETSCII_F3
         if_eq_then
             jsr CMD_SEARCH_DOWN
             rts
         else_end
 
-        cmp #PETSCII_F4
+        cmp # PETSCII_F4
         if_eq_then
             jsr CMD_SEARCH_UP
             rts
@@ -3743,16 +3738,16 @@
 ;;; summary: Command: Search downward <F3>
 ;;; changed: ...
 .proc CMD_SEARCH_DOWN
-    ldx #<DO_SEARCH_DOWN
-    ldy #>DO_SEARCH_DOWN
+    ldx # <DO_SEARCH_DOWN
+    ldy # >DO_SEARCH_DOWN
     bne DO_SEARCH                                           ; bra
 .endproc
 
 ;;; summary: Command: Search upward <F4>
 ;;; changed: ...
 .proc CMD_SEARCH_UP
-    ldx #<DO_SEARCH_UP
-    ldy #>DO_SEARCH_UP
+    ldx # <DO_SEARCH_UP
+    ldy # >DO_SEARCH_UP
 .endproc
 
 ;;; summary: ?
@@ -3767,12 +3762,12 @@
     else_end
 
     from
-        lda #$00
+        lda # 0
         sta V38AE
     loop
         jsr JSR_INDIRECT_DX
         bcc _end                                            ; break
-        lda #$01
+        lda # 1
         sta V38AE
         lda V38AF
         beq _end                                            ; break
@@ -3810,9 +3805,9 @@
         else_end
     else_end
 
-    lda #$0C                                                ; ?
+    lda # $0C                                                ; ?
     sta T5A
-    lda #$23                                                ; ?
+    lda # $23                                                ; ?
     sta T5B
     jsr L21A2
 
@@ -3834,7 +3829,7 @@
     lda V38AC
     if_ne_then
         from
-            ldx #$00
+            ldx # 0
         loop
             lda V388D,x
             jsr L1AE4
@@ -3872,10 +3867,10 @@
     try
         from
             jsr L1BCB
-            ldy #$00
+            ldy # 0
         loop
             jsr L1BBC
-            cmp #PETSCII_RETURN
+            cmp # PETSCII_RETURN
             if_eq_then
                 ldx G_MODE
                 if_ne_then
@@ -3911,7 +3906,7 @@
                 iny
                 jmp _end
             else
-                cpy #$00
+                cpy # 0
                 if_ne_then
                     jsr L2EDD
                 else_end
@@ -3941,7 +3936,7 @@
     from_loop
         jsr L1C99                                           ; A- X- Y-
         jsr L1BBC
-        cmp #PETSCII_RETURN
+        cmp # PETSCII_RETURN
         if_eq_then
             lda G_MODE
             if_ne_then
@@ -3989,7 +3984,7 @@
             jsr L1C99                                       ; A- X- Y-
             bcs _catch
             jsr L1BBC
-            cmp #PETSCII_RETURN
+            cmp # PETSCII_RETURN
             if_eq_then
                 ldx G_MODE
                 if_ne_then
@@ -4056,7 +4051,7 @@
 .proc L2F6D
     from_loop
         jsr L1BBC
-        cmp #PETSCII_RETURN
+        cmp # PETSCII_RETURN
         if_eq_then
             lda G_MODE
             if_ne_then
@@ -4086,8 +4081,8 @@
 ;;; summary: ?
 ;;; changed: ...
 .proc L2F91
-    ldx #<RESOURCE_STRING_SEARCH_STRING_NOT_FOUND
-    ldy #>RESOURCE_STRING_SEARCH_STRING_NOT_FOUND
+    ldx # <RESOURCE_STRING_SEARCH_STRING_NOT_FOUND
+    ldy # >RESOURCE_STRING_SEARCH_STRING_NOT_FOUND
     jsr PRINT_STATUS_LINE
 
     rts
@@ -4096,13 +4091,8 @@
 ;;; summary: Initialize
 ;;; changed: A, X, Y, ...
 .proc INITIALIZE
-    ; Select BASIC RAM
-    lda CPU_PORT_DATA
-    and #CPU_PORT_DATA_LORAM_CLR_RAM
-    sta CPU_PORT_DATA
-
     ; Set all keys repeat
-    lda #$80                                                ; All keys repeat
+    lda # $80                                               ; All keys repeat
     sta KVAR_RPTFLG                                         ; Keyboard repeat switch. Bits: Bits #6-#7: %00 = Only cursor up/down, cursor left/right, Insert/Delete and Space repeat; %01 = No key repeats; %1x = All keys repeat.
     ; A = $80 , X = ? Y = ?
     ;
@@ -4125,28 +4115,10 @@
     ;adc #$01
     ;lda #EDIT_BUFFERS_1_FIRST_PAGE
     ;sta ZPBASIC_INTFLG                                      ; $0E Current numerical expression type. Bits: Bit #7: 0 = Floating point; 1 = Integer.
-    ;
+
     ; Initialize edit buffers: First byte of page points to page of next block.
-    ;
-    ; $2700..$27FF : $28 $__ ... $__ 
-    ; $2800..$28FF : $29 $__ ... $__ 
-    ; ...
-    ; $CF00..$CFFF : $D0 $__ ... $__
-    ; 
-    ; $D000..$D0FF : $D1 $__ ... $__
-    ; $D100..$D1FF : $D2 $__ ... $__
-    ; ...
-    ; $FE00..$FEFF : $FF $__ ... $__
-    ; $FF00..$FFFF : $00 $__ ... $__
-    ;
-    ; A = EDIT_BUFFERS_1_FIRST_PAGE
-    ; Y = 0
-    ; [T4E] = 0
-    ;
     sei
-        lda CPU_PORT_DATA
-        and # CPU_PORT_MEMORY_CONFIGURATION_MASK
-        ora # CPU_PORT_MEMORY_CONFIGURATION_DATA_SET_BASIC_RAM_IO_RAM_KERNAL_RAM
+        lda # CPU_PORT_DATA_BASIC_RAM_IO_RAM_KERNAL_RAM_DATASETTE_DEFAULT
         sta CPU_PORT_DATA
         ; A = ? , X = ? Y = $00
             from
@@ -4171,11 +4143,13 @@
                 bne _loop
             end
             ; A = EDIT_BUFFERS_2_LAST_PAGE , X = ? , Y = 0
-        lda CPU_PORT_DATA
-        and # CPU_PORT_MEMORY_CONFIGURATION_MASK
-        ora # CPU_PORT_MEMORY_CONFIGURATION_DATA_SET_BASIC_RAM_IO_AREA_KERNAL_ROM
+
+        lda # CPU_PORT_DATA_BASIC_RAM_IO_AREA_KERNAL_ROM_DATASETTE_DEFAULT
         sta CPU_PORT_DATA
     cli
+
+    ; Now BASIC is RAM, IO is devices, Kernal is ROM
+
     ; A = ? , X = ? , Y = 0
     ; T4E = $00
     ; T4F = EDIT_BUFFERS_2_LAST_PAGE
@@ -4187,8 +4161,8 @@
     ; [EDIT_BUFFERS_2_LAST_PAGE#0] = 0
     ;
     from
-        ;lda #$00
-        ldx # EDIT_BUFFER_COUNT - 1                         ; 9
+        ;lda # 0
+        ldx # EDIT_BUFFER_COUNT - 1
     loop
         sta V37D9,x
     next
@@ -4206,19 +4180,19 @@
     .if ::FEATURE_ARG = 1
         ; Process arguments, if any: load file.
         lda SHELL_ARGC
-        cmp #2
+        cmp # 2
         if_eq_then
             ; argc == 2, i.e. argv = [ "ED" , "FILE" ]
             ; T5C#T5D := SHELL_ARGV[1]
             clc
             lda SHELL_ARGV_LO
-            adc #SIZEOF_ADDR                                ; get argv[1] 
+            adc # SIZEOF_ADDR                               ; get argv[1] 
             sta T5C
             lda SHELL_ARGV_HI
-            adc #$00
+            adc # 0
             sta T5D
             ; T5C#T5D := *argv[1]
-            ldy #$00                                        ; Y = 0
+            ldy # 0                                         ; Y = 0
             lda [T5C],y
             tax
             iny                                             ; Y = 1
@@ -4231,13 +4205,13 @@
                 sta V37B1,y
             next
                 iny
-                cmp #$00
+                cmp # 0
                 bne _loop
             end
-            ;
+
             ; Load
             jsr CMD_GET
-            ;
+
             jsr L21A2
         else_end
     .endif
@@ -4248,12 +4222,7 @@
 ;;; summary: Command: Quit
 ;;; changed: ...
 .proc CMD_QUIT
-    ; Select BASIC ROM
-    lda CPU_PORT_DATA
-    ora #CPU_PORT_DATA_LORAM_SET_ROM
-    sta CPU_PORT_DATA
-
-    ; Jump to BASIC, basically same as <RUN STOP>+<RESTORE>.
+    ; Jump to BASIC, basically same as <RUN STOP>+<RESTORE>. Selects BASIC ROM, IO devices, Kernal ROM.
     jmp [KERNAL_CBINV]
         ; Does not return to here.
 .endproc
