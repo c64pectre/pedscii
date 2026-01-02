@@ -51,7 +51,7 @@ V3801:      .res EDIT_BUFFER_COUNT     ; $3801
 V380B:      .res 100    ; $380B..$386E  Serial status, e.g. "00, OK,00,00",PETSCII_NUL or "62, FILE NOT FOUND,00,00",PETSCII_NUL
 V386F:      .res 30     ; $386F..$388C
 V388D:      .res 30     ; $388D..$38AA
-V38AB:      .res 1      ; $38AB
+V38AB:      .res 1      ; $38AB         ; Init 0
 V38AC:      .res 1      ; $38AC
 V38AD:      .res 1      ; $38AD
 V38AE:      .res 1      ; $38AE

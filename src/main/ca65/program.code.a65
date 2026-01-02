@@ -78,6 +78,7 @@
 .endproc
 
 ;;; summary: Add character in A to current cursor position, afterwards move 1 position to the right
+;;; throws: EXCEPTION_OUT_OF_MEMORY
 ;;; changed: A, X
 .proc ADD_CHAR
     ldx G_MODE
@@ -102,7 +103,7 @@
         rts
     else_end
 
-    jsr L1AE4
+    jsr L1AE4                                               ; May throw EXCEPTION_OUT_OF_MEMORY
     if_cs_then
         rts
     else_end
@@ -116,7 +117,7 @@
     jsr L1BBC
     if_cs_then
         lda # PETSCII_RETURN
-        jsr L1AE4
+        jsr L1AE4                                           ; May throw EXCEPTION_OUT_OF_MEMORY
         if_cs_then
             jsr L1C99                                       ; A- X- Y-
             jsr L1BF7
@@ -578,16 +579,17 @@
 .endproc
 
 ;;; summary: ?
+;;; throws: EXCEPTION_OUT_OF_MEMORY
 ;;; changed: ...
 .proc L1AE4
     sta L1B46
     tya
     pha
-    ldy # 2                                                ; ?
+    ldy # 2                                                 ; ?
     lda [T4E],y
-    cmp # $FF                                                ; ?
+    cmp # $FF                                               ; ?
     if_eq_then
-        jsr L1B77
+        jsr L1B77                                           ; May throw EXCEPTION_OUT_OF_MEMORY
         if_cs_then
             pla
             rts
@@ -685,6 +687,7 @@
 .endproc
 
 ;;; summary: ?
+;;; throws: EXCEPTION_OUT_OF_MEMORY
 ;;; changed: ...
 .proc L1B77
     clc
@@ -984,6 +987,7 @@
 .endproc
 
 ;;; summary: Command: Cut <F5>
+;;; throws: EXCEPTION_OUT_OF_MEMORY
 ;;; changed: ...
 .proc CMD_CUT
     lda G_MODE
@@ -1003,7 +1007,7 @@
     lda # 0
     sta TFB
     sta PFD
-    jsr L1B77
+    jsr L1B77                                               ; May throw EXCEPTION_OUT_OF_MEMORY
     if_cs_then
         rts
     else_end
@@ -1013,7 +1017,7 @@
     ldy # 0
     lda [TFB],y
     sta ZP_0E
-    jsr L1B77
+    jsr L1B77                                               ; May throw EXCEPTION_OUT_OF_MEMORY
     if_cs_then
         lda L1EE6
         sta ZP_0E
@@ -1279,6 +1283,7 @@
 .endproc
 
 ;;; summary: Command: Paste
+;;; throws: EXCEPTION_OUT_OF_MEMORY, EXCEPTION_NOT_ENOUGH_MEMORY
 ;;; changed: ...
 .proc CMD_PASTE
     lda G_MODE
@@ -1332,7 +1337,7 @@
         sta PFE
         lda TFC
         pha
-        jsr L1B77
+        jsr L1B77                                           ; May throw EXCEPTION_OUT_OF_MEMORY
         ldy # 0
         sta [TFB],y
         sta TFC
@@ -1356,7 +1361,7 @@
 
     lda TFC
     sta L1EE5
-    jsr L1B77
+    jsr L1B77                                               ; May throw EXCEPTION_OUT_OF_MEMORY
     ldy # 0
     sta [TFB],y
     sta TFC
@@ -2071,6 +2076,7 @@
 .endproc
 
 ;;; summary: Command: Split line (insert/add return)
+;;; throws: EXCEPTION_OUT_OF_MEMORY
 ;;; changed: ...
 .proc CMD_SPLIT_LINE
     ldx G_MODE
@@ -2081,7 +2087,7 @@
 
     ; Mode is edit mode
 
-    jsr L1AE4
+    jsr L1AE4                                               ; May throw EXCEPTION_OUT_OF_MEMORY
     if_cs_then
         rts
     else_end
@@ -2697,6 +2703,7 @@
 .endproc
 
 ;;; summary: ?
+;;; throws: EXCEPTION_OUT_OF_MEMORY
 ;;; changed: ...
 .proc L26DA
     tax
@@ -2726,7 +2733,7 @@
 
     cpx ZPKERNAL_CMP0
     if_eq_then
-        jsr L1B77
+        jsr L1B77                                           ; May throw EXCEPTION_OUT_OF_MEMORY
         sta L272B
         lda ZPKERNAL_CMP0
         jsr L26AB
@@ -2749,13 +2756,14 @@
 .endproc
 
 ;;; summary: ?
+;;; throws: EXCEPTION_OUT_OF_MEMORY
 ;;; changed: ...
 .proc L272C
     pha
     tax
     lda V37D9,x
     if_eq_then
-        jsr L1B77
+        jsr L1B77                                           ; May throw EXCEPTION_OUT_OF_MEMORY
         if_cs_then
             pla
             rts
@@ -2804,6 +2812,7 @@
 .endproc
 
 ;;; summary: ?
+;;; throws: EXCEPTION_NO_MORE_FREE_FILES
 ;;; changed: ...
 .proc L2784
     sta L2808
@@ -3054,6 +3063,7 @@
 .endproc
 
 ;;; summary: Command: Enter command mode
+;;; throws: RESOURCE_STRING_INVALID_COMMAND
 ;;; changed: ...
 .proc CMD_COMMAND_MODE
     from_loop
@@ -3137,6 +3147,7 @@
 .endproc
 
 ;;; summary: Command: Clear current buffer
+;;; throws: EXCEPTION_NO_MORE_FREE_FILES
 .proc CMD_CLEAR
     lda # MODE_EDIT
     sta G_MODE
@@ -3148,7 +3159,7 @@
         jmp _end
     else
         lda # 0
-        jsr L2784
+        jsr L2784                                           ; May throw EXCEPTION_NO_MORE_FREE_FILES
         if_cs_then
             rts
         else_end
@@ -3164,6 +3175,7 @@
 .endproc
 
 ;;; summary: Command: Goto buffer
+;;; throws: EXCEPTION_NO_MORE_FREE_FILES
 ;;; changed: ...
 .proc CMD_GOTO
     lda V37B1
@@ -3172,7 +3184,7 @@
     else_end
 
     lda # 1
-    jsr L2784
+    jsr L2784                                               ; May throw EXCEPTION_NO_MORE_FREE_FILES
     if_cs_then
         rts
     else_end
@@ -3200,6 +3212,7 @@
 .endproc
 
 ;;; summary: ?
+;;; throws: EXCEPTION_DRIVE_NOT_PRESENT
 ;;; changed: ...
 .proc L2AB7
     pha
@@ -3280,6 +3293,7 @@
 .endproc
 
 ;;; summary: Command: Get (load) file
+;;; throws: EXCEPTION_OUT_OF_MEMORY
 ;;; changed: ...
 .proc CMD_GET
     lda # MODE_EDIT
@@ -3309,7 +3323,7 @@
     try
         from_loop
             jsr KERNAL_CHRIN
-            jsr L1AE4
+            jsr L1AE4                                       ; May throw EXCEPTION_OUT_OF_MEMORY
             if_cs_then
                 jsr L1C99                                   ; A- X- Y-
                 if_cc_then
@@ -3318,7 +3332,7 @@
                     if_ne_then
                         jsr L1BF7
                         lda # PETSCII_RETURN
-                        jsr L1AE4
+                        jsr L1AE4                           ; May throw EXCEPTION_OUT_OF_MEMORY
                     else_end
                 else_end
 
@@ -3346,7 +3360,7 @@
         if_ne_then
             jsr L1B9C
             lda # PETSCII_RETURN
-            jsr L1AE4
+            jsr L1AE4                                       ; May throw EXCEPTION_OUT_OF_MEMORY
         else_end
     else_end
 
@@ -3735,22 +3749,30 @@
     end
 .endproc
 
-;;; summary: Command: Search downward <F3>
+;;; summary: Command: Search downward
+;;; throws: EXCEPTION_SEARCH_STRING_NOT_FOUND
 ;;; changed: ...
 .proc CMD_SEARCH_DOWN
     ldx # <DO_SEARCH_DOWN
     ldy # >DO_SEARCH_DOWN
-    bne DO_SEARCH                                           ; bra
+    jsr DO_SEARCH
+
+    rts
 .endproc
 
-;;; summary: Command: Search upward <F4>
+;;; summary: Command: Search upward
+;;; throws: EXCEPTION_SEARCH_STRING_NOT_FOUND
 ;;; changed: ...
 .proc CMD_SEARCH_UP
     ldx # <DO_SEARCH_UP
     ldy # >DO_SEARCH_UP
+    jsr DO_SEARCH
+
+    rts
 .endproc
 
 ;;; summary: ?
+;;; throws: EXCEPTION_SEARCH_STRING_NOT_FOUND
 ;;; changed: ...
 .proc DO_SEARCH
     stx DL
@@ -3783,7 +3805,7 @@
 
     lda V38AE
     if_eq_then
-        jsr L2F91
+        jsr L2F91                                           ; May throw EXCEPTION_SEARCH_STRING_NOT_FOUND
         rts
     else_end
 
@@ -3815,6 +3837,7 @@
 .endproc
 
 ;;; summary: ?
+;;; throws: EXCEPTION_OUT_OF_MEMORY
 ;;; changed: ...
 .proc L2E4D
     from
@@ -3832,7 +3855,7 @@
             ldx # 0
         loop
             lda V388D,x
-            jsr L1AE4
+            jsr L1AE4                                       ; May throw EXCEPTION_OUT_OF_MEMORY
             if_cs_then
                 rts
             else_end
@@ -4079,6 +4102,7 @@
 .endproc
 
 ;;; summary: ?
+;;; throws: EXCEPTION_SEARCH_STRING_NOT_FOUND
 ;;; changed: ...
 .proc L2F91
     ldx # <RESOURCE_STRING_SEARCH_STRING_NOT_FOUND

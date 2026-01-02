@@ -25,8 +25,8 @@ L1CE5:      .byte 0
 L1CE6:      .byte 0
 L1CE7:      .byte 0
 L1CE8:      .byte 0
-L1CE9:      .byte 0
-L1CEA:      .byte 0
+L1CE9:      .byte 0                     ; Init 0
+L1CEA:      .byte 0                     ; Init 0
 
 L1EE3:      .byte 0
 L1EE4:      .byte 0
