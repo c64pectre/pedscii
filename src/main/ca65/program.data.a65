@@ -16,100 +16,67 @@
 ;
 ;    Contact: https://github.com/c64pectre/pedscii/ create an issue
 
-L1B46:      .byte   $00
-L1B47:      .byte   $00
+L1B46:      .byte 0
+L1B47:      .byte 0
 
-G_MODE:
-    L1CE4:  .byte   MODE_EDIT                               ; $00
+G_MODE:     .byte MODE_EDIT
 
-L1CE5:      .byte   $00
-L1CE6:      .byte   $00
-L1CE7:      .byte   $00
-L1CE8:      .byte   $00
-L1CE9:      .byte   $00
-L1CEA:      .byte   $00
+L1CE5:      .byte 0
+L1CE6:      .byte 0
+L1CE7:      .byte 0
+L1CE8:      .byte 0
+L1CE9:      .byte 0
+L1CEA:      .byte 0
 
-L1EE3:      .byte   $00
-L1EE4:      .byte   $00
-L1EE5:      .byte   $00
-L1EE6:      .byte   $00
-L1EE7:      .byte   $00
+L1EE3:      .byte 0
+L1EE4:      .byte 0
+L1EE5:      .byte 0
+L1EE6:      .byte 0
+L1EE7:      .byte 0
 
-L2340:      .byte   $00
+L2340:      .byte 0
 
-L24E5:      .byte   $00
+L24E5:      .byte 0
 
-L251E:      .byte   $00
-L251F:      .byte   $00
-L2520:      .byte   $00
-
-;               01234567890012345678900123456789001234567890
-; Status line: "..BUFFERNM.......line NNNN..column NNNN "
-
-;STATUS_LINE_CONTENT:
-;    _259B:  .byte   "  "
-;L259D:      .byte   $00, $00, $00, $00, $00, $00, $00, $00
-;    _25A5:  .byte   "       line "
-;L25B1:      .byte   $00, $00, $00, $00
-;    _25B5:  .byte   "  column "
-;L25BE:      .byte   $00, $00, $00, $00
+L251E:      .byte 0
+L251F:      .byte 0
+L2520:      .byte 0
 
 ;               01234567890012345678900123456789001234567890
-; Status line: "[BUFFERNM] line NNNN.column NNNN"
+; Status line: "BUFFERNM l NNNN c NNNN"
 STATUS_LINE_CONTENT:
-;    _259B:  .byte   "["
-;L259D:      .byte   $00, $00, $00, $00, $00, $00, $00, $00
-L259D:      .byte   "????????"
-;    _25A5:  .byte   "] l "
-    _25A5:  .byte   " l "
-;L25B1:      .byte   $00, $00, $00, $00
-L25B1:      .byte   "????"
-    _25B5:  .byte   " c "
-;L25BE:      .byte   $00, $00, $00, $00
-L25BE:      .byte   "??? u ??? f ???" , $00
-
-;INT_TO_STRING_INPUT_LO:
-;    L261F:  .byte   $00
-
-;INT_TO_STRING_INPUT_HI:
-;    L2620:  .byte   $00
-
-;INT_TO_STRING_WORK_LO:
-;    L2621:  .byte   $00
-
-;INT_TO_STRING_WORK_HI:
-;    L2622:  .byte   $00
+L259D:      .byte "????????"
+            .byte " l "
+L25B1:      .byte "????"
+            .byte " c "
+L25BE:      .byte "???"
+            .byte PETSCII_NUL
 
 INT_TO_STRING_RESULT:
-    L2623:  .byte   $00, $00, $00, $00
+            .byte 0, 0, 0, 0
 
-L272B:      .byte   $00
+L272B:      .byte 0
 
-L2807:      .byte   $00
+L2807:      .byte 0
 
-L2808:      .byte   $00
+L2808:      .byte 0
 
 BUFFER_NAME_TABLE:
-    L281C:  .byte   "main", PETSCII_NUL, PETSCII_NUL, PETSCII_NUL, PETSCII_NUL  ; [0]
-    _2824:  .byte   "paste"            , PETSCII_NUL, PETSCII_NUL, PETSCII_NUL  ; [1]
-    _282C:  .byte   $00, $00, $00, $00, $00, $00, $00, $00                      ; [2]
-    _2834:  .byte   $00, $00, $00, $00, $00, $00, $00, $00                      ; [3]
-    _283C:  .byte   $00, $00, $00, $00, $00, $00, $00, $00                      ; [4]
-    _2844:  .byte   $00, $00, $00, $00, $00, $00, $00, $00                      ; [5]
-    _284C:  .byte   $00, $00, $00, $00, $00, $00, $00, $00                      ; [6]
-    _2854:  .byte   $00, $00, $00, $00, $00, $00, $00, $00                      ; [7]
-    _285C:  .byte   $00, $00, $00, $00, $00, $00, $00, $00                      ; [8]
-    _2864:  .byte   $00, $00, $00, $00, $00, $00, $00, $00                      ; [9]
+            .byte "main"                                               , PETSCII_NUL , PETSCII_NUL , PETSCII_NUL , PETSCII_NUL ; [0]
+            .byte "paste"                                                            , PETSCII_NUL , PETSCII_NUL , PETSCII_NUL ; [1]
+            .byte PETSCII_NUL , PETSCII_NUL , PETSCII_NUL , PETSCII_NUL, PETSCII_NUL , PETSCII_NUL , PETSCII_NUL , PETSCII_NUL ; [2]
+            .byte PETSCII_NUL , PETSCII_NUL , PETSCII_NUL , PETSCII_NUL, PETSCII_NUL , PETSCII_NUL , PETSCII_NUL , PETSCII_NUL ; [3]
+            .byte PETSCII_NUL , PETSCII_NUL , PETSCII_NUL , PETSCII_NUL, PETSCII_NUL , PETSCII_NUL , PETSCII_NUL , PETSCII_NUL ; [4]
+            .byte PETSCII_NUL , PETSCII_NUL , PETSCII_NUL , PETSCII_NUL, PETSCII_NUL , PETSCII_NUL , PETSCII_NUL , PETSCII_NUL ; [5]
+            .byte PETSCII_NUL , PETSCII_NUL , PETSCII_NUL , PETSCII_NUL, PETSCII_NUL , PETSCII_NUL , PETSCII_NUL , PETSCII_NUL ; [6]
+            .byte PETSCII_NUL , PETSCII_NUL , PETSCII_NUL , PETSCII_NUL, PETSCII_NUL , PETSCII_NUL , PETSCII_NUL , PETSCII_NUL ; [7]
+            .byte PETSCII_NUL , PETSCII_NUL , PETSCII_NUL , PETSCII_NUL, PETSCII_NUL , PETSCII_NUL , PETSCII_NUL , PETSCII_NUL ; [8]
+            .byte PETSCII_NUL , PETSCII_NUL , PETSCII_NUL , PETSCII_NUL, PETSCII_NUL , PETSCII_NUL , PETSCII_NUL , PETSCII_NUL ; [9]
 
-L297F:      .byte   $00
+L297F:      .byte 0
 
 T_COMMAND_INDEX:
-    L29D4:  .byte   $00
+            .byte 0
 
-;S_BACKUP:
-;    L312E:  .byte   $00
-
-; L312F:      .byte   $00                                   ; See SETUP_FONT_AND_TEXT_SCREEN
-
-L337F:      .byte   $00
-L3380:      .byte   $00
+L337F:      .byte 0
+L3380:      .byte 0
