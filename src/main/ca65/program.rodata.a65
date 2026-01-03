@@ -20,54 +20,55 @@
 ; Resource strings
 ;
 
-RESOURCE_STRING_EMPTY:
-    .byte PETSCII_NUL
 
-RESOURCE_STRING_BOTTOM:
-    .byte "[bottom]", PETSCII_NUL
-
-RESOURCE_STRING_LIST_HEADER:
-    .byte PETSCII_RETURN, PETSCII_RETURN, PETSCII_RETURN, PETSCII_RETURN, PETSCII_RETURN, "name        blocks", PETSCII_RETURN, PETSCII_RETURN, PETSCII_NUL
-
-RESOURCE_STRING_LIST_FOOTER:
-    .byte PETSCII_RETURN, PETSCII_RETURN, "blocks free: ", PETSCII_NUL
-
-RESOURCE_STRING_HIT_RETURN_TO_CONTINUE:
-    .byte "hit return to continue", PETSCII_NUL
-
-;;; summary: Disk directory (length is 1)
+;;; summary: Disk directory (length is 1). No nul terminator.
 RESOURCE_STRING_DIR_NAME:
     .byte "$"
 
+RESOURCE_STRING_EMPTY:
+    .asciiz ""
+
+RESOURCE_STRING_BOTTOM:
+    .asciiz "[bottom]"
+
+RESOURCE_STRING_LIST_HEADER:
+    .asciiz PETSCII_RETURN, PETSCII_RETURN, PETSCII_RETURN, PETSCII_RETURN, PETSCII_RETURN, "name        blocks", PETSCII_RETURN, PETSCII_RETURN
+
+RESOURCE_STRING_LIST_FOOTER:
+    .asciiz PETSCII_RETURN, PETSCII_RETURN, "blocks free: "
+
+RESOURCE_STRING_HIT_RETURN_TO_CONTINUE:
+    .asciiz "hit return to continue"
+
 RESOURCE_STRING_COMMAND_PROMPT:
-    .byte "cmd: ", PETSCII_NUL
+    .asciiz "cmd: "
 
 RESOURCE_STRING_OUT_OF_MEMORY:
-    .byte "out of memory", PETSCII_NUL
+    .asciiz "out of memory"
 
 RESOURCE_STRING_NOT_ENOUGH_MEMORY:
-    .byte "not enough memory", PETSCII_NUL
+    .asciiz "not enough memory"
 
 RESOURCE_STRING_INVALID_COMMAND:
-    .byte "invalid command", PETSCII_NUL
+    .asciiz "invalid command"
 
 RESOURCE_STRING_DRIVE_NOT_PRESENT:
-    .byte "drive not present", PETSCII_NUL
+    .asciiz "drive not present"
 
 RESOURCE_STRING_NO_MORE_FREE_FILES:
-    .byte "no more free files", PETSCII_NUL
+    .asciiz "no more free files"
 
 RESOURCE_STRING_SEARCH_STRING_NOT_FOUND:
-    .byte "search string not found", PETSCII_NUL
+    .asciiz "search string not found"
 
-RESOURCE_STRING_COMMAND_NAME_GET  : .byte "get"   , PETSCII_NUL
-RESOURCE_STRING_COMMAND_NAME_PUT  : .byte "put"   , PETSCII_NUL
-RESOURCE_STRING_COMMAND_NAME_GOTO : .byte "go"    , PETSCII_NUL
-RESOURCE_STRING_COMMAND_NAME_CLEAR: .byte "clear" , PETSCII_NUL
-RESOURCE_STRING_COMMAND_NAME_LIST : .byte "list"  , PETSCII_NUL
-RESOURCE_STRING_COMMAND_NAME_QUIT : .byte "quit"  , PETSCII_NUL
-RESOURCE_STRING_COMMAND_NAME_DIR  : .byte "dir"   , PETSCII_NUL
-RESOURCE_STRING_COMMAND_NAME_DISK : .byte "disk"  , PETSCII_NUL
+RESOURCE_STRING_COMMAND_NAME_GET  : .asciiz "get"
+RESOURCE_STRING_COMMAND_NAME_PUT  : .asciiz "put"
+RESOURCE_STRING_COMMAND_NAME_GOTO : .asciiz "go"
+RESOURCE_STRING_COMMAND_NAME_CLEAR: .asciiz "clear"
+RESOURCE_STRING_COMMAND_NAME_LIST : .asciiz "list"
+RESOURCE_STRING_COMMAND_NAME_QUIT : .asciiz "quit"
+RESOURCE_STRING_COMMAND_NAME_DIR  : .asciiz "dir"
+RESOURCE_STRING_COMMAND_NAME_DISK : .asciiz "disk"
 
 ;
 ; Tables power of 10
