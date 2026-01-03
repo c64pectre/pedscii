@@ -36,8 +36,13 @@ V378A:      .res 1      ; $378A
 V378B:      .res 1      ; $378B
 V378C:      .res 1      ; $378C
 V378D:      .res 1      ; $378D
-V378E:      .res 35     ; $378E..$37B0  Command
-V37B1:      .res 35     ; $37B1..$37D3  File name (to send to disk SETNAM) or buffer name for goto BUFFERNAME or clear BUFFERNAME
+
+COMMAND_TEXT:
+            .res 35     ; $378E..$37B0  Command
+
+NAME_TEXT:
+            .res 35     ; $37B1..$37D3  File name (to send to disk SETNAM) or buffer name for goto BUFFERNAME or clear BUFFERNAME
+
 V37D4:      .res 1      ; $37D4
 V37D5:      .res 1      ; $37D5
 V37D6:      .res 1      ; $37D6

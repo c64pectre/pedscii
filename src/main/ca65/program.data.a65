@@ -75,6 +75,7 @@ BUFFER_NAME_TABLE:
 
 L297F:      .byte 0
 
+;;; deprecated
 T_COMMAND_INDEX:
             .byte 0
 

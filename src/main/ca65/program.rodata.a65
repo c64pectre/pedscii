@@ -20,6 +20,9 @@
 ; Resource strings
 ;
 
+RESOURCE_STRING_EMPTY:
+    .byte PETSCII_NUL
+
 RESOURCE_STRING_BOTTOM:
     .byte "[bottom]", PETSCII_NUL
 
@@ -56,6 +59,15 @@ RESOURCE_STRING_NO_MORE_FREE_FILES:
 
 RESOURCE_STRING_SEARCH_STRING_NOT_FOUND:
     .byte "search string not found", PETSCII_NUL
+
+RESOURCE_STRING_COMMAND_NAME_GET  : .byte "get"   , PETSCII_NUL
+RESOURCE_STRING_COMMAND_NAME_PUT  : .byte "put"   , PETSCII_NUL
+RESOURCE_STRING_COMMAND_NAME_GOTO : .byte "go"    , PETSCII_NUL
+RESOURCE_STRING_COMMAND_NAME_CLEAR: .byte "clear" , PETSCII_NUL
+RESOURCE_STRING_COMMAND_NAME_LIST : .byte "list"  , PETSCII_NUL
+RESOURCE_STRING_COMMAND_NAME_QUIT : .byte "quit"  , PETSCII_NUL
+RESOURCE_STRING_COMMAND_NAME_DIR  : .byte "dir"   , PETSCII_NUL
+RESOURCE_STRING_COMMAND_NAME_DISK : .byte "disk"  , PETSCII_NUL
 
 ;
 ; Tables power of 10
@@ -157,42 +169,130 @@ CMD_ADDR_TABLE_HI:
     .hibytes CMD_PASTE          ; 23  CMD_NUMBER_PASTE       
     .hibytes 0                  ; 24
 
-COMMAND_NAME_TABLE:
-    .byte   "get", PETSCII_NUL, PETSCII_NUL, PETSCII_NUL, PETSCII_NUL  ; 0 GET
-    .byte   "put", PETSCII_NUL, PETSCII_NUL, PETSCII_NUL, PETSCII_NUL  ; 1 PUT
-    .byte   "goto"            , PETSCII_NUL, PETSCII_NUL, PETSCII_NUL  ; 2 GOTO
-    .byte   "clear"                        , PETSCII_NUL, PETSCII_NUL  ; 3 CLEAR
-    .byte   "list"            , PETSCII_NUL, PETSCII_NUL, PETSCII_NUL  ; 4 LIST
-    .byte   "quit"            , PETSCII_NUL, PETSCII_NUL, PETSCII_NUL  ; 6 QUIT
-    .byte   "dir", PETSCII_NUL, PETSCII_NUL, PETSCII_NUL, PETSCII_NUL  ; 7 DIR
-    .byte   "disk"            , PETSCII_NUL, PETSCII_NUL, PETSCII_NUL  ; 8 DISK
+MAP_COMMAND_NAME_TO_COMMAND_NUMBER_KEYS_NAME_LO:
+    .lobytes RESOURCE_STRING_COMMAND_NAME_GET   ; 0 GET  
+    .lobytes RESOURCE_STRING_COMMAND_NAME_PUT   ; 1 PUT  
+    .lobytes RESOURCE_STRING_COMMAND_NAME_GOTO  ; 2 GOTO 
+    .lobytes RESOURCE_STRING_COMMAND_NAME_CLEAR ; 3 CLEAR
+    .lobytes RESOURCE_STRING_COMMAND_NAME_LIST  ; 4 LIST 
+    .lobytes RESOURCE_STRING_COMMAND_NAME_QUIT  ; 5 QUIT 
+    .lobytes RESOURCE_STRING_COMMAND_NAME_DIR   ; 6 DIR  
+    .lobytes RESOURCE_STRING_COMMAND_NAME_DISK  ; 7 DISK 
 
-COMMAND_NAME_SIGNIFICANT_CHAR_COUNT:
-    .byte 2  ; 0 GEt
-    .byte 2  ; 1 PUt
-    .byte 2  ; 2 GOto
-    .byte 5  ; 3 CLEAR
-    .byte 1  ; 4 List
-    .byte 4  ; 6 QUIT
-    .byte 3  ; 7 DIR
-    .byte 3  ; 8 DISk
+MAP_COMMAND_NAME_TO_COMMAND_NUMBER_KEYS_NAME_HI:
+    .hibytes RESOURCE_STRING_COMMAND_NAME_GET   ; 0 GET  
+    .hibytes RESOURCE_STRING_COMMAND_NAME_PUT   ; 1 PUT  
+    .hibytes RESOURCE_STRING_COMMAND_NAME_GOTO  ; 2 GOTO 
+    .hibytes RESOURCE_STRING_COMMAND_NAME_CLEAR ; 3 CLEAR
+    .hibytes RESOURCE_STRING_COMMAND_NAME_LIST  ; 4 LIST 
+    .hibytes RESOURCE_STRING_COMMAND_NAME_QUIT  ; 5 QUIT 
+    .hibytes RESOURCE_STRING_COMMAND_NAME_DIR   ; 6 DIR  
+    .hibytes RESOURCE_STRING_COMMAND_NAME_DISK  ; 7 DISK 
 
-COMMAND_ADDR_TABLE_LO:
-    .lobytes CMD_GET    ; 0
-    .lobytes CMD_PUT    ; 1
-    .lobytes CMD_GOTO   ; 2
-    .lobytes CMD_CLEAR  ; 3
-    .lobytes CMD_LIST   ; 4
-    .lobytes CMD_QUIT   ; 5
-    .lobytes CMD_DIR    ; 6
-    .lobytes CMD_DISK   ; 7
+MAP_COMMAND_NAME_TO_COMMAND_NUMBER_KEYS_SIGNIFICANT_CHAR_COUNT:
+    .byte 2 ; 0 GET    "GEt"
+    .byte 2 ; 1 PUT    "PUt"
+    .byte 2 ; 2 GOTO   "GOto"
+    .byte 5 ; 3 CLEAR  "CLEAR"
+    .byte 1 ; 4 LIST   "List"
+    .byte 4 ; 6 QUIT   "QUIT"
+    .byte 3 ; 7 DIR    "DIR"
+    .byte 3 ; 8 DISK   "DISk"
 
-COMMAND_ADDR_TABLE_HI:
-    .hibytes CMD_GET    ; 0
-    .hibytes CMD_PUT    ; 1
-    .hibytes CMD_GOTO   ; 2
-    .hibytes CMD_CLEAR  ; 3
-    .hibytes CMD_LIST   ; 4
-    .hibytes CMD_QUIT   ; 5
-    .hibytes CMD_DIR    ; 6
-    .hibytes CMD_DISK   ; 7
+MAP_COMMAND_NAME_TO_COMMAND_NUMBER_VALUES:
+    .byte CMD_NUMBER_GET   ; 0 GET  
+    .byte CMD_NUMBER_PUT   ; 1 PUT  
+    .byte CMD_NUMBER_GOTO  ; 2 GOTO 
+    .byte CMD_NUMBER_CLEAR ; 3 CLEAR
+    .byte CMD_NUMBER_LIST  ; 4 LIST 
+    .byte CMD_NUMBER_QUIT  ; 5 QUIT 
+    .byte CMD_NUMBER_DIR   ; 6 DIR  
+    .byte CMD_NUMBER_DISK  ; 7 DISK 
+
+MAP_COMMAND_NAME_TO_COMMAND_NUMBER_SIZE = 8
+
+MAP_COMMAND_NUMBER_TO_HANDLER_LO:
+    .lobytes CMD_PANIC         ;  0 CMD_NUMBER_NONE
+    .lobytes CMD_NOP           ;  1
+    .lobytes CMD_COMMAND_MODE  ;  2
+    .lobytes CMD_SELECT_MODE   ;  3
+    .lobytes CMD_CURSOR_RIGHT  ;  4
+    .lobytes CMD_CURSOR_LEFT   ;  5
+    .lobytes CMD_CURSOR_DOWN   ;  6
+    .lobytes CMD_CURSOR_UP     ;  7
+    .lobytes CMD_GO_BEGIN_LINE ;  8
+    .lobytes CMD_GO_END_LINE   ;  9
+    .lobytes CMD_PAGE_DOWN     ; 10
+    .lobytes CMD_PAGE_UP       ; 11
+    .lobytes CMD_GO_TOP        ; 12
+    .lobytes CMD_GO_BOTTOM     ; 13
+    .lobytes CMD_SEARCH_DOWN   ; 14
+    .lobytes CMD_SEARCH_UP     ; 15
+    .lobytes CMD_SPLIT_LINE    ; 16
+    .lobytes CMD_ADD_LINE      ; 17
+    .lobytes CMD_DELETE        ; 18
+    .lobytes CMD_INSERT        ; 19
+    .lobytes CMD_SELECT_ALL    ; 20
+    .lobytes CMD_COPY          ; 21
+    .lobytes CMD_CUT           ; 22
+    .lobytes CMD_PASTE         ; 23
+    .lobytes CMD_GET           ; 24
+    .lobytes CMD_PUT           ; 25
+    .lobytes CMD_GOTO          ; 26
+    .lobytes CMD_CLEAR         ; 27
+    .lobytes CMD_LIST          ; 28
+    .lobytes CMD_QUIT          ; 29
+    .lobytes CMD_DIR           ; 30
+    .lobytes CMD_DISK          ; 31
+
+MAP_COMMAND_NUMBER_TO_HANDLER_HI:
+    .hibytes CMD_PANIC         ;  0 CMD_NUMBER_NONE
+    .hibytes CMD_NOP           ;  1
+    .hibytes CMD_COMMAND_MODE  ;  2
+    .hibytes CMD_SELECT_MODE   ;  3
+    .hibytes CMD_CURSOR_RIGHT  ;  4
+    .hibytes CMD_CURSOR_LEFT   ;  5
+    .hibytes CMD_CURSOR_DOWN   ;  6
+    .hibytes CMD_CURSOR_UP     ;  7
+    .hibytes CMD_GO_BEGIN_LINE ;  8
+    .hibytes CMD_GO_END_LINE   ;  9
+    .hibytes CMD_PAGE_DOWN     ; 10
+    .hibytes CMD_PAGE_UP       ; 11
+    .hibytes CMD_GO_TOP        ; 12
+    .hibytes CMD_GO_BOTTOM     ; 13
+    .hibytes CMD_SEARCH_DOWN   ; 14
+    .hibytes CMD_SEARCH_UP     ; 15
+    .hibytes CMD_SPLIT_LINE    ; 16
+    .hibytes CMD_ADD_LINE      ; 17
+    .hibytes CMD_DELETE        ; 18
+    .hibytes CMD_INSERT        ; 19
+    .hibytes CMD_SELECT_ALL    ; 20
+    .hibytes CMD_COPY          ; 21
+    .hibytes CMD_CUT           ; 22
+    .hibytes CMD_PASTE         ; 23
+    .hibytes CMD_GET           ; 24
+    .hibytes CMD_PUT           ; 25
+    .hibytes CMD_GOTO          ; 26
+    .hibytes CMD_CLEAR         ; 27
+    .hibytes CMD_LIST          ; 28
+    .hibytes CMD_QUIT          ; 29
+    .hibytes CMD_DIR           ; 30
+    .hibytes CMD_DISK          ; 31
+
+MAP_EXCEPTION_CODE_TO_RESOURCE_STRING_LO:
+    .lobytes RESOURCE_STRING_EMPTY                   ; 0 EXCEPTION_NONE
+    .lobytes RESOURCE_STRING_OUT_OF_MEMORY           ; 1 EXCEPTION_OUT_OF_MEMORY
+    .lobytes RESOURCE_STRING_NOT_ENOUGH_MEMORY       ; 2 EXCEPTION_NOT_ENOUGH_MEMORY
+    .lobytes RESOURCE_STRING_DRIVE_NOT_PRESENT       ; 3 EXCEPTION_DRIVE_NOT_PRESENT
+    .lobytes RESOURCE_STRING_NO_MORE_FREE_FILES      ; 4 EXCEPTION_NO_MORE_FREE_FILES
+    .lobytes RESOURCE_STRING_SEARCH_STRING_NOT_FOUND ; 5 EXCEPTION_SEARCH_STRING_NOT_FOUND
+    .lobytes RESOURCE_STRING_INVALID_COMMAND         ; 6 EXCEPTION_COMMAND_NOT_FOUND
+
+MAP_EXCEPTION_CODE_TO_RESOURCE_STRING_HI:
+    .hibytes RESOURCE_STRING_EMPTY                   ; 0 EXCEPTION_NONE
+    .hibytes RESOURCE_STRING_OUT_OF_MEMORY           ; 1 EXCEPTION_OUT_OF_MEMORY
+    .hibytes RESOURCE_STRING_NOT_ENOUGH_MEMORY       ; 2 EXCEPTION_NOT_ENOUGH_MEMORY
+    .hibytes RESOURCE_STRING_DRIVE_NOT_PRESENT       ; 3 EXCEPTION_DRIVE_NOT_PRESENT
+    .hibytes RESOURCE_STRING_NO_MORE_FREE_FILES      ; 4 EXCEPTION_NO_MORE_FREE_FILES
+    .hibytes RESOURCE_STRING_SEARCH_STRING_NOT_FOUND ; 5 EXCEPTION_SEARCH_STRING_NOT_FOUND
+    .hibytes RESOURCE_STRING_INVALID_COMMAND         ; 6 EXCEPTION_COMMAND_NOT_FOUND

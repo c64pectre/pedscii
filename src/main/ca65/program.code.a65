@@ -962,7 +962,7 @@
     rts
 .endproc
 
-;;; summary: Command: Enter select mode for cut <SHIFT + STOP_RUN>
+;;; summary: Command: Enter select mode for cut
 ;;; changed: ...
 .proc CMD_SELECT_MODE
     bit G_MODE
@@ -994,7 +994,7 @@
     rts
 .endproc
 
-;;; summary: Command: Cut <F5>
+;;; summary: Command: Cut
 ;;; throws: EXCEPTION_OUT_OF_MEMORY
 ;;; changed: ...
 .proc CMD_CUT
@@ -2224,9 +2224,10 @@
     rts
 .endproc
 
-;;; summary: ?
-;;; changed: ...
-.proc L2426
+;;; summary: Get command text
+;;; out: COMMAND_TEXT
+;;; changed: A  X Y ...
+.proc GET_COMMAND_TEXT
     lda # <COMMAND_PANEL_FIRST_LINE_START_VM
     sta TFB
     lda # >COMMAND_PANEL_FIRST_LINE_START_VM
@@ -2252,17 +2253,16 @@
             pha
             lda L24E5
             if_ne_then
-                ;beq L2464
                 pla
                 cmp # CMD_KEY_SEARCH_DOWN
                 if_eq_then
-                    sta V378E,x
+                    sta COMMAND_TEXT,x
                     rts
                 else_end
 
                 cmp # CMD_KEY_SEARCH_UP
                 if_eq_then
-                    sta V378E,x
+                    sta COMMAND_TEXT,x
                     rts
                 else_end
 
@@ -2279,7 +2279,7 @@
 
             cpy # VIC_CHAR_COLUMNS - 1
             if_ne_then
-                sta V378E,x
+                sta COMMAND_TEXT,x
                 jsr L240D                                   ; A+, V378D+
                 sta [TFB],y
                 inx
@@ -2298,7 +2298,7 @@
         ldy # 0
         cpx # 0
         if_ne_then
-            lda V378E
+            lda COMMAND_TEXT
             cmp # PETSCII_LATIN_LETTER_A
             if_cc_then
                 ldy #$01
@@ -2322,7 +2322,7 @@
     if_ne_then
         from_loop
             dex
-            lda V378E,x
+            lda COMMAND_TEXT,x
             cmp # PETSCII_QUOTATION_MARK
             beq L24AE
         next
@@ -2335,13 +2335,13 @@
     
     L24AE:
     lda # 0
-    sta V378E,x
-    sta V37B1
+    sta COMMAND_TEXT,x
+    sta NAME_TEXT
     from
         ldx # $FF
     loop
         inx
-        lda V378E,x
+        lda COMMAND_TEXT,x
         if_eq_then
             rts
         else_end
@@ -2351,10 +2351,10 @@
     end
 
     lda # 0
-    sta V378E,x
+    sta COMMAND_TEXT,x
     from_loop
         inx
-        lda V378E,x
+        lda COMMAND_TEXT,x
         bne L24CF
         rts
         L24CF:
@@ -2372,8 +2372,8 @@
     loop
         inx
         iny
-        lda V378E,x
-        sta V37B1,y
+        lda COMMAND_TEXT,x
+        sta NAME_TEXT,y
     next
         bne _loop
     end
@@ -2824,9 +2824,9 @@
 .proc L2784
     sta L2808
     from
-        lda # <V37B1
+        lda # <NAME_TEXT
         sta TFB
-        lda # >V37B1
+        lda # >NAME_TEXT
         sta TFC
         lda # <BUFFER_NAME_TABLE
         sta PFD
@@ -2901,7 +2901,7 @@
         sta TFC
         ldy # 0
     loop
-        lda V37B1,y
+        lda NAME_TEXT,y
         sta [TFB],y
     next
         iny
@@ -3025,9 +3025,10 @@
     rts
 .endproc
 
-;;; summary: A to decimal string representation in A (10^2) X (10^1) Y (10^0)
-;;; parameters: A
-;;; return: A, X, Y
+;;; summary: `A` to decimal string representation in `A` (10^2) `X` (10^1) `Y` (10^0)
+;;; in: A
+;;; out: A X Y
+;;; changes: A  X  Y
 .proc A_TO_DECIMAL_3_A_X_Y
     from
         ldx # PETSCII_SPACE
@@ -3070,64 +3071,47 @@
 .endproc
 
 ;;; summary: Command: Enter command mode
-;;; throws: RESOURCE_STRING_INVALID_COMMAND
-;;; changed: ...
+;;; throws: EXCEPTION_COMMAND_NOT_FOUND
+;;; changed: A  X  Y  AL  BX  CX
 .proc CMD_COMMAND_MODE
     from_loop
         ; Show "cmd: " on command line
         ldx # <RESOURCE_STRING_COMMAND_PROMPT
         ldy # >RESOURCE_STRING_COMMAND_PROMPT
-        jsr L2426
-        lda V378E
+        jsr GET_COMMAND_TEXT
+        lda COMMAND_TEXT
         if_eq_then
+            ; No command text -> leave command mode
             jsr L2545
-            rts
+            rts                                             ; return
         else_end
 
+        ; We've got a command text
         if
             cmp # PETSCII_LATIN_LETTER_A
-            bcc _then
+            bcc _then                                       ; A < 'A' -> then
+            ; A >= 'A'
             cmp # PETSCII_LATIN_LETTER_Z + 1
-            bcc _end
+            bcc _else                                       ; A >= 'A' and A <= 'Z' -> else
+            ; A >= 'A' and A > 'Z'
         then
-            jsr L2D74
-            rts
-        else_end
-
-        from
-            lda # <COMMAND_NAME_TABLE
-            sta TFB
-            lda # >COMMAND_NAME_TABLE
-            sta TFC
-            lda # <V378E
-            sta PFD
-            lda # >V378E
-            sta PFE
-            ldx # 0
-        loop
-            stx T_COMMAND_INDEX
-            lda COMMAND_NAME_SIGNIFICANT_CHAR_COUNT,x
-            jsr STRING_COMPARE_SIGNIFICANT
-            beq EXECUTE_COMMAND
-            lda TFB
-            clc
-            adc # COMMAND_NAME_LENGTH
-            sta TFB
-            if_cs_then
-                inc TFC
-            else_end
-        next
-            ldx T_COMMAND_INDEX
-            inx
-            cpx # COMMAND_COUNT
-            bne _loop
+            ; not (A >= 'A' and A <= 'Z') -> Not a command
+            jsr L2D74                                       ; Handle search down/up?
+            rts                                             ; return
+        else
+            ; Maybe a command
+            try
+                ; A >= 'A' and A <= 'Z'
+                jsr MAP_COMMAND_NAME_TO_COMMAND_NUMBER      ; out A , X+ Y+ AL+ BX+ CX+
+                bvs _catch                                  ; Exception
+                jsr EXECUTE_COMMAND                         ; in A
+                ; check V=0
+                rts                                         ; return
+            catch
+                jsr HANDLE_EXCEPTION
+                ; check V=0
+            finally_end
         end
-
-        ; Command not found
-        ; Show "invalid command"
-        ldx # <RESOURCE_STRING_INVALID_COMMAND
-        ldy # >RESOURCE_STRING_INVALID_COMMAND
-        jsr PRINT_STATUS_LINE
     next
         jmp _loop
     end
@@ -3136,21 +3120,67 @@
     brk
 .endproc
 
-;;; summary: execute command with index in T_COMMAND_INDEX
-;;; changed: ...
-.proc EXECUTE_COMMAND
-    ldx T_COMMAND_INDEX
-    lda COMMAND_ADDR_TABLE_LO,x
-    sta DL
-    lda COMMAND_ADDR_TABLE_HI,x
-    sta DH
-    jsr JSR_INDIRECT_DX
-    jsr L21A2
+;;; summary: Map command name to command number
+;;; in:
+;;;    COMMAND_TEXT  Nul-terminated string
+;;; out:
+;;;   A  Command number
+;;; throws: EXCEPTION_COMMAND_NOT_FOUND
+;;; changed: A X Y AL BX CX
+.proc MAP_COMMAND_NAME_TO_COMMAND_NUMBER
+    from
+        lda # <COMMAND_TEXT
+        sta CL
+        lda # >COMMAND_TEXT
+        sta CH
+        ldy # 0
+    loop
+        sty AL                                              ; Map index
+        lda MAP_COMMAND_NAME_TO_COMMAND_NUMBER_KEYS_NAME_LO,y
+        sta BL
+        lda MAP_COMMAND_NAME_TO_COMMAND_NUMBER_KEYS_NAME_HI,y
+        sta BH
+        ldx MAP_COMMAND_NAME_TO_COMMAND_NUMBER_KEYS_SIGNIFICANT_CHAR_COUNT,y
+        jsr STRING_COMPARE_SIGNIFICANT_BX_CX_X              ; A+ X+ Y+
+        if_eq_then
+            ldx AL
+            lda MAP_COMMAND_NAME_TO_COMMAND_NUMBER_VALUES,x
+            rts                                             ; return A
+        else_end
+    next
+        ldy AL
+        iny
+        cpy # MAP_COMMAND_NAME_TO_COMMAND_NUMBER_SIZE
+        bne _loop
+    end
 
-    ; Need jmp here else CMD_QUIT will not work after another command
-    jmp CMD_COMMAND_MODE
-    ;jsr CMD_COMMAND_MODE
-    ;rts
+    ; Throw EXCEPTION_COMMAND_NOT_FOUND
+    bit ZP_BIT_V
+    lda # EXCEPTION_COMMAND_NOT_FOUND
+    sta ZP_EXCEPTION_CODE
+
+    rts
+.endproc
+
+;;; summary: Execute command with number in `A`
+;;; changed: A X Y DX ...
+.proc EXECUTE_COMMAND
+    try
+        tax
+        lda MAP_COMMAND_NUMBER_TO_HANDLER_LO,x
+        sta DL
+        lda MAP_COMMAND_NUMBER_TO_HANDLER_HI,x
+        sta DH
+        jsr JSR_INDIRECT_DX
+        jsr L21A2
+        bvs _catch
+        jmp _finally
+    catch
+        jsr HANDLE_EXCEPTION
+        ; check V=0
+    finally_end
+
+    rts
 .endproc
 
 ;;; summary: Command: Clear current buffer
@@ -3158,7 +3188,7 @@
 .proc CMD_CLEAR
     lda # MODE_EDIT
     sta G_MODE
-    lda V37B1
+    lda NAME_TEXT
     if_eq_then
         sta P38
         sta P39
@@ -3185,7 +3215,7 @@
 ;;; throws: EXCEPTION_NO_MORE_FREE_FILES
 ;;; changed: ...
 .proc CMD_GOTO
-    lda V37B1
+    lda NAME_TEXT
     if_eq_then
         rts
     else_end
@@ -3243,7 +3273,7 @@
     from
         ldy # 0
     loop
-        lda V37B1,y
+        lda NAME_TEXT,y
         beq _end                                            ; break
     next
         iny
@@ -3254,30 +3284,30 @@
     if_ne_then
         dey
         dey
-        lda V37B1,y
+        lda NAME_TEXT,y
         iny
         iny
         cmp # PETSCII_COMMA
         if_ne_then
             lda # PETSCII_COMMA
-            sta V37B1,y
+            sta NAME_TEXT,y
             iny
             lda # PETSCII_LATIN_LETTER_S
-            sta V37B1,y
+            sta NAME_TEXT,y
             iny
         else_end
 
         lda # PETSCII_COMMA
-        sta V37B1,y
+        sta NAME_TEXT,y
         iny
         lda # PETSCII_LATIN_LETTER_W
-        sta V37B1,y
+        sta NAME_TEXT,y
         iny
     else_end
 
     tya
-    ldx # <V37B1
-    ldy # >V37B1
+    ldx # <NAME_TEXT
+    ldy # >NAME_TEXT
     jsr KERNAL_SETNAM
     jsr KERNAL_OPEN
     if_cs_then
@@ -3305,7 +3335,7 @@
 .proc CMD_GET
     lda # MODE_EDIT
     sta G_MODE
-    lda V37B1
+    lda NAME_TEXT
     if_eq_then
         rts
     else_end
@@ -3379,7 +3409,7 @@
 ;;; summary: Command: Put (save) file
 ;;; changed: ...
 .proc CMD_PUT
-    lda V37B1
+    lda NAME_TEXT
     if_eq_then
         rts
     else_end
@@ -3423,8 +3453,8 @@
     rts
 .endproc
 
-;;; summary compare [TFB] with [PFD] with A significant characters
-;;; changed: ...
+;;; summary: Compare strings with a significant number of characters
+;;; changed: A+  X+  Y+
 .proc STRING_COMPARE_SIGNIFICANT
     tax
     from
@@ -3433,11 +3463,13 @@
         lda [TFB],y
         cmp [PFD],y
         if_ne_then
-            ;beq L2C0C
+            ; (A = [TFB],y) != [PFD],y
             rts
         else_end
 
+        ; A = [TFB],y = [PFD],y
         iny
+        ; A may be 0
         cmp # 0
         beq _end                                            ; break
     next
@@ -3639,14 +3671,14 @@
     lda # 0                                                 ; Disk command has no name
     jsr KERNAL_SETNAM
     jsr KERNAL_OPEN
-    lda V37B1
+    lda NAME_TEXT
     if_ne_then
         ldx # DISK_CMD_FH
         jsr KERNAL_CHKOUT
         from
             ldx # 0
         loop
-            lda V37B1,x
+            lda NAME_TEXT,x
             beq _end                                        ; break
             jsr KERNAL_CHROUT
         next
@@ -3681,7 +3713,7 @@
         ldy # 1
         ldx # 0
     loop
-        lda V378E,y
+        lda COMMAND_TEXT,y
         cmp # CMD_KEY_SEARCH_DOWN
         if_eq_then
             stx V38AB
@@ -3696,7 +3728,7 @@
             rts
         else_end
     next
-        cmp V378E
+        cmp COMMAND_TEXT
         beq _end
         sta V386F,x
         iny
@@ -3710,7 +3742,7 @@
         iny
         ldx # 0
     loop
-        lda V378E,y
+        lda COMMAND_TEXT,y
         cmp # CMD_KEY_SEARCH_DOWN
         if_eq_then
             stx V38AC
@@ -3725,7 +3757,7 @@
             rts
         else_end
 
-        cmp V378E
+        cmp COMMAND_TEXT
         beq _end                                            ; break
         sta V388D,x
     next
@@ -3739,7 +3771,7 @@
         stx V38AC
     loop
         iny
-        lda V378E,y
+        lda COMMAND_TEXT,y
         cmp # CMD_KEY_SEARCH_DOWN
         if_eq_then
             jsr CMD_SEARCH_DOWN
@@ -4234,7 +4266,7 @@
             dey                                             ; Y = 0
             from_loop
                 lda [T5C],y
-                sta V37B1,y
+                sta NAME_TEXT,y
             next
                 iny
                 cmp # 0
@@ -4583,7 +4615,6 @@
 ;;;   A: character to process (!= 0)
 ;;; changed: ...
 .proc PROCESS_CHAR
-BREAK1:
     ; available: X, Y
     ;
     ; $00 - $1F Control characters
@@ -5136,5 +5167,93 @@ BREAK1:
 ;;; changed: A- X- Y-
 .proc JSR_INDIRECT_DX
     jmp [DX]
+    rts
+.endproc
+
+;;; summary: Compare nul-terminated strings
+;;; in:
+;;;   BX  Left string
+;;;   CX  Right string
+;;; out:
+;;;   Z   Is equal?
+;;; changed: A+  Y+
+.proc STRING_COMPARE_BX_CX
+    from
+        ldy # 0
+    loop
+        lda [BX],y
+        cmp [CX],y
+        if_ne_then
+            ; (A = [BX],y) != [CX],y
+            rts
+        else_end
+
+        ; A = [BX],y = [CX],y
+        ; A may be 0
+        cmp # 0
+        beq _end                                            ; break
+    next
+        iny
+        bne _loop                                           ; bra compare max 255/256
+    end
+
+    rts
+.endproc
+
+;;; summary: Compare nul-terminated strings with `X` significant characters
+;;; in:
+;;;   X   Number of significant characters
+;;;   BX  Left string
+;;;   CX  Right string
+;;; out:
+;;;   Z   Is equal?
+;;; changed: A+  X+  Y+
+.proc STRING_COMPARE_SIGNIFICANT_BX_CX_X
+    from
+        ldy # 0
+    loop
+        lda [BX],y
+        cmp [CX],y
+        if_ne_then
+            rts
+        else_end
+
+        iny
+        cmp # 0
+        beq _end                                            ; break
+    next
+        dex
+        bne _loop
+    end
+
+    rts
+.endproc
+
+.proc CMD_PANIC
+    pha
+        lda # COLOR_RED
+        sta VIC_EC
+    pla
+
+    from_loop
+    next
+        jmp _loop
+    end
+
+    ; Does not come here
+    brk
+.endproc
+
+.proc HANDLE_EXCEPTION
+    clv                                                 ; Clear exception
+    ldx ZP_EXCEPTION_CODE
+    lda MAP_EXCEPTION_CODE_TO_RESOURCE_STRING_LO,x
+    sta AL
+    lda MAP_EXCEPTION_CODE_TO_RESOURCE_STRING_HI,x
+    sta AH
+    ldx AL
+    ldy AH
+    jsr PRINT_STATUS_LINE
+
     rts
 .endproc
