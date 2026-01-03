@@ -45,12 +45,15 @@ L2520:      .byte 0
 ;               01234567890012345678900123456789001234567890
 ; Status line: "BUFFERNM l NNNN c NNNN"
 STATUS_LINE_CONTENT:
-L259D:      .byte "????????"
-            .byte " l "
-L25B1:      .byte "????"
-            .byte " c "
-L25BE:      .byte "???"
-            .byte PETSCII_NUL
+STATUS_LINE_CONTENT_BUFFER: .byte "???????"
+                            .byte " l "
+STATUS_LINE_CONTENT_LINE:   .byte "????"
+                            .byte " c "
+STATUS_LINE_CONTENT_COLUMN: .byte "???"
+                            .byte " "
+STATUS_LINE_CONTENT_MODE:   .byte "?"
+                            .byte " "
+                            .byte PETSCII_NUL
 
 INT_TO_STRING_RESULT:
             .byte 0, 0, 0, 0

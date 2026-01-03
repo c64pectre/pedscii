@@ -982,6 +982,7 @@
     if_cc_then
         dec G_MODE
         ; G_MODE = MODE_SELECT
+        jsr L219D
         lda T58
         sta L1CE5
         lda T59
@@ -2459,6 +2460,7 @@
 ;;; summary: ?
 ;;; changed: ...
 .proc L2545
+    ; Buffer
     from
         lda ZPKERNAL_CMP0
         ; A := 8 * A
@@ -2470,7 +2472,7 @@
     loop
         lda BUFFER_NAME_TABLE,y
         beq _end                                            ; break
-        sta L259D,x
+        sta STATUS_LINE_CONTENT_BUFFER,x
     next
         iny
         inx
@@ -2478,15 +2480,16 @@
     end
 
     from
-        lda # PETSCII_SPACE
+        lda # PETSCII_COMMERCIAL_AT;  PETSCII_SPACE
     loop
-        sta L259D,x
+        sta STATUS_LINE_CONTENT_BUFFER,x
     next
         inx
-        cpx # BUFFER_NAME_TABLE_ENTRY_SIZE
+        cpx # BUFFER_NAME_TABLE_ENTRY_SIZE - 1
         bne _loop
     end
 
+    ; Line
     ldx P38
     ldy P39
     inx
@@ -2499,12 +2502,13 @@
         ldx # 3
     loop
         lda INT_TO_STRING_RESULT,x
-        sta L25B1,x
+        sta STATUS_LINE_CONTENT_LINE,x
     next
         dex
         bpl _loop
     end
 
+    ; Column
     ldx     P35
     inx
     ldy     # 0
@@ -2513,11 +2517,24 @@
         ldx # 2
     loop
         lda INT_TO_STRING_RESULT,x
-        sta L25BE,x
+        sta STATUS_LINE_CONTENT_COLUMN,x
     next
         dex
         bpl _loop
     end
+
+    ; Mode indicator
+    bit G_MODE
+    if_pl_then
+        ; G_MODE = MODE_EDIT
+        lda # STATUS_LINE_CONTENT_MODE_EDIT
+        bne _end                                            ; bra
+    else
+        ; G_MODE = MODE_SELECT
+        lda # STATUS_LINE_CONTENT_MODE_SELECT
+    end
+    ;
+    sta STATUS_LINE_CONTENT_MODE
 
     lda # <COMMAND_PANEL_FIRST_LINE_START_VM
     sta TFB
