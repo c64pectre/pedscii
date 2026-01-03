@@ -70,7 +70,7 @@
 
 .exportzp ZP_0B := $0B  ; ZPBASIC_COUNT
 .exportzp ZP_0C := $0C  ; ZPBASIC_DIMFLG
-.exportzp ZP_0D := $0D  ; ZPBASIC_VALTYP
+.exportzp ZP_0D := $0D  ; ZPBASIC_VALTYP                                        USED
 .exportzp ZP_0E := $0E  ; ZPBASIC_INTFLG
 .exportzp ZP_0F := $0F  ; ZPBASIC_DORES_GARBFL
 .exportzp ZP_10 := $10  ; ZPBASIC_SUBFLG
@@ -221,6 +221,9 @@
 ; ZPKERNAL_TIME_2 := $A2
 ; ZPKERNAL_PNT    := $D1-$D2 Pointer to current line in screen memory
 
+
+.exportzp CURRENT_BUFFER_HEAD := ZP_0D
+
 .exportzp P19 := ZP_19
 
 .exportzp T22 := ZP_22                  ; Init 0  [T22+T23],y
@@ -232,14 +235,15 @@
 .exportzp P35 := ZP_35
 .exportzp P36 := ZP_36
 
-.exportzp P38 := ZP_38                  ; Init 0
+.exportzp CURRENT_BUFFER_D := ZP_38                  ; Init 0 ; Was P38
 
-.exportzp P39 := ZP_39                  ; Init 0
+.exportzp CURRENT_BUFFER_E := ZP_39                  ; Init 0 ; Was P39
 
 .exportzp T4E := ZP_4E                  ; Init 0  [T4E+T4F],y
 .exportzp T4F := ZP_4F
+.exportzp CURRENT_BUFFER_B := ZP_4F ; Was T4F
 
-.exportzp T50 := ZP_50
+.exportzp CURRENT_BUFFER_C := ZP_50 ; Was T50
 
 .exportzp T52 := ZP_52
 .exportzp T53 := ZP_53
@@ -251,7 +255,7 @@
 
 .exportzp T5A := ZP_5A                  ; Init 0
 
-.exportzp T5B := ZP_5B                  ; Init 0  CURSOR_X_SCREEN 0..35
+.exportzp CURSOR_SCREEN_X := ZP_5B      ; Init 0  CURSOR_SCREEN_X 0..35 was T5B
 
 .exportzp T5C := ZP_5C                  ; [T5C+T5D],y
 .exportzp T5D := ZP_5D
@@ -288,6 +292,7 @@
 .exportzp ZAB := ZP_AB
 
 .exportzp ZB0 := ZP_B0                  ; [ZB0+ZB1],y
+.exportzp CURRENT_BUFFER_INDEX := ZP_B0
 .exportzp ZB1 := ZP_B1
 
 .exportzp ZB2 := ZP_B2

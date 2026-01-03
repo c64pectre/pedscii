@@ -45,13 +45,13 @@ L2520:      .byte 0
 ;               01234567890012345678900123456789001234567890
 ; Status line: "BUFFERNM l NNNN c NNNN"
 STATUS_LINE_CONTENT:
-STATUS_LINE_CONTENT_BUFFER: .byte "???????"
+STATUS_LINE_CONTENT_BUFFER: .byte "--------" ; zzz
                             .byte " l "
-STATUS_LINE_CONTENT_LINE:   .byte "????"
+STATUS_LINE_CONTENT_LINE:   .byte "    "
                             .byte " c "
-STATUS_LINE_CONTENT_COLUMN: .byte "???"
+STATUS_LINE_CONTENT_COLUMN: .byte "   "
                             .byte " "
-STATUS_LINE_CONTENT_MODE:   .byte "?"
+STATUS_LINE_CONTENT_MODE:   .byte " "
                             .byte " "
                             .byte PETSCII_NUL
 
@@ -62,19 +62,25 @@ L272B:      .byte 0
 
 L2807:      .byte 0
 
-L2808:      .byte 0
+CREATE_BUFFER_IF_NOT_EXISTS:
+            .byte $DD ; Init value does not matter
 
-BUFFER_NAME_TABLE:
-            .byte "main"                                               , PETSCII_NUL , PETSCII_NUL , PETSCII_NUL , PETSCII_NUL ; [0]
-            .byte "paste"                                                            , PETSCII_NUL , PETSCII_NUL , PETSCII_NUL ; [1]
-            .byte PETSCII_NUL , PETSCII_NUL , PETSCII_NUL , PETSCII_NUL, PETSCII_NUL , PETSCII_NUL , PETSCII_NUL , PETSCII_NUL ; [2]
-            .byte PETSCII_NUL , PETSCII_NUL , PETSCII_NUL , PETSCII_NUL, PETSCII_NUL , PETSCII_NUL , PETSCII_NUL , PETSCII_NUL ; [3]
-            .byte PETSCII_NUL , PETSCII_NUL , PETSCII_NUL , PETSCII_NUL, PETSCII_NUL , PETSCII_NUL , PETSCII_NUL , PETSCII_NUL ; [4]
-            .byte PETSCII_NUL , PETSCII_NUL , PETSCII_NUL , PETSCII_NUL, PETSCII_NUL , PETSCII_NUL , PETSCII_NUL , PETSCII_NUL ; [5]
-            .byte PETSCII_NUL , PETSCII_NUL , PETSCII_NUL , PETSCII_NUL, PETSCII_NUL , PETSCII_NUL , PETSCII_NUL , PETSCII_NUL ; [6]
-            .byte PETSCII_NUL , PETSCII_NUL , PETSCII_NUL , PETSCII_NUL, PETSCII_NUL , PETSCII_NUL , PETSCII_NUL , PETSCII_NUL ; [7]
-            .byte PETSCII_NUL , PETSCII_NUL , PETSCII_NUL , PETSCII_NUL, PETSCII_NUL , PETSCII_NUL , PETSCII_NUL , PETSCII_NUL ; [8]
-            .byte PETSCII_NUL , PETSCII_NUL , PETSCII_NUL , PETSCII_NUL, PETSCII_NUL , PETSCII_NUL , PETSCII_NUL , PETSCII_NUL ; [9]
+.define BUFFER_NAME_MAIN "main"
+.define BUFFER_NAME_PASTE "paste"
+
+BUFFER_TABLE_NAME:
+            .byte BUFFER_NAME_MAIN
+            .res BUFFER_NAME_MAX_LENGTH - .strlen(BUFFER_NAME_MAIN) , PETSCII_NUL   ; [0]
+            .byte BUFFER_NAME_PASTE
+            .res BUFFER_NAME_MAX_LENGTH - .strlen(BUFFER_NAME_PASTE) , PETSCII_NUL  ; [1]
+            .res BUFFER_NAME_MAX_LENGTH , PETSCII_NUL                               ; [2]
+            .res BUFFER_NAME_MAX_LENGTH , PETSCII_NUL                               ; [3]
+            .res BUFFER_NAME_MAX_LENGTH , PETSCII_NUL                               ; [4]
+            .res BUFFER_NAME_MAX_LENGTH , PETSCII_NUL                               ; [5]
+            .res BUFFER_NAME_MAX_LENGTH , PETSCII_NUL                               ; [6]
+            .res BUFFER_NAME_MAX_LENGTH , PETSCII_NUL                               ; [7]
+            .res BUFFER_NAME_MAX_LENGTH , PETSCII_NUL                               ; [8]
+            .res BUFFER_NAME_MAX_LENGTH , PETSCII_NUL                               ; [9]
 
 L297F:      .byte 0
 

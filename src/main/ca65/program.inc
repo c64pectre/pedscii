@@ -38,23 +38,65 @@
 ; | $D000 .. $FFFF |            | EDIT_BUFFERS_1_FIRST_PAGE<<8 .. EDIT_BUFFERS_2_LAST_PAGE<<8+$FF | EDIT BUFFERS 2 under IO & KERNAL ROM |
 ; +----------------+------------+-----------------------------------------------------------------+--------------------------------------+
 
+;
+; Boolean values
+;
+; notes:
+;   You can test a variable `M` without changing any register:
+;     bit M
+;     bpl FALSE_BRANCH
+;     bmi TRUE_BRANCH
+;   You can change value without changing any register:
+;     * From `FALSE` to `TRUE`:
+;         dec M
+;     * From `TRUE` to `FALSE`:
+;         inc M
+
+FALSE = 0
+TRUE  = $FF
+
+;
+; Edit buffers
+;
+
 ; We have got 10 edit buffers:
 ; 0   Main
 ; 1   Paste
 ; 2-9 User defined
-EDIT_BUFFER_COUNT = 10
+BUFFER_TABLE_SIZE = 10
 
 BUFFER_INDEX_MAIN = 0
 BUFFER_INDEX_PASTE = 1
+BUFFER_INDEX_CUSTOM_FIRST = 2
 
 ;;; summary: Maximum length of buffer name (including nul terminator)
-EDIT_BUFFER_NAME_MAX_LENGTH = 8
+BUFFER_NAME_MAX_LENGTH = 8
 
+;
+; Memory areanas for edit buffers
+;
 EDIT_BUFFERS_1_FIRST_PAGE = >(__PROGRAM_MEM_LAST__ + $FF)   ; $27
 EDIT_BUFFERS_1_LAST_PAGE  = $CE
 
 EDIT_BUFFERS_2_FIRST_PAGE = $CF
 EDIT_BUFFERS_2_LAST_PAGE  = $CF
+
+; An edit buffer is a linked list of 256 byte blocks.
+
+;;; summary: Next block. 0 = none
+BLOCK_OFFSET_NEXT     = 0
+
+;;; summary: Previous block? 0 = none
+BLOCK_OFFSET_PREVIOUS = 1
+
+;;; summary: Pointer (offset) within block to last character in use. There is a always nul byte at the end of the text.
+;;; notes:
+;;;   BLOCK.BLOCK_OFFSET_POINTER >= 3
+BLOCK_OFFSET_POINTER  = 2
+
+;
+; Screen
+;
 
 PAGE_LINE_COUNT = 20
 
@@ -67,10 +109,6 @@ BUMP_LEFT   = 5
 BUMP_RIGHT  = 35
 BUMP_TOP    = 7
 BUMP_BOTTOM = 17
-
-BUFFER_NAME_TABLE_ENTRY_SIZE = 8;
-BUFFER_NAME_MAX_LENGTH = BUFFER_NAME_TABLE_ENTRY_SIZE - 1
-BUFFER_NAME_TABLE_ENTRY_COUNT = 10;
 
 MAX_LINE_LENGTH = 240                                       ; $F0
 
@@ -156,13 +194,6 @@ MODE_SELECT = $FF
 
 STATUS_LINE_CONTENT_MODE_EDIT   = PETSCII_LATIN_LETTER_E
 STATUS_LINE_CONTENT_MODE_SELECT = PETSCII_LATIN_LETTER_S
-
-;
-; Boolean values
-;
-
-FALSE = 0
-TRUE  = 1
 
 ;
 ; Commands

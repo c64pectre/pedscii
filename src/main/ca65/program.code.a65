@@ -26,7 +26,7 @@
     jsr INITIALIZE
 
     from_loop
-        ldy T5B
+        ldy CURSOR_SCREEN_X
         lda [ZPKERNAL_PNT],y
         pha
         jsr REVERSE_CURSOR_CHAR
@@ -126,12 +126,12 @@
             jsr L1BF7
             rts
         else
-            inc T5B
+            inc CURSOR_SCREEN_X
             jsr L1BCB
             jsr L1982
-            lda T4F
+            lda CURRENT_BUFFER_B
             sta V37D4
-            lda T50
+            lda CURRENT_BUFFER_C
             sta V37D5
             jsr L1BD6
             inc V37D6
@@ -140,7 +140,7 @@
             rts
         end
     else
-        lda T5B
+        lda CURSOR_SCREEN_X
         cmp # BUMP_RIGHT
         if_cs_then
             inc P36
@@ -148,7 +148,7 @@
             jsr L1A15
             rts
         else
-            inc T5B
+            inc CURSOR_SCREEN_X
             jsr L1A15
             rts
         end
@@ -192,13 +192,13 @@
         jsr L1A15
         jsr L19D0
         inx
-        cpx T5B
+        cpx CURSOR_SCREEN_X
         if_ne_then
             dec P36
             jsr SCROLL_LEFT
             rts
         else_end
-        dec T5B
+        dec CURSOR_SCREEN_X
 
         rts
     else_end
@@ -246,15 +246,15 @@
         jsr L1C99                                           ; A- X- Y-
     end
 
-    lda P38
+    lda CURRENT_BUFFER_D
     if_eq_then
-        dec P39
+        dec CURRENT_BUFFER_E
     else_end
 
-    dec P38
+    dec CURRENT_BUFFER_D
     jsr L1BF7
     lda # BUMP_RIGHT
-    sta T5B
+    sta CURSOR_SCREEN_X
     lda T5A
     cmp # PETSCII_RETURN
     if_cs_then
@@ -423,7 +423,7 @@
 .proc L1A2A
     try
         lda # 0
-        sta T5B
+        sta CURSOR_SCREEN_X
         sta P35
         jsr L1BEC
         ldy # 0
@@ -454,7 +454,7 @@
             iny
             jsr L1B9C
         next
-            inc T5B
+            inc CURSOR_SCREEN_X
             inc P35
             jmp _loop
         else_end
@@ -589,10 +589,11 @@
     sta L1B46
     tya
     pha
-    ldy # 2                                                 ; ?
+    ldy # 2                                                 ; Y = 2
     lda [T4E],y
     cmp # $FF                                               ; ?
     if_eq_then
+        ; A = $FF
         jsr L1B77                                           ; May throw EXCEPTION_OUT_OF_MEMORY
         if_cs_then
             pla
@@ -602,12 +603,12 @@
     else_end
 
     lda V37D4
-    cmp T4F
+    cmp CURRENT_BUFFER_B
     if_eq_then
         inc V37D5
     else_end
 
-    ldy # 2                                                ; ?
+    ldy # 2                                                ; Y = 2
     lda [T4E],y
     tay
     iny
@@ -632,7 +633,7 @@
         end
     next
         dey
-        cpy T50
+        cpy CURRENT_BUFFER_C
         bne _loop
     end
 
@@ -677,7 +678,7 @@
     sta ZP_0E
     pla
     sta [T22],y
-    lda T4F
+    lda CURRENT_BUFFER_B
     iny
     sta [T22],y
     lda # 3                                                ; ?
@@ -720,36 +721,35 @@
 ;;; changed: A-, Y-
 .proc L1B9C
     pha
-    tya
-    pha
-    lda T50
-    ldy # 2
-    cmp [T4E],y
-    if_cs_then
-        ldy # 0
-        lda [T4E],y
-        if_ne_then
-            sta T4F
-            lda # 3
-            sta T50
-        else_end
-        jmp _end
-    else
-        inc T50
-    end
-
-    pla
-    tay
+        tya
+        pha
+            lda CURRENT_BUFFER_C
+            ldy # 2
+            cmp [T4E],y
+            if_cs_then
+                ldy # 0
+                lda [T4E],y
+                if_ne_then
+                    sta CURRENT_BUFFER_B
+                    lda # 3
+                    sta CURRENT_BUFFER_C
+                else_end
+                jmp _end
+            else
+                inc CURRENT_BUFFER_C
+            end
+        pla
+        tay
     pla
 
     rts
 .endproc
 
-;;; summary: C:= [T4E],T50 == 0
+;;; summary: C:= [T4E],CURRENT_BUFFER_C == 0
 ;;; changed: A+
 .proc L1BBC
     sty L1B46                                               ; Backup Y
-    ldy T50
+    ldy CURRENT_BUFFER_C
     lda [T4E],y
     clc
     if_eq_then
@@ -760,53 +760,53 @@
     rts
 .endproc
 
-;;; summary: T52#T53 := T4F#T50
-;;; changed: A- X- Y- T52:=T4F T53:=T50
+;;; summary: T52#T53 := CURRENT_BUFFER_B#CURRENT_BUFFER_C
+;;; changed: A- X- Y- T52:=CURRENT_BUFFER_B T53:=CURRENT_BUFFER_C
 .proc L1BCB
     pha
-        lda T4F
+        lda CURRENT_BUFFER_B
         sta T52
-        lda T50
+        lda CURRENT_BUFFER_C
         sta T53
     pla
 
     rts
 .endproc
 
-;;; summary: T4F#T50 := T52#T53
+;;; summary: CURRENT_BUFFER_B#CURRENT_BUFFER_C := T52#T53
 ;;; changed: A- X- Y-
 .proc L1BD6
     pha
         lda T52
-        sta T4F
+        sta CURRENT_BUFFER_B
         lda T53
-        sta T50
+        sta CURRENT_BUFFER_C
     pla
 
     rts
 .endproc
 
-;;; summary: T58#T59 := T4F#T50 
+;;; summary: T58#T59 := CURRENT_BUFFER_B#CURRENT_BUFFER_C 
 ;;; changed: A- X- Y-
 .proc L1BE1
     pha
-        lda T4F
+        lda CURRENT_BUFFER_B
         sta T58
-        lda T50
+        lda CURRENT_BUFFER_C
         sta T59
     pla
 
     rts
 .endproc
 
-;;; summary: T4F#T50 := T58#T59
+;;; summary: CURRENT_BUFFER_B#CURRENT_BUFFER_C := T58#T59
 ;;; changed: A- X- Y-
 .proc L1BEC
     pha
         lda T58
-        sta T4F
+        sta CURRENT_BUFFER_B
         lda T59
-        sta T50
+        sta CURRENT_BUFFER_C
     pla
 
     rts
@@ -821,7 +821,7 @@
             tya
             pha
                 lda V37D4
-                cmp T4F
+                cmp CURRENT_BUFFER_B
                 if_eq_then
                     dec V37D5
                 else_end
@@ -829,13 +829,13 @@
                 ldy # 2
                 lda [T4E],y
                 tax
-                cmp T50
+                cmp CURRENT_BUFFER_C
                 if_eq_then
                     lda [T4E],y
                     sec
                     sbc # 1
                     sta [T4E],y
-                    ldy T4F
+                    ldy CURRENT_BUFFER_B
                     jsr L1B9C
                     txa
                     cmp # 3
@@ -861,7 +861,7 @@
                     sbc # 1
                     sta [T4E],y
                     from
-                        ldy T50
+                        ldy CURRENT_BUFFER_C
                         iny
                     loop
                         lda [T4E],y
@@ -909,9 +909,9 @@
 
     if_eq_then
         lda T27
-        sta ZPBASIC_VALTYP
-        ldx ZPKERNAL_CMP0
-        sta V37D9,x
+        sta CURRENT_BUFFER_HEAD
+        ldx CURRENT_BUFFER_INDEX
+        sta BUFFER_TABLE_HEAD,x
         jmp _end
     else
         sta T27
@@ -935,7 +935,7 @@
     pha
         tya
         pha
-            lda T50
+            lda CURRENT_BUFFER_C
             cmp # 3
             if_eq_then
                 ldy # 1
@@ -944,15 +944,15 @@
                     sec
                     jmp _end
                 else
-                    sta T4F
+                    sta CURRENT_BUFFER_B
                     iny
                     lda [T4E],y
-                    sta T50
+                    sta CURRENT_BUFFER_C
                     clc
                 end
                 jmp _end
             else
-                dec T50
+                dec CURRENT_BUFFER_C
                 clc
             end
         pla
@@ -1040,9 +1040,9 @@
         lda L1CE7
         sta L1CE9
         lda L1CE5
-        sta T4F
+        sta CURRENT_BUFFER_B
         lda L1CE6
-        sta T50
+        sta CURRENT_BUFFER_C
         lda T58
         sta V37D4
         lda T59
@@ -1060,13 +1060,13 @@
         else_end
 
         lda L1CE5
-        sta T4F
+        sta CURRENT_BUFFER_B
         lda L1CE6
-        sta T50
+        sta CURRENT_BUFFER_C
         jsr L1982
-        lda T4F
+        lda CURRENT_BUFFER_B
         sta V37D4
-        lda T50
+        lda CURRENT_BUFFER_C
         sta V37D5
         jsr L1BD6
         jsr L1982
@@ -1075,28 +1075,28 @@
     lda L1CE8
     if_pl_then
         sec
-        lda P38
+        lda CURRENT_BUFFER_D
         sbc L1CE9
-        sta P38
-        lda P39
+        sta CURRENT_BUFFER_D
+        lda CURRENT_BUFFER_E
         sbc L1CEA
-        sta P39
+        sta CURRENT_BUFFER_E
         jmp _end
     else
-        inc P38
+        inc CURRENT_BUFFER_D
         if_eq_then
-            inc P39
+            inc CURRENT_BUFFER_E
         else_end
     end
 
     lda L1EE6
     sta TFC
     ldx # 1
-    sta V37D9,x
-    sta V37E3,x
+    sta BUFFER_TABLE_HEAD,x
+    sta BUFFER_TABLE_B,x
     lda # 3
-    sta V37ED,x
-    lda T4F
+    sta BUFFER_TABLE_C,x
+    lda CURRENT_BUFFER_B
     cmp V37D4
     if_eq_then
         jsr L1E80
@@ -1119,11 +1119,11 @@
     iny
     lda [T4E],y
     sec
-    sbc T50
+    sbc CURRENT_BUFFER_C
     clc
     adc # 3
     sta [TFB],y
-    ldy T50
+    ldy CURRENT_BUFFER_C
     dey
     sty L1EE3
     ldy # 2
@@ -1184,7 +1184,7 @@
     tay
     sta [TFB],y
     ldy # 1
-    lda T4F
+    lda CURRENT_BUFFER_B
     sta [PFD],y
     dey
     lda PFE
@@ -1197,10 +1197,10 @@
         sta [TFB],y
     else_end
 
-    lda T50
+    lda CURRENT_BUFFER_C
     cmp # 3
     if_eq_then
-        lda T4F
+        lda CURRENT_BUFFER_B
         jsr L1C55
         jmp _end
     else
@@ -1211,9 +1211,9 @@
     end
 
     lda PFE
-    sta T4F
+    sta CURRENT_BUFFER_B
     lda # 3
-    sta T50
+    sta CURRENT_BUFFER_C
     jsr L21A2
 
     rts
@@ -1235,7 +1235,7 @@
 ;;; changed: ...
 .proc L1E80
     from
-        ldy T50
+        ldy CURRENT_BUFFER_C
         sty L1EE3
         ldy # 3
         sty L1EE4
@@ -1267,7 +1267,7 @@
         ldy V37D5
         dey
         sty L1EE3
-        ldy T50
+        ldy CURRENT_BUFFER_C
         dey
         sty L1EE4
     loop
@@ -1303,7 +1303,7 @@
     ; G_MODE = MODE_EDIT
 
     ldx # 1
-    lda V37D9,x
+    lda BUFFER_TABLE_HEAD,x
     jsr L1FFE
     sta L1EE5
     inc L1EE5
@@ -1320,22 +1320,22 @@
 
     jsr L1BEC
     clc
-    lda P38
+    lda CURRENT_BUFFER_D
     adc L1CE9
-    sta P38
-    lda P39
+    sta CURRENT_BUFFER_D
+    lda CURRENT_BUFFER_E
     adc L1CEA
-    sta P39
+    sta CURRENT_BUFFER_E
     lda # 0
     sta TFB
     sta PFD
     tay
     lda [T4E],y
     pha
-    lda T4F
+    lda CURRENT_BUFFER_B
     sta TFC
     ldx # 1
-    lda V37D9,x
+    lda BUFFER_TABLE_HEAD,x
     if_eq_then
         pla
         rts
@@ -1390,7 +1390,7 @@
     else_end
 
     from
-        ldy T50
+        ldy CURRENT_BUFFER_C
         dey
         sty L1EE3
         ldy # 2
@@ -1411,10 +1411,10 @@
 
     lda L1EE4
     sta [TFB],y
-    lda T50
+    lda CURRENT_BUFFER_C
     cmp # 3
     if_eq_then
-        lda T4F
+        lda CURRENT_BUFFER_B
         jsr L1C55
         jmp _end
     else
@@ -1425,9 +1425,9 @@
     end
 
     lda TFC
-    sta T4F
+    sta CURRENT_BUFFER_B
     lda # 3
-    sta T50
+    sta CURRENT_BUFFER_C
     lda L1EE5
     sta PFE
     ldy # 2
@@ -1494,7 +1494,7 @@
     sta V3789
     sta V378A
     sta V378B
-    lda ZPBASIC_VALTYP
+    lda CURRENT_BUFFER_HEAD
     pha
     from_loop
         pla
@@ -1517,7 +1517,7 @@
     inc V3783
     pla
     sta T5F
-    cmp T4F
+    cmp CURRENT_BUFFER_B
     if_eq_then
         inc V3787
     else_end
@@ -1555,12 +1555,12 @@
         sta [T5C],y
         lda V3787
         if_ne_then
-            lda T50
+            lda CURRENT_BUFFER_C
             cmp V3784
             if_eq_then
                 lda T5D
-                sta T4F
-                sty T50
+                sta CURRENT_BUFFER_B
+                sty CURRENT_BUFFER_C
                 dec V3787
             else_end
         else_end
@@ -1657,10 +1657,10 @@
 
     lda V3787
     if_ne_then
-        lda T50
+        lda CURRENT_BUFFER_C
         sec
         sbc V3786
-        sta T50
+        sta CURRENT_BUFFER_C
     else_end
 
     lda V3788
@@ -1738,10 +1738,10 @@
     stx P19
     txa
     sec
-    sbc T5B
+    sbc CURSOR_SCREEN_X
     if_cc_then
         lda P35
-        sta T5B
+        sta CURSOR_SCREEN_X
         lda # 0
     else_end
 
@@ -1807,12 +1807,12 @@
     if_ne_then
         if_cc_then
             lda Z97
-            sta T4F
-            stx T50
+            sta CURRENT_BUFFER_B
+            stx CURRENT_BUFFER_C
             jsr L19DD
-            lda T4F
+            lda CURRENT_BUFFER_B
             sta V37D4
-            lda T50
+            lda CURRENT_BUFFER_C
             sta V37D5
             jmp _end
         else
@@ -2112,10 +2112,10 @@
     end
 
     lda # 0
-    sta T5B
-    inc P38
+    sta CURSOR_SCREEN_X
+    inc CURRENT_BUFFER_D
     if_eq_then
-        inc P39
+        inc CURRENT_BUFFER_E
     else_end
 
     jsr L219D
@@ -2238,7 +2238,8 @@
         ldx # 0
     loop
         jsr L247D
-        jsr L24E6
+        jsr L24E6                                           ; out A
+        ; Backspace
         cmp # PETSCII_DELETE
         if_eq_then
             cpx # 0
@@ -2249,7 +2250,7 @@
                 sta [TFB],y
             else_end
 
-            jmp _end
+            jmp _end ; bvc _end ; bra
         else
             pha
             lda L24E5
@@ -2290,7 +2291,6 @@
     next
         jmp _loop
     end
-    
     
     L247D:
 
@@ -2378,7 +2378,6 @@
     next
         bne _loop
     end
-
     rts
 .endproc
 
@@ -2462,7 +2461,7 @@
 .proc L2545
     ; Buffer
     from
-        lda ZPKERNAL_CMP0
+        lda CURRENT_BUFFER_INDEX
         ; A := 8 * A
         asl
         asl
@@ -2470,7 +2469,7 @@
         tay
         ldx # 0
     loop
-        lda BUFFER_NAME_TABLE,y
+        lda BUFFER_TABLE_NAME,y
         beq _end                                            ; break
         sta STATUS_LINE_CONTENT_BUFFER,x
     next
@@ -2479,19 +2478,20 @@
         bne _loop
     end
 
+    ; Right fill with spaces
     from
-        lda # PETSCII_COMMERCIAL_AT;  PETSCII_SPACE
+        lda # PETSCII_SPACE
     loop
         sta STATUS_LINE_CONTENT_BUFFER,x
     next
         inx
-        cpx # BUFFER_NAME_TABLE_ENTRY_SIZE - 1
+        cpx # BUFFER_NAME_MAX_LENGTH ; zzz
         bne _loop
     end
 
     ; Line
-    ldx P38
-    ldy P39
+    ldx CURRENT_BUFFER_D
+    ldy CURRENT_BUFFER_E
     inx
     if_eq_then
         iny
@@ -2509,10 +2509,10 @@
     end
 
     ; Column
-    ldx     P35
+    ldx P35
     inx
-    ldy     # 0
-    jsr     INT_TO_STRING
+    ldy # 0
+    jsr INT_TO_STRING
     from
         ldx # 2
     loop
@@ -2618,17 +2618,17 @@
 .proc L2627
     jsr L1BCB
     lda V37D4
-    sta T4F
+    sta CURRENT_BUFFER_B
     lda V37D5
-    sta T50
+    sta CURRENT_BUFFER_C
     jsr L1982
     if_cs_then
         dec V37D6
     else_end
 
-    lda T4F
+    lda CURRENT_BUFFER_B
     sta V37D4
-    lda T50
+    lda CURRENT_BUFFER_C
     sta V37D5
     jsr L1BD6
 
@@ -2647,13 +2647,13 @@
 
     jsr L1BCB
     lda V37D4
-    sta T4F
+    sta CURRENT_BUFFER_B
     lda V37D5
-    sta T50
+    sta CURRENT_BUFFER_C
     jsr L19DD
-    lda T4F
+    lda CURRENT_BUFFER_B
     sta V37D4
-    lda T50
+    lda CURRENT_BUFFER_C
     sta V37D5
     jsr L1BD6
 
@@ -2665,13 +2665,13 @@
 .proc L2671
     jsr L1BCB
     lda V37D7
-    sta T4F
+    sta CURRENT_BUFFER_B
     lda V37D8
-    sta T50
+    sta CURRENT_BUFFER_C
     jsr L1982
-    lda T4F
+    lda CURRENT_BUFFER_B
     sta V37D7
-    lda T50
+    lda CURRENT_BUFFER_C
     sta V37D8
     jsr L1BD6
 
@@ -2683,13 +2683,13 @@
 .proc L268E
     jsr L1BCB
     lda V37D7
-    sta T4F
+    sta CURRENT_BUFFER_B
     lda V37D8
-    sta T50
+    sta CURRENT_BUFFER_C
     jsr L19DD
-    lda T4F
+    lda CURRENT_BUFFER_B
     sta V37D7
-    lda T50
+    lda CURRENT_BUFFER_C
     sta V37D8
     jsr L1BD6
 
@@ -2701,8 +2701,8 @@
 .proc L26AB
     tax
     lda L272B
-    sta V37D9,x
-    sta V37E3,x
+    sta BUFFER_TABLE_HEAD,x
+    sta BUFFER_TABLE_B,x
     sta TFC
     lda # 0
     sta TFB
@@ -2716,10 +2716,10 @@
     lda # 3
     iny
     sta [TFB],y
-    sta V37ED,x
+    sta BUFFER_TABLE_C,x
     lda # 0
-    sta V37F7,x
-    sta V3801,x
+    sta BUFFER_TABLE_D,x
+    sta BUFFER_TABLE_E,x
     iny
     sta [TFB],y
 
@@ -2731,7 +2731,7 @@
 ;;; changed: ...
 .proc L26DA
     tax
-    lda V37D9,x
+    lda BUFFER_TABLE_HEAD,x
     if_eq_then
         rts
     else_end
@@ -2739,7 +2739,7 @@
     sta TFC
     lda # 0
     sta TFB
-    sta V37D9,x
+    sta BUFFER_TABLE_HEAD,x
     tay
 
     from_loop
@@ -2755,23 +2755,23 @@
         bne _loop
     end
 
-    cpx ZPKERNAL_CMP0
+    cpx CURRENT_BUFFER_INDEX
     if_eq_then
         jsr L1B77                                           ; May throw EXCEPTION_OUT_OF_MEMORY
         sta L272B
-        lda ZPKERNAL_CMP0
+        lda CURRENT_BUFFER_INDEX
         jsr L26AB
-        ldx ZPKERNAL_CMP0
-        lda V37D9,x
-        sta ZPBASIC_VALTYP
-        lda V37E3,x
-        sta T4F
-        lda V37ED,x
-        sta T50
-        lda V37F7,x
-        sta P38
-        lda V3801,x
-        sta P39
+        ldx CURRENT_BUFFER_INDEX
+        lda BUFFER_TABLE_HEAD,x
+        sta CURRENT_BUFFER_HEAD
+        lda BUFFER_TABLE_B,x
+        sta CURRENT_BUFFER_B
+        lda BUFFER_TABLE_C,x
+        sta CURRENT_BUFFER_C
+        lda BUFFER_TABLE_D,x
+        sta CURRENT_BUFFER_D
+        lda BUFFER_TABLE_E,x
+        sta CURRENT_BUFFER_E
         lda # 0
         sta T5A
     else_end
@@ -2784,152 +2784,194 @@
 ;;; changed: ...
 .proc L272C
     pha
-    tax
-    lda V37D9,x
-    if_eq_then
-        jsr L1B77                                           ; May throw EXCEPTION_OUT_OF_MEMORY
-        if_cs_then
-            pla
-            rts
+        tax
+        lda BUFFER_TABLE_HEAD,x
+        if_eq_then
+            ; No head block -> allocate
+            jsr L1B77                                           ; out if C=0 then A ; May throw EXCEPTION_OUT_OF_MEMORY
+            if_cs_then
+                ; Allocation failed  if_vs_then ... TODO
+                pla
+                rts
+            else_end
+
+            sta L272B
         else_end
 
-        sta L272B
-    else_end
-
-    ldx ZPKERNAL_CMP0
-    if_pl_then
-        lda ZPBASIC_VALTYP
-        sta V37D9,x
-        lda T4F
-        sta V37E3,x
-        lda T50
-        sta V37ED,x
-        lda P38
-        sta V37F7,x
-        lda P39
-        sta V3801,x
-    else_end
-
+        ldx CURRENT_BUFFER_INDEX
+        if_pl_then
+            lda CURRENT_BUFFER_HEAD
+            sta BUFFER_TABLE_HEAD,x
+            lda CURRENT_BUFFER_B
+            sta BUFFER_TABLE_B,x
+            lda CURRENT_BUFFER_C
+            sta BUFFER_TABLE_C,x
+            lda CURRENT_BUFFER_D
+            sta BUFFER_TABLE_D,x
+            lda CURRENT_BUFFER_E
+            sta BUFFER_TABLE_E,x
+        else_end
     pla
-    sta ZPKERNAL_CMP0
+    sta CURRENT_BUFFER_INDEX
     tax
-    lda V37D9,x
+    lda BUFFER_TABLE_HEAD,x
     if_eq_then
         txa
         pha
-        jsr L26AB
+            jsr L26AB
         pla
         tax
-        lda V37D9,x
+        lda BUFFER_TABLE_HEAD,x
     else_end
 
-    sta ZPBASIC_VALTYP
-    lda V37E3,x
-    sta T4F
-    lda V37ED,x
-    sta T50
-    lda V37F7,x
-    sta P38
-    lda V3801,x
-    sta P39
+    sta CURRENT_BUFFER_HEAD
+    lda BUFFER_TABLE_B,x
+    sta CURRENT_BUFFER_B
+    lda BUFFER_TABLE_C,x
+    sta CURRENT_BUFFER_C
+    lda BUFFER_TABLE_D,x
+    sta CURRENT_BUFFER_D
+    lda BUFFER_TABLE_E,x
+    sta CURRENT_BUFFER_E
+
     rts
 .endproc
 
-;;; summary: ?
+;;; summary: Find buffer, optionally creating new if not exists
+;;; in:
+;;;   A          Boolean flag: create if not exists?
+;;;   NAME_TEXT  Buffer name to find
+;;; out:
+;;;   A    Buffer index if OK
+;;;   C=0  OK
+;;;   C=1  Error: requested buffer does not exist and do not create if not exists.
 ;;; throws: EXCEPTION_NO_MORE_FREE_FILES
-;;; changed: ...
-.proc L2784
-    sta L2808
-    from
+;;; changed: A+ X+ Y+ TFB+ TFC+ ...
+.proc FIND_BUFFER_OPT_CREATE
+    sta CREATE_BUFFER_IF_NOT_EXISTS
+    from LOOP
         lda # <NAME_TEXT
         sta TFB
         lda # >NAME_TEXT
         sta TFC
-        lda # <BUFFER_NAME_TABLE
+        ; PFD#PFE is pointer to current entry in BUFFER_TABLE_NAME
+        lda # <BUFFER_TABLE_NAME
         sta PFD
-        lda # >BUFFER_NAME_TABLE
+        lda # >BUFFER_TABLE_NAME
         sta PFE
         ldx # 0
     loop
-        stx L2807
-        lda # $FF
+        stx L2807                                           ; Temp can use e.g. AL
+        lda # BUFFER_NAME_MAX_LENGTH - 1; zzz
         jsr STRING_COMPARE_SIGNIFICANT
-        bne L27B2
-        ldx L2807
-        cpx # 2
-        bcs L27AD
-        L27AA:
-        txa
-        clc
-        rts
-        L27AD:
-        lda V37D9,x
-        bne L27AA
-        L27B2:
+        if_eq_then
+            ;bne L27B2
+            ; Match
+            ldx L2807
+            cpx # BUFFER_INDEX_CUSTOM_FIRST
+            if
+                bcc _then                                   ; X < BUFFER_INDEX_CUSTOM_FIRST -> Special case: do not allocate
+                lda BUFFER_TABLE_HEAD,x
+                beq _end                                    ; A = BUFFER_TABLE_HEAD[x] = 0 -> Allocate
+                ; A = BUFFER_TABLE_HEAD[x] != 0
+            then
+                ; X < BUFFER_INDEX_CUSTOM_FIRST or A = BUFFER_TABLE_HEAD[x] != 0
+                ; Special case: do not allocate: 'main' has got a head, clipboard operations will allocate for paste if needed.
+                ; Main or paste block or found buffer with head
+                txa                                         ; return A
+                clc                                         ; OK
+                rts
+            else_end
+
+            ; X >= 2 or A = BUFFER_TABLE_HEAD[x] = 0
+            ; Found custom (not main, not paste) buffer without head.
+            jmp LOOP::_end                                  ; break
+        else_end
+        ; No match
+    next
+        ; PFD#PFE := address of next entry in BUFFER_TABLE_NAME
         lda PFD
         clc
-        adc # 8
+        adc # BUFFER_NAME_MAX_LENGTH
         sta PFD
-        bcc L27BD
-        inc PFE
-        L27BD:
-    next
+        if_cs_then
+            inc PFE
+        else_end
+
         ldx L2807
         inx
-        cpx # 10
-        bne _loop
+        cpx # BUFFER_TABLE_SIZE
+        bne _loop                                           ; X != BUFFER_TABLE_SIZE -> ; X < BUFFER_TABLE_SIZE
     end
+    ; X = BUFFER_TABLE_SIZE
 
-    lda L2808
+    ; Not found or found custom (not main, not paste) buffer without head.
+    ; Allocate if option says so.
+
+    lda CREATE_BUFFER_IF_NOT_EXISTS
     if_eq_then
-        sec
+        ; CREATE_BUFFER_IF_NOT_EXISTS = FALSE
+        sec                                                 ; Error
         rts
     else_end
 
+    ; CREATE_BUFFER_IF_NOT_EXISTS = TRUE
+
+    ; Find free slot
     from
-        ldx # 2
+        ldx # BUFFER_INDEX_CUSTOM_FIRST                     ; Because: 0=Main, 1=Paste always in use.
     loop
-        lda V37D9,x
-        beq L27E1
+        lda BUFFER_TABLE_HEAD,x
+        beq _end                                            ; Found empty slot -> break
+        ; Slot in use
+    next
         inx
-        cpx # 10
-        bne _loop
+        cpx # BUFFER_TABLE_SIZE
+        if_eq_then
+            ; X = BUFFER_TABLE_SIZE
+            ; Exhaused
+            lda # EXCEPTION_NO_MORE_FREE_FILES
+            sta ZP_EXCEPTION_CODE
+            sec
+            bit ZP_BIT_V
+            rts                                             ; throw
+        else_end
+
+        bne _loop                                           ; X != BUFFER_TABLE_SIZE -> X < BUFFER_TABLE_SIZE
     end
 
-    ; Show "no more free files"
-    ldx # <RESOURCE_STRING_NO_MORE_FREE_FILES
-    ldy # >RESOURCE_STRING_NO_MORE_FREE_FILES
-    jsr PRINT_STATUS_LINE
-    sec
-    rts
-
-    L27E1:
+    ; Found free slot in `X`
     stx L2807
+
+    ; Copy `NAME_TEXT` to found slot in `BUFFER_TABLE_NAME`.
     from
+                .assert BUFFER_NAME_MAX_LENGTH = 8, error, "Require BUFFER_NAME_MAX_LENGTH = 8 else multiplication code below will not be correct."
+        ; TFB#TFC := &BUFFER_TABLE_NAME[X * BUFFER_NAME_MAX_LENGTH] Points to start address of `X`-th entry in BUFFER_TABLE_NAME.
         txa
         ; A := 8 * A
         asl
         asl
         asl
-        adc # <BUFFER_NAME_TABLE
+        adc # <BUFFER_TABLE_NAME
         sta TFB
         lda # 0
-        adc # >BUFFER_NAME_TABLE
+        adc # >BUFFER_TABLE_NAME
         sta TFC
+        ; Copy NAME_TEXT to TFB#TFC.
         ldy # 0
     loop
         lda NAME_TEXT,y
         sta [TFB],y
     next
+        beq _end                                            ; nul-terminator has been copied
         iny
-        cpy # BUFFER_NAME_TABLE_ENTRY_SIZE - 1               ; -1 because of '\0'
-        bne _loop
+        ; check Y <= BUFFER_NAME_MAX_LENGTH
+        bne _loop                                           ; bra
     end
 
-    lda     # 0
-    sta     [TFB],y
-    lda     L2807
-    clc
+    lda L2807
+    clc                                                     ; OK
+
     rts
 .endproc
 
@@ -2945,28 +2987,28 @@
     ; Show header
     ldx # <RESOURCE_STRING_LIST_HEADER
     ldy # >RESOURCE_STRING_LIST_HEADER
-    jsr L293D
+    jsr PUTS
     from
-        lda # <BUFFER_NAME_TABLE
+        lda # <BUFFER_TABLE_NAME
         sta T5C
-        lda # >BUFFER_NAME_TABLE
+        lda # >BUFFER_TABLE_NAME
         sta T5D
         ldx # 0
     loop
-        stx L2807
-        cpx ZPKERNAL_CMP0
+        stx L2807                                           ; local index can use AL e.g.
+        cpx CURRENT_BUFFER_INDEX
         if_eq_then
-            lda ZPBASIC_VALTYP
+            lda CURRENT_BUFFER_HEAD
             jmp _end
         else
-            lda V37D9,x
+            lda BUFFER_TABLE_HEAD,x
         end
 
         if_ne_then
             pha
             ldx T5C
             ldy T5D
-            jsr L293D
+            jsr PUTS
             from_loop
                 lda # PETSCII_SPACE
                 jsr KERNAL_CHROUT
@@ -2990,7 +3032,7 @@
 
         lda T5C
         clc
-        adc # BUFFER_NAME_TABLE_ENTRY_SIZE
+        adc # BUFFER_NAME_MAX_LENGTH
         sta T5C
         if_cs_then
             inc T5D
@@ -2998,14 +3040,14 @@
     next
         ldx L2807
         inx
-        cpx # BUFFER_NAME_TABLE_ENTRY_COUNT
+        cpx # BUFFER_TABLE_SIZE
         bne _loop
     end
 
     ; Show footer
     ldx # <RESOURCE_STRING_LIST_FOOTER
     ldy # >RESOURCE_STRING_LIST_FOOTER
-    jsr L293D
+    jsr PUTS
     lda ZP_0E
     jsr L1FFE
     jsr A_TO_DECIMAL_3_A_X_Y
@@ -3023,9 +3065,12 @@
     rts
 .endproc
 
-;;; summary: ?
-;;; changed: ...
-.proc L293D
+;;; summary: Put string at X#Y
+;;; in:
+;;;   X  lo address
+;;;   Y  hi address
+;;; changed: Y+
+.proc PUTS                                                  ; L293D
     from
         stx T5E
         sty T5F
@@ -3033,7 +3078,7 @@
     loop
         lda [T5E],y
         beq _end                                            ; break
-        jsr KERNAL_CHROUT
+        jsr KERNAL_CHROUT                                   ; A- X- Y-
     next
         iny
         bne _loop
@@ -3201,24 +3246,26 @@
 .endproc
 
 ;;; summary: Command: Clear current buffer
-;;; throws: EXCEPTION_NO_MORE_FREE_FILES
+;;; throws: EXCEPTION_NO_MORE_FREE_FILES ?
 .proc CMD_CLEAR
     lda # MODE_EDIT
     sta G_MODE
     lda NAME_TEXT
     if_eq_then
-        sta P38
-        sta P39
-        lda ZPKERNAL_CMP0
+        sta CURRENT_BUFFER_D
+        sta CURRENT_BUFFER_E
+        lda CURRENT_BUFFER_INDEX
         jmp _end
     else
-        lda # 0
-        jsr L2784                                           ; May throw EXCEPTION_NO_MORE_FREE_FILES
+        lda # FALSE                                         ; Do not create buffer if not exists
+        jsr FIND_BUFFER_OPT_CREATE                          ; out A, C, V ; May throw EXCEPTION_NO_MORE_FREE_FILES ?
         if_cs_then
+            ; Not found
             rts
         else_end
-        cmp # 1
+        cmp # BUFFER_INDEX_PASTE
         if_eq_then
+            ; May not clear Paste buffer.
             rts
         else_end
     end
@@ -3227,6 +3274,7 @@
 
     rts
 .endproc
+
 
 ;;; summary: Command: Goto buffer
 ;;; throws: EXCEPTION_NO_MORE_FREE_FILES
@@ -3237,13 +3285,19 @@
         rts
     else_end
 
-    lda # 1
-    jsr L2784                                               ; May throw EXCEPTION_NO_MORE_FREE_FILES
+    lda # TRUE                                              ; Do create buffer if not exists
+    jsr FIND_BUFFER_OPT_CREATE                              ; if C=0 then out A ; May throw EXCEPTION_NO_MORE_FREE_FILES
+    if_vs_then
+        ; Exception
+        rts                                                 ; Rethrow
+    else_end
+
     if_cs_then
+        ; Not found?
         rts
     else_end
 
-    cmp ZPKERNAL_CMP0
+    cmp CURRENT_BUFFER_INDEX   ; Current/active buffer?
     if_eq_then
         rts
     else_end
@@ -3260,7 +3314,7 @@
     lda # $0C                                                ; ?
     sta T5A
     lda # $27                                                ; ?
-    sta T5B
+    sta CURSOR_SCREEN_X
 
     rts
 .endproc
@@ -3445,10 +3499,10 @@
     else_end
 
     jsr L1BCB
-    lda ZPBASIC_VALTYP
-    sta T4F
+    lda CURRENT_BUFFER_HEAD
+    sta CURRENT_BUFFER_B
     lda # 3
-    sta T50
+    sta CURRENT_BUFFER_C
     ldx # SERIAL_DATA_FH
     jsr KERNAL_CHKOUT
     from_loop
@@ -3886,7 +3940,7 @@
     lda # $0C                                                ; ?
     sta T5A
     lda # $23                                                ; ?
-    sta T5B
+    sta CURSOR_SCREEN_X
     jsr L21A2
 
     rts
@@ -3938,9 +3992,9 @@
     pha
     lda L1CE8
     pha
-    lda P38
+    lda CURRENT_BUFFER_D
     pha
-    lda P39
+    lda CURRENT_BUFFER_E
     pha
 
     try
@@ -3960,9 +4014,9 @@
                     else_end
                 else_end
 
-                inc P38
+                inc CURRENT_BUFFER_D
                 if_eq_then
-                    inc P39
+                    inc CURRENT_BUFFER_E
                 else_end
             else_end
 
@@ -3996,9 +4050,9 @@
     catch_finally_end
 
     pla
-    sta P39
+    sta CURRENT_BUFFER_E
     pla
-    sta P38
+    sta CURRENT_BUFFER_D
     pla
     sta L1CE8
     pla
@@ -4028,12 +4082,12 @@
                 dec L1CE7
             else_end
 
-            lda P38
+            lda CURRENT_BUFFER_D
             if_eq_then
-                dec P39
+                dec CURRENT_BUFFER_E
             else_end
 
-            dec P38
+            dec CURRENT_BUFFER_D
         else_end
     next
         dey
@@ -4053,9 +4107,9 @@
     pha
     lda L1CE8
     pha
-    lda P38
+    lda CURRENT_BUFFER_D
     pha
-    lda P39
+    lda CURRENT_BUFFER_E
     pha
 
     try
@@ -4076,12 +4130,12 @@
                     dec L1CE7
                 else_end
 
-                lda P38
+                lda CURRENT_BUFFER_D
                 if_eq_then
-                    dec P39
+                    dec CURRENT_BUFFER_E
                 else_end
 
-                dec P38
+                dec CURRENT_BUFFER_D
             else_end
 
             cmp V386F,y
@@ -4112,9 +4166,9 @@
     catch_finally_end
 
     pla
-    sta P39
+    sta CURRENT_BUFFER_E
     pla
-    sta P38
+    sta CURRENT_BUFFER_D
     pla
     sta L1CE8
     pla
@@ -4141,9 +4195,9 @@
                 else_end
             else_end
 
-            inc P38
+            inc CURRENT_BUFFER_D
             if_eq_then
-                inc P39
+                inc CURRENT_BUFFER_E
             else_end
         else_end
 
@@ -4188,11 +4242,11 @@
     sty G_MODE                                              ; MODE_EDIT
     sty T22
     sty T26
-    sty P38
-    sty P39
-    sty T4E
+    sty CURRENT_BUFFER_D
+    sty CURRENT_BUFFER_E
+    sty T4E                                                 ; T4E = 0
     sty T5A
-    sty T5B
+    sty CURSOR_SCREEN_X
     sty L1CE9
     sty L1CEA
     sty V38AB
@@ -4208,7 +4262,7 @@
                 sta ZP_0E
                 ; [ZP_0E] = EDIT_BUFFERS_1_FIRST_PAGE
             loop
-                sta T4F
+                sta CURRENT_BUFFER_B
                 clc
                 adc # 1
                 cmp # EDIT_BUFFERS_1_LAST_PAGE + 1
@@ -4233,27 +4287,27 @@
 
     ; A = ? , X = ? , Y = 0
     ; T4E = $00
-    ; T4F = EDIT_BUFFERS_2_LAST_PAGE
+    ; CURRENT_BUFFER_B = EDIT_BUFFERS_2_LAST_PAGE
     ; Set last page in edit buffer 2 next page pointer to 0
     ;sty VBF00
     tya
     ; A = 0 , X = ? , Y = 0
     sta [T4E],y
     ; [EDIT_BUFFERS_2_LAST_PAGE#0] = 0
-    ;
+
+    ; Initialize BUFFER_TABLE_HEAD entries to 0. BUFFER_TABLE_HEAD[] := [ 0, ..., 0 ]
     from
         ;lda # 0
-        ldx # EDIT_BUFFER_COUNT - 1
+        ldx # BUFFER_TABLE_SIZE - 1
     loop
-        sta V37D9,x
+        sta BUFFER_TABLE_HEAD,x
     next
         dex
         bpl _loop
     end
     ; A = $00 , X = $FF , Y = $00
     ;
-    stx ZPKERNAL_CMP0
-
+    stx CURRENT_BUFFER_INDEX                                ; CURRENT_BUFFER_INDEX = $FF
     jsr L272C
     jsr L1A89
     jsr L21A2
@@ -4722,7 +4776,7 @@
         stx P35
         stx P19
         jsr L1B9C
-        lda T5B
+        lda CURSOR_SCREEN_X
         cmp # BUMP_RIGHT
         if_cs_then
             inc P36
@@ -4730,7 +4784,7 @@
             jmp L2545
         else_end
 
-        inc T5B
+        inc CURSOR_SCREEN_X
         jsr L2545
     else_end
 
@@ -4755,12 +4809,12 @@
         stx P35
         stx P19
         jsr L1C99                                           ; A- X- Y-
-        lda T5B
+        lda CURSOR_SCREEN_X
         cmp # BUMP_LEFT
         if_cc_then
             jsr L19D0
             inx
-            cpx T5B
+            cpx CURSOR_SCREEN_X
             if_ne_then
                 dec P36
                 jsr SCROLL_LEFT
@@ -4768,7 +4822,7 @@
             else_end
         else_end
 
-        dec T5B
+        dec CURSOR_SCREEN_X
         jsr L2545
     else_end
 
@@ -4834,12 +4888,12 @@
         jsr L34F3
     else_end
 
-    lda P38
+    lda CURRENT_BUFFER_D
     if_eq_then
-        dec P39
+        dec CURRENT_BUFFER_E
     else_end
  
-    dec P38
+    dec CURRENT_BUFFER_D
     jsr L2545
 
     rts
@@ -4876,9 +4930,9 @@
     end
 
     sty T5A
-    lda T4F
+    lda CURRENT_BUFFER_B
     sta V37D7
-    lda T50
+    lda CURRENT_BUFFER_C
     sta V37D8
 
     rts
@@ -4973,9 +5027,9 @@
         else_end
     else_end
 
-    inc P38
+    inc CURRENT_BUFFER_D
     if_eq_then
-        inc P39
+        inc CURRENT_BUFFER_E
     else_end
 
     jsr L2545
@@ -5000,9 +5054,9 @@
                 else_end
             else_end
 
-            inc P38
+            inc CURRENT_BUFFER_D
             if_eq_then
-                inc P39
+                inc CURRENT_BUFFER_E
             else_end
         else_end
     next
@@ -5036,11 +5090,11 @@
                 dec L1CE7
             else_end
             
-            lda P38
+            lda CURRENT_BUFFER_D
             if_eq_then
-                dec P39
+                dec CURRENT_BUFFER_E
             else_end
-            dec P38
+            dec CURRENT_BUFFER_D
         else_end
     next
         dec V38B3
@@ -5057,25 +5111,25 @@
 ;;; summary: Command: Go top
 ;;; changed: ...
 .proc CMD_GO_TOP
-    lda ZPBASIC_VALTYP
-    sta T4F
+    lda CURRENT_BUFFER_HEAD
+    sta CURRENT_BUFFER_B
     lda # 3
-    sta T50
+    sta CURRENT_BUFFER_C
     bit G_MODE
     if_mi_then
         ; G_MODE = MODE_SELECT
         sec
         lda L1CE7
-        sbc P38
+        sbc CURRENT_BUFFER_D
         sta L1CE7
         lda L1CE8
-        sbc P39
+        sbc CURRENT_BUFFER_E
         sta L1CE8
     else_end
 
     lda # 0
-    sta P38
-    sta P39
+    sta CURRENT_BUFFER_D
+    sta CURRENT_BUFFER_E
     jsr L21A2
 
     rts
@@ -5097,9 +5151,9 @@
             else_end
         else_end
 
-        inc P38
+        inc CURRENT_BUFFER_D
         if_eq_then
-            inc P39
+            inc CURRENT_BUFFER_E
         else_end
     next
         bne _loop
@@ -5121,7 +5175,7 @@
     else_end
     
     lda # BUMP_RIGHT
-    sta T5B
+    sta CURSOR_SCREEN_X
     jsr L219D
 
     rts
@@ -5274,3 +5328,36 @@
 
     rts
 .endproc
+
+nop
+BREAK0:
+BREAK1:
+BREAK2:
+BREAK3:
+BREAK4:
+BREAK5:
+BREAK6:
+BREAK7:
+BREAK8:
+BREAK9:
+BREAK10:
+BREAK11:
+BREAK12:
+BREAK13:
+BREAK14:
+BREAK15:
+BREAK16:
+BREAK17:
+BREAK18:
+BREAK19:
+BREAK20:
+BREAK21:
+BREAK22:
+BREAK23:
+BREAK24:
+BREAK25:
+BREAK26:
+BREAK27:
+BREAK28:
+BREAK29:
+nop
