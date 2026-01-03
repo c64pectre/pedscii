@@ -52,6 +52,18 @@
 ;     * From `TRUE` to `FALSE`:
 ;         inc M
 
+;
+; Size of basic types
+;
+
+SIZEOF_BYTE = 1
+SIZEOF_WORD = 2
+SIZEOF_ADDR = 2
+
+;
+; Boolean values
+;
+
 FALSE = 0
 TRUE  = $FF
 
@@ -83,47 +95,77 @@ EDIT_BUFFERS_2_LAST_PAGE  = $CF
 
 ; An edit buffer is a linked list of 256 byte blocks.
 
+BLOCK_NONE = 0
+
 ;;; summary: Next block. 0 = none
-BLOCK_OFFSET_NEXT     = 0
+BLOCK_OFFSET_NEXT = 0
 
 ;;; summary: Previous block? 0 = none
 BLOCK_OFFSET_PREVIOUS = 1
 
 ;;; summary: Pointer (offset) within block to last character in use. There is a always nul byte at the end of the text.
 ;;; notes:
-;;;   BLOCK.BLOCK_OFFSET_POINTER >= 3
-BLOCK_OFFSET_POINTER  = 2
+;;;   BLOCK.BLOCK_OFFSET_POINTER >= BLOCK_OFFSET_POINTER_MIN_VALUE = 3
+BLOCK_OFFSET_POINTER = 2
+
+BLOCK_OFFSET_POINTER_MIN_VALUE = 3
+
+BLOCK_OFFSET_POINTER_MAX_VALUE = $FF
+
+;;; summary: Maximum number of characters allowed in a line.
+MAX_LINE_LENGTH = 240
 
 ;
 ; Screen
 ;
 
-PAGE_LINE_COUNT = 20
+OUR_SCREEN_MIN_COL    = VIC_CHAR_MIN_COL                                        ; 0
+OUR_SCREEN_MAX_COL    = VIC_CHAR_MAX_COL                                        ; 39
+OUR_SCREEN_WIDTH      = VIC_CHAR_COLUMNS                                        ; 40
+OUR_SCREEN_MIN_LINE   = VIC_CHAR_MIN_LINE                                       ; 0
+OUR_SCREEN_MAX_LINE   = VIC_CHAR_MAX_LINE                                       ; 24
+OUR_SCREEN_HEIGHT     = VIC_CHAR_LINES                                          ; 25
+
+EDIT_PANEL_WIDTH      = OUR_SCREEN_WIDTH                                        ; 40
+EDIT_PANEL_MIN_COLUMN = OUR_SCREEN_MIN_COL                                      ; 0
+EDIT_PANEL_MAX_COLUMN = OUR_SCREEN_MAX_COL                                      ; 39
+EDIT_PANEL_HEIGHT     = 24
+EDIT_PANEL_FIRST_LINE = OUR_SCREEN_MIN_LINE                                     ; 0
+EDIT_PANEL_LAST_LINE  = EDIT_PANEL_FIRST_LINE + EDIT_PANEL_HEIGHT - 1           ; 23
+
+STATUS_COMMAND_PANEL_WIDTH      = OUR_SCREEN_WIDTH                              ; 40
+STATUS_COMMAND_PANEL_MIN_COLUMN = OUR_SCREEN_MIN_COL                            ; 0
+STATUS_COMMAND_PANEL_MAX_COLUMN = OUR_SCREEN_MAX_COL                            ; 39
+STATUS_COMMAND_PANEL_HEIGHT = 1
+STATUS_COMMAND_PANEL_FIRST_LINE = EDIT_PANEL_LAST_LINE + 1                      ; 24
+STATUS_COMMAND_PANEL_LAST_LINE  = STATUS_COMMAND_PANEL_FIRST_LINE + STATUS_COMMAND_PANEL_HEIGHT - 1 ; 24
+        .assert STATUS_COMMAND_PANEL_FIRST_LINE = 24, error
+        .assert STATUS_COMMAND_PANEL_LAST_LINE <= OUR_SCREEN_HEIGHT, error
+        .assert STATUS_COMMAND_PANEL_LAST_LINE = 24, error
 
 MARGIN_LEFT   = 4
 MARGIN_RIGHT  = 4
 MARGIN_TOP    = 6
 MARGIN_BOTTOM = 6
 
-BUMP_LEFT   = 5
-BUMP_RIGHT  = 35
-BUMP_TOP    = 7
-BUMP_BOTTOM = 17
+BUMP_LEFT   = EDIT_PANEL_MIN_COLUMN + MARGIN_LEFT + 1                           ; 5
+BUMP_RIGHT  = EDIT_PANEL_MAX_COLUMN - MARGIN_RIGHT                              ; 35
+BUMP_TOP    = EDIT_PANEL_FIRST_LINE + MARGIN_TOP + 1                            ; 7
+BUMP_BOTTOM = EDIT_PANEL_LAST_LINE - MARGIN_BOTTOM                              ; 17
+        .assert BUMP_LEFT = 5, error
+        .assert BUMP_RIGHT = 35, error
+        .assert BUMP_TOP = 7, error
+        .assert BUMP_BOTTOM = 17, error
 
-MAX_LINE_LENGTH = 240                                       ; $F0
+;;; summary: number of lines to go page down or up
+PAGE_LINE_COUNT = 20
 
-CURSOR_BLINK_DELAY = 20                                     ; $14
+;;; summary: Blink delay in jiffies.
+CURSOR_BLINK_DELAY = 20
 
 ;
 ; Screen (Video Matrix), Character Base, Color RAM
 ;
-
-OUR_TEXT_SCREEN_FIRST_PAGE = >SCREEN_TEXT_RAM_BASE          ; $04
-OUR_TEXT_SCREEN_LAST_PAGE  = OUR_TEXT_SCREEN_FIRST_PAGE + 3 ; $07
-;OUR_TEXT_SCREEN_PAGE_COUNT = 4
-;SCREEN_PAGE_COUNT = 4
-
-COLOR_RAM_BASE := SCREEN_COLOR_RAM_BASE
 
 ; VIC Bank
 ;
@@ -135,46 +177,44 @@ COLOR_RAM_BASE := SCREEN_COLOR_RAM_BASE
 ;       %11, 3: Bank 0: $0000-$3FFF, 0-16383 (standard)
 
 OUR_VIC_BANK_BASE := VIC_BANK_0_BASE                        ; $0000
+OUR_VIDEO_MATRIX_BASE := SCREEN_TEXT_RAM_BASE               ; $0400
+OUR_COLOR_RAM_BASE := SCREEN_COLOR_RAM_BASE                 ; $D800
 
-OUR_VIDEO_MATRIX_BASE := OUR_TEXT_SCREEN_FIRST_PAGE << 8
-
-;;; summary: Our Video Memory
-OUR_VM = $15
-
-; V17FC := $17FC                                              ; SHELL work drive. Replaced by ZPKERNAL_FA (last used serial device)
-
-; DISK_CMD_FA File Address we take from ZPKERNAL_FA
-DISK_CMD_FH = $0F                       ; Disk command: File Handle
-DISK_CMD_SA = $0F                       ; Disk command: Secondary Address (channel)
-
-; SERIAL_DATA_FA take from ZPKERNAL_FA
-SERIAL_DATA_FH = $01                    ; File Handle for disk/printer data
-SERIAL_DATA_DOC_SA = $02                ; SA for loading and saving document
-SERIAL_DATA_DIR_SA = $00                ; SA for loading directory
-SERIAL_DATA_PRINT_SA = $07              ; SA for printing
-
-EDIT_PANEL_FIRST_LINE = 0  ; $00
-EDIT_PANEL_LAST_LINE  = 23 ; $17
-EDIT_PANEL_LAST_LINE_START_VM := OUR_VIDEO_MATRIX_BASE + EDIT_PANEL_LAST_LINE * VIC_CHAR_COLUMNS ; $7798
+EDIT_PANEL_LAST_LINE_START_VM := OUR_VIDEO_MATRIX_BASE + EDIT_PANEL_LAST_LINE * VIC_CHAR_COLUMNS
 
 EDIT_PANEL_BEFORE_LAST_LINE = EDIT_PANEL_LAST_LINE - 1
-EDIT_PANEL_BEFORE_LAST_LINE_START_VM := OUR_VIDEO_MATRIX_BASE + EDIT_PANEL_BEFORE_LAST_LINE * VIC_CHAR_COLUMNS ; $7770
+EDIT_PANEL_BEFORE_LAST_LINE_START_VM := OUR_VIDEO_MATRIX_BASE + EDIT_PANEL_BEFORE_LAST_LINE * OUR_SCREEN_WIDTH
 
-COMMAND_PANEL_FIRST_LINE = 24
-COMMAND_PANEL_LAST_LINE = 24
-; Ptr to start command line in Video Memory $77C0
-COMMAND_PANEL_FIRST_LINE_START_VM := OUR_VIDEO_MATRIX_BASE + COMMAND_PANEL_FIRST_LINE * VIC_CHAR_COLUMNS
-; Ptr to start command line in Color Ram $DBC0
-COMMAND_PANEL_FIRST_LINE_START_CR := COLOR_RAM_BASE        + COMMAND_PANEL_FIRST_LINE * VIC_CHAR_COLUMNS
+; Address of start of status/command line in Video Memory (VM)
+STATUS_COMMAND_PANEL_FIRST_LINE_START_VM := OUR_VIDEO_MATRIX_BASE + STATUS_COMMAND_PANEL_FIRST_LINE * OUR_SCREEN_WIDTH
+; Address of start of status/command line in Color RAM (CR)
+STATUS_COMMAND_PANEL_FIRST_LINE_START_CR := OUR_COLOR_RAM_BASE + STATUS_COMMAND_PANEL_FIRST_LINE * OUR_SCREEN_WIDTH
+
+;
+; Disk
+;
+; DISK_CMD_FA                                               ; File Address we take from ZPKERNAL_FA
+DISK_CMD_FH = $0F                                           ; File Handle for disk cxommands
+DISK_CMD_SA = $0F                                           ; Secondary Address (channel) for disk commands
+
+; SERIAL_DATA_FA                                            ; File Address we take from ZPKERNAL_FA
+SERIAL_DATA_FH = $01                                        ; File Handle for disk/printer data
+SERIAL_DATA_DOC_SA = $02                                    ; Secondary Address for loading and saving document
+SERIAL_DATA_DIR_SA = $00                                    ; Secondary Address for loading directory
+SERIAL_DATA_PRINT_SA = $07                                  ; Secondary Address for printing
+
+;
+; Table power of 10
+;
 
 TABLE_POWER_OF_10_LENGTH = 4
 
-SIZEOF_BYTE = 1
-SIZEOF_WORD = 2
-SIZEOF_ADDR = 2
-
 ;;; summary: Number of digits handled by INT_TO_STRING / INT_TO_STRING_RESULT [0,9999]
 INT_TO_STRING_DIGIT_COUNT = 4
+
+LINE_MAX_DIGIT_COUNT = 4
+
+COLUMN_MAX_DIGIT_COUNT = 3
 
 ;;; summary: Modes
 ;;; see-also: `G_MODE`.

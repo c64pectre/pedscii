@@ -232,12 +232,13 @@
 .exportzp T26 := ZP_26                  ; Init 0  [T26+T27],y
 .exportzp T27 := ZP_27
 
-.exportzp P35 := ZP_35
+.exportzp CURRENT_BUFFER_COLUMN := ZP_35
+
 .exportzp P36 := ZP_36
 
-.exportzp CURRENT_BUFFER_D := ZP_38                  ; Init 0 ; Was P38
+.exportzp CURRENT_BUFFER_LINE_LO := ZP_38                  ; Init 0 ; Was P38
 
-.exportzp CURRENT_BUFFER_E := ZP_39                  ; Init 0 ; Was P39
+.exportzp CURRENT_BUFFER_LINE_HI := ZP_39                  ; Init 0 ; Was P39
 
 .exportzp T4E := ZP_4E                  ; Init 0  [T4E+T4F],y
 .exportzp T4F := ZP_4F

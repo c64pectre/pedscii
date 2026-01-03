@@ -25,16 +25,16 @@
 .proc main
     jsr INITIALIZE
 
-    from_loop
+    from_loop OUTER_LOOP
         ldy CURSOR_SCREEN_X
         lda [ZPKERNAL_PNT],y
         pha
         jsr REVERSE_CURSOR_CHAR
-        from_loop
+        from_loop INNER_LOOP
             tya
             pha
             jsr KERNAL_GETIN
-            bne _end                                        ; break ; We've got a char
+            bne _end                                ; break ; We've got a char
             jsr L2017
             pla
             tay
@@ -100,7 +100,7 @@
         rts
     else_end
 
-    ldx P35
+    ldx CURRENT_BUFFER_COLUMN
     cpx P36
     if_cc_then
         rts
@@ -112,9 +112,9 @@
     else_end
     
     jsr L1B9C
-    ldx P35
+    ldx CURRENT_BUFFER_COLUMN
     inx
-    stx P35
+    stx CURRENT_BUFFER_COLUMN
     stx P19
     inc Z92
     jsr L1BBC
@@ -169,7 +169,7 @@
 
     ; G_MODE = MODE_EDIT
 
-    lda P35
+    lda CURRENT_BUFFER_COLUMN
     cmp P36
     if_cc_then
         rts
@@ -184,8 +184,8 @@
     cmp # PETSCII_RETURN
     if_ne_then
         jsr L1BF7
-        dec P35
-        lda P35
+        dec CURRENT_BUFFER_COLUMN
+        lda CURRENT_BUFFER_COLUMN
         sta P19
         dec Z92
         jsr L19FD
@@ -246,12 +246,12 @@
         jsr L1C99                                           ; A- X- Y-
     end
 
-    lda CURRENT_BUFFER_D
+    lda CURRENT_BUFFER_LINE_LO
     if_eq_then
-        dec CURRENT_BUFFER_E
+        dec CURRENT_BUFFER_LINE_HI
     else_end
 
-    dec CURRENT_BUFFER_D
+    dec CURRENT_BUFFER_LINE_LO
     jsr L1BF7
     lda # BUMP_RIGHT
     sta CURSOR_SCREEN_X
@@ -277,10 +277,11 @@
 
 ;;; summary: ?
 ;;; return:
-;;;   CS: CC:
+;;;   C=0  OK
+;;;   C=1  Fail
 ;;; changed: X+ ...
 .proc L1982
-    ldx # 0
+    ldx # 0                                                 ; ?
     jsr L1BBC
     if_cs_then
         rts
@@ -424,7 +425,7 @@
     try
         lda # 0
         sta CURSOR_SCREEN_X
-        sta P35
+        sta CURRENT_BUFFER_COLUMN
         jsr L1BEC
         ldy # 0
         inx
@@ -439,7 +440,7 @@
             beq _catch
             iny
             jsr L1B9C
-            inc P35
+            inc CURRENT_BUFFER_COLUMN
         next
             jmp _loop
         end
@@ -455,7 +456,7 @@
             jsr L1B9C
         next
             inc CURSOR_SCREEN_X
-            inc P35
+            inc CURRENT_BUFFER_COLUMN
             jmp _loop
         else_end
 
@@ -484,8 +485,8 @@
 .proc L1A7F
     lda # 0
     sta T5C
-    ldx # >COMMAND_PANEL_FIRST_LINE_START_CR
-    ldy # <COMMAND_PANEL_FIRST_LINE_START_CR
+    ldx # >STATUS_COMMAND_PANEL_FIRST_LINE_START_CR
+    ldy # <STATUS_COMMAND_PANEL_FIRST_LINE_START_CR
     bne L1A9B                                               ; bra
 .endproc
 
@@ -498,8 +499,8 @@
     ;--lda # COLOR_GRY
     ;--sta VIC_B0C
     ;<<
-    ldx # >COLOR_RAM_BASE
-    ldy # <COLOR_RAM_BASE
+    ldx # >OUR_COLOR_RAM_BASE
+    ldy # <OUR_COLOR_RAM_BASE
     sty T5C
     ;--lda #COLOR_WHT
     lda KVAR_COLOR
@@ -508,12 +509,12 @@
 ;;; summary: ?
 ;;; changed: ...
 .proc L1A9B
-    from_loop
+    from_loop   
         stx T5D
         from_loop
-            cpy # <COMMAND_PANEL_FIRST_LINE_START_CR
+            cpy # <STATUS_COMMAND_PANEL_FIRST_LINE_START_CR
             if_eq_then
-                cpx # >COMMAND_PANEL_FIRST_LINE_START_CR
+                cpx # >STATUS_COMMAND_PANEL_FIRST_LINE_START_CR
                 if_eq_then
                     ;--lda # COLOR_BLK               ; Command color
                 else_end
@@ -826,7 +827,7 @@
                     dec V37D5
                 else_end
 
-                ldy # 2
+                ldy # BLOCK_OFFSET_POINTER
                 lda [T4E],y
                 tax
                 cmp CURRENT_BUFFER_C
@@ -838,17 +839,17 @@
                     ldy CURRENT_BUFFER_B
                     jsr L1B9C
                     txa
-                    cmp # 3
+                    cmp # BLOCK_OFFSET_POINTER_MIN_VALUE
                     bne L1C27
                     tya
                     jsr L1C55
                     jmp L1C39
                     L1C27:
-                    ldy # 2
+                    ldy # BLOCK_OFFSET_POINTER
                     lda [T57],y
                     cmp T59
                     bcs L1C39
-                    ldy # 0
+                    ldy # BLOCK_OFFSET_NEXT
                     lda [T57],y
                     sta T58
                     lda # 3
@@ -891,7 +892,7 @@
     if_eq_then
         lda [T22],y
         sta V37D7
-        lda # 3
+        lda # BLOCK_OFFSET_POINTER_MIN_VALUE
         sta V37D8
     else_end
 
@@ -921,7 +922,7 @@
     end
 
     lda ZP_0E
-    ldy # 0
+    ldy # BLOCK_OFFSET_NEXT
     sta [T22],y
     lda T23
     sta ZP_0E
@@ -930,30 +931,35 @@
 .endproc
 
 ;;; summary: ?
+;;; out:
+;;;   C=0  OK
+;;;   C=1  Fail
 ;;; changed: A- X- Y-
 .proc L1C99
     pha
         tya
         pha
             lda CURRENT_BUFFER_C
-            cmp # 3
+            cmp # BLOCK_OFFSET_POINTER_MIN_VALUE
             if_eq_then
-                ldy # 1
+                ldy # BLOCK_OFFSET_PREVIOUS                 ; Y = 1 = BLOCK_OFFSET_PREVIOUS
                 lda [T4E],y
                 if_eq_then
-                    sec
-                    jmp _end
+                    sec                                     ; Fail
+                    bcs _end                                ; bra
                 else
                     sta CURRENT_BUFFER_B
-                    iny
+                    iny                                     ; Y = 2 = BLOCK_OFFSET_POINTER
                     lda [T4E],y
                     sta CURRENT_BUFFER_C
-                    clc
+                    clc                                     ; OK
                 end
+
+                bvc _end                                    ; bra
                 jmp _end
             else
                 dec CURRENT_BUFFER_C
-                clc
+                clc                                         ; OK
             end
         pla
         tay
@@ -987,7 +993,7 @@
         sta L1CE5
         lda T59
         sta L1CE6
-        lda #$00
+        lda # 0
         sta L1CE7
         sta L1CE8
     else_end
@@ -1022,7 +1028,7 @@
     
     sta L1EE6
     sta TFC
-    ldy # 0
+    ldy # BLOCK_OFFSET_NEXT
     lda [TFB],y
     sta ZP_0E
     jsr L1B77                                               ; May throw EXCEPTION_OUT_OF_MEMORY
@@ -1075,26 +1081,26 @@
     lda L1CE8
     if_pl_then
         sec
-        lda CURRENT_BUFFER_D
+        lda CURRENT_BUFFER_LINE_LO
         sbc L1CE9
-        sta CURRENT_BUFFER_D
-        lda CURRENT_BUFFER_E
+        sta CURRENT_BUFFER_LINE_LO
+        lda CURRENT_BUFFER_LINE_HI
         sbc L1CEA
-        sta CURRENT_BUFFER_E
+        sta CURRENT_BUFFER_LINE_HI
         jmp _end
     else
-        inc CURRENT_BUFFER_D
+        inc CURRENT_BUFFER_LINE_LO
         if_eq_then
-            inc CURRENT_BUFFER_E
+            inc CURRENT_BUFFER_LINE_HI
         else_end
     end
 
     lda L1EE6
     sta TFC
-    ldx # 1
+    ldx # BUFFER_INDEX_PASTE
     sta BUFFER_TABLE_HEAD,x
     sta BUFFER_TABLE_B,x
-    lda # 3
+    lda # BLOCK_OFFSET_POINTER_MIN_VALUE
     sta BUFFER_TABLE_C,x
     lda CURRENT_BUFFER_B
     cmp V37D4
@@ -1103,7 +1109,7 @@
         rts
     else_end
 
-    ldy # 0
+    ldy # BLOCK_OFFSET_NEXT                                 ; Y = BLOCK_OFFSET_NEXT = 0
     lda L1EE7
     sta PFE
     lda [PFD],y
@@ -1112,16 +1118,16 @@
     sta [TFB],y
     sta PFE
     tya
-    iny
+    iny                                                     ; Y = BLOCK_OFFSET_PREVIOUS = 1
     sta [TFB],y
     lda TFC
     sta [PFD],y
-    iny
+    iny                                                     ; Y = BLOCK_OFFSET_POINTER = 2
     lda [T4E],y
     sec
     sbc CURRENT_BUFFER_C
     clc
-    adc # 3
+    adc # BLOCK_OFFSET_POINTER_MIN_VALUE
     sta [TFB],y
     ldy CURRENT_BUFFER_C
     dey
@@ -1146,20 +1152,20 @@
     sta PFE
     lda V37D4
     sta TFC
-    ldy # 0
+    ldy # BLOCK_OFFSET_NEXT
     lda [TFB],y
     sta [PFD],y
-    ldy # 2
+    ldy # BLOCK_OFFSET_POINTER
     lda [TFB],y
     sec
     sbc V37D5
     clc
-    adc # 3
+    adc # BLOCK_OFFSET_POINTER_MIN_VALUE
     sta [PFD],y
     ldy V37D5
     dey
     sty L1EE3
-    ldy # 2
+    ldy # BLOCK_OFFSET_POINTER
     sty L1EE4
     from_loop
         inc L1EE3
@@ -1169,13 +1175,13 @@
         ldy L1EE4
         sta [PFD],y
     next
-        ldy # 2
+        ldy # BLOCK_OFFSET_POINTER
         lda [TFB],y
         cmp L1EE3
         bne _loop
     end
 
-    ldy # 2
+    ldy # BLOCK_OFFSET_POINTER
     lda V37D5
     sta [TFB],y
     tay
@@ -1183,22 +1189,22 @@
     sta [TFB],y
     tay
     sta [TFB],y
-    ldy # 1
+    ldy # BLOCK_OFFSET_PREVIOUS                             ; Y = BLOCK_OFFSET_PREVIOUS = 1
     lda CURRENT_BUFFER_B
     sta [PFD],y
-    dey
+    dey                                                     ; Y = BLOCK_OFFSET_NEXT = 0
     lda PFE
     sta [T4E],y
     lda [PFD],y
     if_ne_then
         sta TFC
         lda PFE
-        iny
+        iny                                                 ; Y = BLOCK_OFFSET_PREVIOUS = 1
         sta [TFB],y
     else_end
 
     lda CURRENT_BUFFER_C
-    cmp # 3
+    cmp # BLOCK_OFFSET_POINTER_MIN_VALUE
     if_eq_then
         lda CURRENT_BUFFER_B
         jsr L1C55
@@ -1206,13 +1212,13 @@
     else
         sec
         sbc # 1
-        ldy # 2
+        ldy # BLOCK_OFFSET_POINTER
         sta [T4E],y
     end
 
     lda PFE
     sta CURRENT_BUFFER_B
-    lda # 3
+    lda # BLOCK_OFFSET_POINTER_MIN_VALUE
     sta CURRENT_BUFFER_C
     jsr L21A2
 
@@ -1237,7 +1243,7 @@
     from
         ldy CURRENT_BUFFER_C
         sty L1EE3
-        ldy # 3
+        ldy # BLOCK_OFFSET_POINTER_MIN_VALUE
         sty L1EE4
     loop
         ldy L1EE3
@@ -1251,16 +1257,16 @@
         bne _loop
     end
 
-    lda # 0
-    tay
+    lda # 0                                                 ; A = BLOCK_NONE
+    tay                                                     ; Y = BLOCK_OFFSET_NEXT = 0
     sta [TFB],y
-    iny
+    iny                                                     ; Y = BLOCK_OFFSET_PREVIOUS = 1
     sta [TFB],y
     lda L1EE4
-    iny
+    iny                                                     ; Y = BLOCK_OFFSET_POINTER = 2
     sta [TFB],y
     tay
-    lda # 0
+    lda # PETSCII_NUL
     sta [TFB],y
 
     from
@@ -1277,14 +1283,15 @@
         lda [T4E],y
         ldy L1EE4
         sta [T4E],y
-        ldy # 2
+        ldy # BLOCK_OFFSET_POINTER                          ; Y = 2
         lda [T4E],y
         cmp L1EE3
         bne _loop
     end
+    ; Y = BLOCK_OFFSET_POINTER = 2
 
     lda     L1EE4
-    sta     [T4E],y
+    sta     [T4E],y                                         ; Y = BLOCK_OFFSET_POINTER = 2
     jsr     L21A2
 
     rts
@@ -1302,7 +1309,7 @@
 
     ; G_MODE = MODE_EDIT
 
-    ldx # 1
+    ldx # BUFFER_INDEX_PASTE                                ; 1
     lda BUFFER_TABLE_HEAD,x
     jsr L1FFE
     sta L1EE5
@@ -1320,12 +1327,12 @@
 
     jsr L1BEC
     clc
-    lda CURRENT_BUFFER_D
+    lda CURRENT_BUFFER_LINE_LO
     adc L1CE9
-    sta CURRENT_BUFFER_D
-    lda CURRENT_BUFFER_E
+    sta CURRENT_BUFFER_LINE_LO
+    lda CURRENT_BUFFER_LINE_HI
     adc L1CEA
-    sta CURRENT_BUFFER_E
+    sta CURRENT_BUFFER_LINE_HI
     lda # 0
     sta TFB
     sta PFD
@@ -1334,7 +1341,7 @@
     pha
     lda CURRENT_BUFFER_B
     sta TFC
-    ldx # 1
+    ldx # BUFFER_INDEX_PASTE
     lda BUFFER_TABLE_HEAD,x
     if_eq_then
         pla
@@ -1346,7 +1353,7 @@
         lda TFC
         pha
         jsr L1B77                                           ; May throw EXCEPTION_OUT_OF_MEMORY
-        ldy # 0
+        ldy # BLOCK_OFFSET_NEXT
         sta [TFB],y
         sta TFC
         lda [TFB],y
@@ -1370,16 +1377,16 @@
     lda TFC
     sta L1EE5
     jsr L1B77                                               ; May throw EXCEPTION_OUT_OF_MEMORY
-    ldy # 0
+    ldy # BLOCK_OFFSET_NEXT                                 ; Y = BLOCK_OFFSET_NEXT = 0
     sta [TFB],y
     sta TFC
     lda [TFB],y
     sta ZP_0E
     lda L1EE5
-    iny
+    iny                                                     ; Y = BLOCK_OFFSET_PREVIOUS = 1
     sta [TFB],y
     pla
-    dey
+    dey                                                     ; Y = BLOCK_OFFSET_NEXT = 0
     sta [TFB],y
     cmp # 0
     if_ne_then
@@ -1403,7 +1410,7 @@
         ldy L1EE4
         sta [TFB],y
     next
-        ldy # 2
+        ldy # BLOCK_OFFSET_POINTER
         lda [T4E],y
         cmp L1EE3
         bne _loop
@@ -1412,7 +1419,7 @@
     lda L1EE4
     sta [TFB],y
     lda CURRENT_BUFFER_C
-    cmp # 3
+    cmp # BLOCK_OFFSET_POINTER_MIN_VALUE
     if_eq_then
         lda CURRENT_BUFFER_B
         jsr L1C55
@@ -1420,19 +1427,19 @@
     else
         sec
         sbc # 1
-        ldy # 2
+        ldy # BLOCK_OFFSET_POINTER
         sta [T4E],y
     end
 
     lda TFC
     sta CURRENT_BUFFER_B
-    lda # 3
+    lda # BLOCK_OFFSET_POINTER_MIN_VALUE
     sta CURRENT_BUFFER_C
     lda L1EE5
     sta PFE
-    ldy # 2
+    ldy # BLOCK_OFFSET_POINTER                              ; Y = BLOCK_OFFSET_POINTER = 2
     lda [PFD],y
-    cmp # 3
+    cmp # BLOCK_OFFSET_POINTER_MIN_VALUE
     if_eq_then
         lda PFE
         jsr L1C55
@@ -1440,7 +1447,7 @@
     else
         sec
         sbc # 1
-        sta [PFD],y
+        sta [PFD],y                                         ; Y = BLOCK_OFFSET_POINTER = 2
     end
 
     lda T5A
@@ -1483,7 +1490,8 @@
 .endproc
 
 ;;; summary: ?
-;;; changed: ...
+;;; changed: A+ X+ Y+ T5C T5D T5E V3787 V3788 V3789 V378A V378B V3783
+
 .proc L2017
     lda # 0
     sta T5C
@@ -1499,7 +1507,7 @@
     from_loop
         pla
         sta T5D
-        ldy # 0
+        ldy # BLOCK_OFFSET_NEXT
         lda [T5C],y
         if_eq_then
             clc
@@ -1507,9 +1515,9 @@
         else_end
     next
         pha
-        ldy # 2
+        ldy # BLOCK_OFFSET_POINTER
         lda [T5C],y
-        cmp # $FF
+        cmp # BLOCK_OFFSET_POINTER_MAX_VALUE
         beq _loop
     end
 
@@ -1543,10 +1551,10 @@
     else_end
 
     from
-        ldy # 2
+        ldy # BLOCK_OFFSET_POINTER
         lda [T5E],y
         sta V3785
-        ldy # 3
+        ldy # BLOCK_OFFSET_POINTER_MIN_VALUE
         sty V3784
     loop
         ldy V3784
@@ -1617,8 +1625,8 @@
         cmp V3785
         if_eq_then
             lda T5F
-            jsr L1C55
-            ldy # 2
+            jsr L1C55                                       ; A- X+ Y+
+            ldy # BLOCK_OFFSET_POINTER
             lda V3783
             sta [T5C],y
             clc
@@ -1632,14 +1640,14 @@
     end
 
     from
-        lda # $FF
-        ldy # 2
+        lda # BLOCK_OFFSET_POINTER_MAX_VALUE
+        ldy # BLOCK_OFFSET_POINTER
         sta [T5C],y
         iny
         sty V3783
         lda V3784
         sec
-        sbc # 3
+        sbc # BLOCK_OFFSET_POINTER_MIN_VALUE
         sta V3786
         inc V3785
         ldy V3784
@@ -1698,7 +1706,7 @@
     lda V3785
     clc
     sbc V3786
-    ldy # 2
+    ldy # BLOCK_OFFSET_POINTER
     sta [T5E],y
     sec
 
@@ -1734,13 +1742,13 @@
         ldx # 0
     end
 
-    stx P35
+    stx CURRENT_BUFFER_COLUMN
     stx P19
     txa
     sec
     sbc CURSOR_SCREEN_X
     if_cc_then
-        lda P35
+        lda CURRENT_BUFFER_COLUMN
         sta CURSOR_SCREEN_X
         lda # 0
     else_end
@@ -1757,7 +1765,7 @@
     else_end
 
     jsr L333B                                               ; A+ L3380+ L337F+
-    lda # >COLOR_RAM_BASE
+    lda # >OUR_COLOR_RAM_BASE
     sta TFB
     lda # >(OUR_VIDEO_MATRIX_BASE - 1)
     sta TFC
@@ -1887,7 +1895,7 @@
 
     tya
     tax
-    ldy # 2
+    ldy # BLOCK_OFFSET_POINTER
     lda [T5C],y
     sta V378C
 
@@ -2023,6 +2031,8 @@
 .endproc
 
 ;;; summary: ?
+;;; out:
+;;;   X = 2
 ;;; changed:
 ;;;   A+  X=2  Y-
 ;;;   L22BA := L22D0 := L22E8 := L22FC := T5D := Z97 := [T5C],0
@@ -2030,12 +2040,12 @@
 .proc L2341
     tya
     pha
-        ldy # 0
+        ldy # BLOCK_OFFSET_NEXT
         lda [T5C],y
         sta T5D
         sta Z97
 
-        ldy # 2
+        ldy # BLOCK_OFFSET_POINTER
         lda [T5C],y
         sta V378C
         ldx # 2
@@ -2113,9 +2123,9 @@
 
     lda # 0
     sta CURSOR_SCREEN_X
-    inc CURRENT_BUFFER_D
+    inc CURRENT_BUFFER_LINE_LO
     if_eq_then
-        inc CURRENT_BUFFER_E
+        inc CURRENT_BUFFER_LINE_HI
     else_end
 
     jsr L219D
@@ -2191,7 +2201,7 @@
         lda T5E
         sta T5C
         clc
-        adc # >COLOR_RAM_BASE
+        adc # >OUR_COLOR_RAM_BASE
         sta T5E
         if_cc_then
             dec T5F
@@ -2229,9 +2239,9 @@
 ;;; out: COMMAND_TEXT
 ;;; changed: A  X Y ...
 .proc GET_COMMAND_TEXT
-    lda # <COMMAND_PANEL_FIRST_LINE_START_VM
+    lda # <STATUS_COMMAND_PANEL_FIRST_LINE_START_VM
     sta TFB
-    lda # >COMMAND_PANEL_FIRST_LINE_START_VM
+    lda # >STATUS_COMMAND_PANEL_FIRST_LINE_START_VM
     sta TFC
     jsr PRINT_FILL_LINE                                     ; A+ X- Y+
     from
@@ -2302,7 +2312,7 @@
             lda COMMAND_TEXT
             cmp # PETSCII_LATIN_LETTER_A
             if_cc_then
-                ldy #$01
+                ldy # 1
                 jmp L2497
             else_end
 
@@ -2335,7 +2345,7 @@
     else_end
     
     L24AE:
-    lda # 0
+    lda # PETSCII_NUL
     sta COMMAND_TEXT,x
     sta NAME_TEXT
     from
@@ -2351,7 +2361,7 @@
         bne _loop
     end
 
-    lda # 0
+    lda # PETSCII_NUL
     sta COMMAND_TEXT,x
     from_loop
         inx
@@ -2438,9 +2448,9 @@
 ;;; summary: Show X#Y on command/status line 
 ;;; changed: TFB, TFC
 .proc PRINT_STATUS_LINE
-    lda # <COMMAND_PANEL_FIRST_LINE_START_VM
+    lda # <STATUS_COMMAND_PANEL_FIRST_LINE_START_VM
     sta TFB
-    lda # >COMMAND_PANEL_FIRST_LINE_START_VM
+    lda # >STATUS_COMMAND_PANEL_FIRST_LINE_START_VM
     sta TFC
     jsr PRINT_FILL_LINE                                     ; A+ X- Y+
     jsr KERNAL_CLRCHN
@@ -2459,7 +2469,7 @@
 ;;; summary: ?
 ;;; changed: ...
 .proc L2545
-    ; Buffer
+    ; Buffer name
     from
         lda CURRENT_BUFFER_INDEX
         ; A := 8 * A
@@ -2485,13 +2495,13 @@
         sta STATUS_LINE_CONTENT_BUFFER,x
     next
         inx
-        cpx # BUFFER_NAME_MAX_LENGTH ; zzz
+        cpx # BUFFER_NAME_MAX_LENGTH
         bne _loop
     end
 
     ; Line
-    ldx CURRENT_BUFFER_D
-    ldy CURRENT_BUFFER_E
+    ldx CURRENT_BUFFER_LINE_LO
+    ldy CURRENT_BUFFER_LINE_HI
     inx
     if_eq_then
         iny
@@ -2499,7 +2509,7 @@
 
     jsr INT_TO_STRING
     from
-        ldx # 3
+        ldx # LINE_MAX_DIGIT_COUNT - 1
     loop
         lda INT_TO_STRING_RESULT,x
         sta STATUS_LINE_CONTENT_LINE,x
@@ -2509,12 +2519,12 @@
     end
 
     ; Column
-    ldx P35
+    ldx CURRENT_BUFFER_COLUMN
     inx
     ldy # 0
     jsr INT_TO_STRING
     from
-        ldx # 2
+        ldx # COLUMN_MAX_DIGIT_COUNT - 1
     loop
         lda INT_TO_STRING_RESULT,x
         sta STATUS_LINE_CONTENT_COLUMN,x
@@ -2536,9 +2546,9 @@
     ;
     sta STATUS_LINE_CONTENT_MODE
 
-    lda # <COMMAND_PANEL_FIRST_LINE_START_VM
+    lda # <STATUS_COMMAND_PANEL_FIRST_LINE_START_VM
     sta TFB
-    lda # >COMMAND_PANEL_FIRST_LINE_START_VM
+    lda # >STATUS_COMMAND_PANEL_FIRST_LINE_START_VM
     sta TFC
     ; Show/update status line
     ldx # <STATUS_LINE_CONTENT
@@ -2549,9 +2559,14 @@
 .endproc
 
 ;;; summary: X#Y (assuming in [0,9999] to string at INT_TO_STRING_RESULT
+;;; in:
+;;;   X  lo
+;;;   Y  hi
+;;; out:
+;;;   INT_TO_STRING_RESULT
 ;;; notes:
 ;;;    If X#Y == 10.000 then you get ":000" etc
-;;; changed: BX
+;;; changed: A+ X+ Y+ BX+ CX+
 .proc INT_TO_STRING
     stx BL
     sty BH
@@ -2706,21 +2721,21 @@
     sta TFC
     lda # 0
     sta TFB
-    tay
+    tay                                                     ; Y = BLOCK_OFFSET_NEXT = 0
     lda [TFB],y
     sta ZP_0E
     tya
     sta [TFB],y
-    iny
+    iny                                                     ; Y = BLOCK_OFFSET_PREVIOUS = 1
     sta [TFB],y
-    lda # 3
-    iny
+    lda # BLOCK_OFFSET_POINTER_MIN_VALUE
+    iny                                                     ; Y = BLOCK_OFFSET_POINTER = 2
     sta [TFB],y
     sta BUFFER_TABLE_C,x
-    lda # 0
+    lda # PETSCII_NUL
     sta BUFFER_TABLE_D,x
     sta BUFFER_TABLE_E,x
-    iny
+    iny                                                     ; Y = 3
     sta [TFB],y
 
     rts
@@ -2769,9 +2784,9 @@
         lda BUFFER_TABLE_C,x
         sta CURRENT_BUFFER_C
         lda BUFFER_TABLE_D,x
-        sta CURRENT_BUFFER_D
+        sta CURRENT_BUFFER_LINE_LO
         lda BUFFER_TABLE_E,x
-        sta CURRENT_BUFFER_E
+        sta CURRENT_BUFFER_LINE_HI
         lda # 0
         sta T5A
     else_end
@@ -2806,9 +2821,9 @@
             sta BUFFER_TABLE_B,x
             lda CURRENT_BUFFER_C
             sta BUFFER_TABLE_C,x
-            lda CURRENT_BUFFER_D
+            lda CURRENT_BUFFER_LINE_LO
             sta BUFFER_TABLE_D,x
-            lda CURRENT_BUFFER_E
+            lda CURRENT_BUFFER_LINE_HI
             sta BUFFER_TABLE_E,x
         else_end
     pla
@@ -2830,9 +2845,9 @@
     lda BUFFER_TABLE_C,x
     sta CURRENT_BUFFER_C
     lda BUFFER_TABLE_D,x
-    sta CURRENT_BUFFER_D
+    sta CURRENT_BUFFER_LINE_LO
     lda BUFFER_TABLE_E,x
-    sta CURRENT_BUFFER_E
+    sta CURRENT_BUFFER_LINE_HI
 
     rts
 .endproc
@@ -3252,8 +3267,8 @@
     sta G_MODE
     lda NAME_TEXT
     if_eq_then
-        sta CURRENT_BUFFER_D
-        sta CURRENT_BUFFER_E
+        sta CURRENT_BUFFER_LINE_LO
+        sta CURRENT_BUFFER_LINE_HI
         lda CURRENT_BUFFER_INDEX
         jmp _end
     else
@@ -3324,33 +3339,32 @@
 ;;; changed: ...
 .proc L2AB7
     pha
-    ; Close disk command channel
-    lda # DISK_CMD_FH
-    jsr KERNAL_CLOSE
-    ; Open disk command channel
-    lda # DISK_CMD_FH
-    ldx ZPKERNAL_FA                                         ; Last used serial device
-    ldy # DISK_CMD_SA
-    jsr KERNAL_SETLFS
-    lda # 0
-    jsr KERNAL_SETNAM                                       ; Disk command has no name
-    jsr KERNAL_OPEN
-    ; Open disk data
-    lda # SERIAL_DATA_FH
-    ldx ZPKERNAL_FA
-    ldy # SERIAL_DATA_DOC_SA
-    jsr KERNAL_SETLFS
+        ; Close disk command channel
+        lda # DISK_CMD_FH
+        jsr KERNAL_CLOSE
+        ; Open disk command channel
+        lda # DISK_CMD_FH
+        ldx ZPKERNAL_FA                                         ; Last used serial device
+        ldy # DISK_CMD_SA
+        jsr KERNAL_SETLFS
+        lda # 0
+        jsr KERNAL_SETNAM                                       ; Disk command has no name
+        jsr KERNAL_OPEN
+        ; Open disk data
+        lda # SERIAL_DATA_FH
+        ldx ZPKERNAL_FA
+        ldy # SERIAL_DATA_DOC_SA
+        jsr KERNAL_SETLFS
 
-    from
-        ldy # 0
-    loop
-        lda NAME_TEXT,y
-        beq _end                                            ; break
-    next
-        iny
-        jmp _loop
-    end
-
+        from
+            ldy # 0
+        loop
+            lda NAME_TEXT,y
+            beq _end                                            ; break
+        next
+            iny
+            jmp _loop
+        end
     pla
     if_ne_then
         dey
@@ -3388,8 +3402,8 @@
         jsr KERNAL_CLOSE
         ldx # <RESOURCE_STRING_DRIVE_NOT_PRESENT
         ldy # >RESOURCE_STRING_DRIVE_NOT_PRESENT
-        pla
-        pla
+        pla                                                 ; ?
+        pla                                                 ; ?
         jsr PRINT_STATUS_LINE
 
         rts
@@ -3501,7 +3515,7 @@
     jsr L1BCB
     lda CURRENT_BUFFER_HEAD
     sta CURRENT_BUFFER_B
-    lda # 3
+    lda # BLOCK_OFFSET_POINTER_MIN_VALUE
     sta CURRENT_BUFFER_C
     ldx # SERIAL_DATA_FH
     jsr KERNAL_CHKOUT
@@ -3552,7 +3566,9 @@
 .endproc
 
 ;;; summary: Read disk status line to V380B
-;;; return: CC=OK , CS=FAIL
+;;; out:
+;;;   C=0  OK
+;;;   C=1  Fail
 ;;; changed: A+ X+ Y+
 .proc READ_DISK_STATUS
     ldx # DISK_CMD_FH
@@ -3569,18 +3585,16 @@
         jmp _loop
     end
 
-    lda # 0
+    lda # PETSCII_NUL
     sta V380B,y
     lda V380B
     ora V380B + 1
     cmp # PETSCII_DIGIT_ZERO
     if_eq_then
-        ; OK (no error)
-        clc
+        clc                                                 ; OK
         jmp _end
     else
-        ; ERROR
-        sec
+        sec                                                 ; Fail
     end
 
     rts
@@ -3715,19 +3729,20 @@
 .endproc
 
 ;;; summary: read byte from IN
-;;; return:
-;;;    C: 0=OK , 1=FAIL
-;;;    A: byte if CC
+;;; out:
+;;;   C=0  OK
+;;;   C=1  FAIL
+;;;   A    Byte that has been read, if C=0
 .proc L2D27
     jsr KERNAL_READST
     cmp # 0
     if_ne_then
-        sec
+        sec                                                 ; Fail
         rts
     else_end
 
     jsr KERNAL_CHRIN
-    clc
+    clc                                                     ; OK
 
     rts
 .endproc
@@ -3767,9 +3782,11 @@
     jsr KERNAL_CLOSE
     plp
     if_cs_then
-        jsr L2C3F
+        jsr L2C3F                                           ; Fail
         rts
     else_end
+
+    ; C=0                                                   ; OK
 
     rts
 .endproc
@@ -3992,9 +4009,9 @@
     pha
     lda L1CE8
     pha
-    lda CURRENT_BUFFER_D
+    lda CURRENT_BUFFER_LINE_LO
     pha
-    lda CURRENT_BUFFER_E
+    lda CURRENT_BUFFER_LINE_HI
     pha
 
     try
@@ -4014,9 +4031,9 @@
                     else_end
                 else_end
 
-                inc CURRENT_BUFFER_D
+                inc CURRENT_BUFFER_LINE_LO
                 if_eq_then
-                    inc CURRENT_BUFFER_E
+                    inc CURRENT_BUFFER_LINE_HI
                 else_end
             else_end
 
@@ -4050,9 +4067,9 @@
     catch_finally_end
 
     pla
-    sta CURRENT_BUFFER_E
+    sta CURRENT_BUFFER_LINE_HI
     pla
-    sta CURRENT_BUFFER_D
+    sta CURRENT_BUFFER_LINE_LO
     pla
     sta L1CE8
     pla
@@ -4082,12 +4099,12 @@
                 dec L1CE7
             else_end
 
-            lda CURRENT_BUFFER_D
+            lda CURRENT_BUFFER_LINE_LO
             if_eq_then
-                dec CURRENT_BUFFER_E
+                dec CURRENT_BUFFER_LINE_HI
             else_end
 
-            dec CURRENT_BUFFER_D
+            dec CURRENT_BUFFER_LINE_LO
         else_end
     next
         dey
@@ -4107,9 +4124,9 @@
     pha
     lda L1CE8
     pha
-    lda CURRENT_BUFFER_D
+    lda CURRENT_BUFFER_LINE_LO
     pha
-    lda CURRENT_BUFFER_E
+    lda CURRENT_BUFFER_LINE_HI
     pha
 
     try
@@ -4130,12 +4147,12 @@
                     dec L1CE7
                 else_end
 
-                lda CURRENT_BUFFER_D
+                lda CURRENT_BUFFER_LINE_LO
                 if_eq_then
-                    dec CURRENT_BUFFER_E
+                    dec CURRENT_BUFFER_LINE_HI
                 else_end
 
-                dec CURRENT_BUFFER_D
+                dec CURRENT_BUFFER_LINE_LO
             else_end
 
             cmp V386F,y
@@ -4166,9 +4183,9 @@
     catch_finally_end
 
     pla
-    sta CURRENT_BUFFER_E
+    sta CURRENT_BUFFER_LINE_HI
     pla
-    sta CURRENT_BUFFER_D
+    sta CURRENT_BUFFER_LINE_LO
     pla
     sta L1CE8
     pla
@@ -4195,9 +4212,9 @@
                 else_end
             else_end
 
-            inc CURRENT_BUFFER_D
+            inc CURRENT_BUFFER_LINE_LO
             if_eq_then
-                inc CURRENT_BUFFER_E
+                inc CURRENT_BUFFER_LINE_HI
             else_end
         else_end
 
@@ -4242,8 +4259,8 @@
     sty G_MODE                                              ; MODE_EDIT
     sty T22
     sty T26
-    sty CURRENT_BUFFER_D
-    sty CURRENT_BUFFER_E
+    sty CURRENT_BUFFER_LINE_LO
+    sty CURRENT_BUFFER_LINE_HI
     sty T4E                                                 ; T4E = 0
     sty T5A
     sty CURSOR_SCREEN_X
@@ -4268,7 +4285,6 @@
                 cmp # EDIT_BUFFERS_1_LAST_PAGE + 1
                 if_eq_then
                     ; A = EDIT_BUFFERS_1_LAST_PAGE + 1
-                    ;bne L3002
                     lda # EDIT_BUFFERS_2_FIRST_PAGE
                     ; A = EDIT_BUFFERS_2_FIRST_PAGE
                 else_end
@@ -4386,7 +4402,7 @@
 
         ; [Z9E=$00,Z9F] = [L322E=$00,L322F] = [L3223=$00,L3224]
 
-        ldy # 2
+        ldy # BLOCK_OFFSET_POINTER
         lda [T5C],y
         sta V38B1
         jsr L333B                                           ; A+ L3380+ L337F+
@@ -4489,17 +4505,18 @@
 .proc L3287
     tya
     pha
-        ldy # 0
+        ldy # BLOCK_OFFSET_NEXT
         lda [T5C],y
         sta Z9F
         sta ZB1
         sta T5D
-        ldy # 2
+        ldy # BLOCK_OFFSET_POINTER
         lda [T5C],y
         sta V38B1
         ldx # 2
     pla
     tay
+
     rts
 .endproc
 
@@ -4518,7 +4535,7 @@
         lda V37D7
         sta ZB1
         sta T5D
-        ldy # 2
+        ldy # BLOCK_OFFSET_POINTER
         lda [T5C],y
         sta V38B1
         jsr L333B                                           ; A+ L3380+ L337F+
@@ -4692,10 +4709,11 @@
     ; $20 - $7F Printable characters
     ; $80 - $9F Control characters
     ; $A0 - $FF Printable characters
-    cmp # $80
+
+    cmp # PETSCII_CONTROL_CHARACTERS_2_FIRST
     if_lt_then
         ; A < $80
-        cmp # $20
+        cmp # PETSCII_CONTROL_CHARACTERS_1_AFTER
         if_lt_then
             ; A < $20
             jsr PROCESS_CONTROL_CHAR
@@ -4709,7 +4727,7 @@
         bcc _end
     else
         ; A >= $80
-        cmp # $A0
+        cmp # PETSCII_CONTROL_CHARACTERS_2_AFTER
         if_lt_then
             ; $80 <= A < $A0
             jsr PROCESS_CONTROL_CHAR
@@ -4768,12 +4786,12 @@
 ;;; summary: Command: Cursor right
 ;;; changed: ...
 .proc CMD_CURSOR_RIGHT
-    lda P35
+    lda CURRENT_BUFFER_COLUMN
     cmp Z92
     if_ne_then
-        ldx P35
+        ldx CURRENT_BUFFER_COLUMN
         inx
-        stx P35
+        stx CURRENT_BUFFER_COLUMN
         stx P19
         jsr L1B9C
         lda CURSOR_SCREEN_X
@@ -4794,7 +4812,7 @@
 ;;; summary Command: Cursor left
 ;;; changed: ...
 .proc CMD_CURSOR_LEFT
-    ldx P35
+    ldx CURRENT_BUFFER_COLUMN
     cpx P36
     if_cc_then
         stx P19
@@ -4803,10 +4821,10 @@
         rts
     else_end
 
-    cpx # 0
+    cpx # EDIT_PANEL_MIN_COLUMN
     if_ne_then
         dex
-        stx P35
+        stx CURRENT_BUFFER_COLUMN
         stx P19
         jsr L1C99                                           ; A- X- Y-
         lda CURSOR_SCREEN_X
@@ -4888,12 +4906,12 @@
         jsr L34F3
     else_end
 
-    lda CURRENT_BUFFER_D
+    lda CURRENT_BUFFER_LINE_LO
     if_eq_then
-        dec CURRENT_BUFFER_E
+        dec CURRENT_BUFFER_LINE_HI
     else_end
  
-    dec CURRENT_BUFFER_D
+    dec CURRENT_BUFFER_LINE_LO
     jsr L2545
 
     rts
@@ -5027,9 +5045,9 @@
         else_end
     else_end
 
-    inc CURRENT_BUFFER_D
+    inc CURRENT_BUFFER_LINE_LO
     if_eq_then
-        inc CURRENT_BUFFER_E
+        inc CURRENT_BUFFER_LINE_HI
     else_end
 
     jsr L2545
@@ -5054,9 +5072,9 @@
                 else_end
             else_end
 
-            inc CURRENT_BUFFER_D
+            inc CURRENT_BUFFER_LINE_LO
             if_eq_then
-                inc CURRENT_BUFFER_E
+                inc CURRENT_BUFFER_LINE_HI
             else_end
         else_end
     next
@@ -5090,11 +5108,11 @@
                 dec L1CE7
             else_end
             
-            lda CURRENT_BUFFER_D
+            lda CURRENT_BUFFER_LINE_LO
             if_eq_then
-                dec CURRENT_BUFFER_E
+                dec CURRENT_BUFFER_LINE_HI
             else_end
-            dec CURRENT_BUFFER_D
+            dec CURRENT_BUFFER_LINE_LO
         else_end
     next
         dec V38B3
@@ -5113,23 +5131,23 @@
 .proc CMD_GO_TOP
     lda CURRENT_BUFFER_HEAD
     sta CURRENT_BUFFER_B
-    lda # 3
+    lda # BLOCK_OFFSET_POINTER_MIN_VALUE                    ; 3
     sta CURRENT_BUFFER_C
     bit G_MODE
     if_mi_then
         ; G_MODE = MODE_SELECT
         sec
         lda L1CE7
-        sbc CURRENT_BUFFER_D
+        sbc CURRENT_BUFFER_LINE_LO
         sta L1CE7
         lda L1CE8
-        sbc CURRENT_BUFFER_E
+        sbc CURRENT_BUFFER_LINE_HI
         sta L1CE8
     else_end
 
     lda # 0
-    sta CURRENT_BUFFER_D
-    sta CURRENT_BUFFER_E
+    sta CURRENT_BUFFER_LINE_LO
+    sta CURRENT_BUFFER_LINE_HI
     jsr L21A2
 
     rts
@@ -5151,9 +5169,9 @@
             else_end
         else_end
 
-        inc CURRENT_BUFFER_D
+        inc CURRENT_BUFFER_LINE_LO
         if_eq_then
-            inc CURRENT_BUFFER_E
+            inc CURRENT_BUFFER_LINE_HI
         else_end
     next
         bne _loop
@@ -5261,7 +5279,7 @@
 
         ; A = [BX],y = [CX],y
         ; A may be 0
-        cmp # 0
+        cmp # PETSCII_NUL
         beq _end                                            ; break
     next
         iny
@@ -5290,7 +5308,7 @@
         else_end
 
         iny
-        cmp # 0
+        cmp # PETSCII_NUL
         beq _end                                            ; break
     next
         dex
