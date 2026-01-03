@@ -1831,7 +1831,7 @@
         from_loop
             lda TFB
             clc
-            adc # VIC_CHAR_COLUMNS
+            adc # OUR_SCREEN_WIDTH
             sta TFB
             if_cs_then
                 inc TFC
@@ -2020,7 +2020,7 @@
 
         cmp # PETSCII_RETURN
         beq L2319                                           ; break
-        cpy # VIC_CHAR_COLUMNS
+        cpy # OUR_SCREEN_WIDTH
         ;if_eq_then
             bne L2304
             ;from_loop
@@ -2069,7 +2069,7 @@
         lda # PETSCII_SPACE
         eor L2340
     loop
-        cpy # VIC_CHAR_COLUMNS
+        cpy # OUR_SCREEN_WIDTH
         beq _end                                            ; break
         sta [TFB],y
     next
@@ -2194,7 +2194,7 @@
     sta T5F
     lda # <OUR_VIDEO_MATRIX_BASE
     sta T5C
-    lda # VIC_CHAR_COLUMNS
+    lda # OUR_SCREEN_WIDTH
     sta T5E
     ldx # EDIT_PANEL_LAST_LINE
     from_loop
@@ -4444,7 +4444,7 @@
 
         lda P36
         clc
-        adc # VIC_CHAR_COLUMNS - 1
+        adc # OUR_SCREEN_WIDTH - 1
         sta ZAB
 
         lda # 0
@@ -4530,7 +4530,7 @@
         next
             iny
             iny
-            cpy # VIC_CHAR_COLUMNS
+            cpy # OUR_SCREEN_WIDTH
             bne _loop
         end
 
@@ -4540,7 +4540,7 @@
         sta [TFB],y
         lda TFB
         clc
-        adc # VIC_CHAR_COLUMNS
+        adc # OUR_SCREEN_WIDTH
         sta TFB
         if_cs_then
             inc TFC
@@ -4655,7 +4655,7 @@
         inx
         inc Z9C
         from
-            ldy # VIC_CHAR_COLUMNS
+            ldy # OUR_SCREEN_WIDTH
         loop
             dey
             dey
@@ -4673,7 +4673,7 @@
         sta [TFB],y
         lda TFB
         clc
-        adc # VIC_CHAR_COLUMNS
+        adc # OUR_SCREEN_WIDTH
         sta TFB
         if_cs_then
             inc TFC
@@ -4951,7 +4951,7 @@
         else
             lda ZPKERNAL_PNT_LO
             clc
-            adc # VIC_CHAR_COLUMNS
+            adc # OUR_SCREEN_WIDTH
             sta TFB
             if_cs_then
                 inc TFC
@@ -4975,7 +4975,7 @@
 ;;; summary: Reverse line @TFB
 ;;; changed: ...
 .proc L34F3
-    ldy # VIC_CHAR_COLUMNS - 1
+    ldy # OUR_SCREEN_WIDTH - 1
     from_loop
         lda [TFB],y
         eor # $80
@@ -5081,7 +5081,7 @@
         if_pl_then
             lda ZPKERNAL_PNT_LO
             sec
-            sbc # VIC_CHAR_COLUMNS
+            sbc # OUR_SCREEN_WIDTH
             sta TFB
             if_cc_then
                 dec TFC
