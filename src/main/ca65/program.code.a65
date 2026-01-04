@@ -3369,7 +3369,7 @@ clv
         sec
         sbc # 100
 ;>>++
-;clv
+clv
 ;<<++
         bcc _end
         cpx # PETSCII_SPACE
@@ -3389,7 +3389,7 @@ clv
         sec
         sbc # 10
 ;>>++
-;clv
+clv
 ;<<++
         bcc _end                                            ; break
         cpy # PETSCII_SPACE
@@ -3404,14 +3404,13 @@ clv
     end
 
     adc # 10 + PETSCII_DIGIT_ZERO
+;>>++
+clv
+;<<++
     sty L297F
     tay
     txa
     ldx L297F
-
-;>>++
-clv
-;<<++
 
     rts
 .endproc
@@ -3511,7 +3510,7 @@ clv
 .endproc
 
 ;;; summary: Execute command with number in `A`
-;;; changed: A X Y DX ...
+;;; changed: A+ X+ Y+ DX+ ...
 .proc EXECUTE_COMMAND
     try
         tax
@@ -3519,8 +3518,8 @@ clv
         sta DL
         lda MAP_COMMAND_NUMBER_TO_HANDLER_HI,x
         sta DH
-        jsr JSR_INDIRECT_DX
-        jsr L21A2
+        jsr JSR_INDIRECT_DX                                 ; May throw exception
+       ;jsr L21A2                                           ; V=0
         bvs _catch
         ;jmp _finally
         bvc _finally
@@ -3528,7 +3527,9 @@ clv
     catch
         jsr HANDLE_EXCEPTION
         ; check V=0
-    finally_end
+    finally
+        jsr L21A2                                           ; V=0
+    end
 
     rts
 .endproc
