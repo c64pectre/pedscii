@@ -42,9 +42,9 @@
                 lda ZPKERNAL_TIME_2
                 sec
                 sbc PREVIOUS_ZPKERNAL_TIME_2
-;>>++
-clv
-;<<++
+    ;>>++
+    clv
+    ;<<++
                 cmp # CURSOR_BLINK_DELAY
                 if_pl_then
                     jsr REVERSE_CURSOR_CHAR
@@ -63,11 +63,12 @@ clv
         sta [ZPKERNAL_PNT],y
         txa
         try
-            jsr PROCESS_CHAR
+            jsr PROCESS_CHAR                                ; in: A | throws: EXCEPTION
            ;bvs _catch                                      ; Exception
             bvc _end                                        ; No exception
         catch
-            jsr HANDLE_EXCEPTION
+            ; check V=1
+            jsr HANDLE_EXCEPTION                            ; in: ZP_EXCEPTION_CODE | out: V=0
             ; check V=0
         finally_end
     next
@@ -227,9 +228,9 @@ clv
     txa
     clc
     adc V3781
-;>>++
-clv
-;<<++
+    ;>>++
+    clv
+    ;<<++
     if_cs_then
         jsr L1B9C
         rts
@@ -339,19 +340,19 @@ clv
             lda # EDIT_PANEL_LAST_LINE
             sec
             sbc T5A
-;>>++
-;clv
-;<<++
+    ;>>++
+    ;clv
+    ;<<++
             clc
             adc L1CE7
-;>>++
-;clv
-;<<++
+    ;>>++
+    ;clv
+    ;<<++
             lda # 0
             adc L1CE8
-;>>++
-clv
-;<<++
+    ;>>++
+    clv
+    ;<<++
             if_mi_then
                 lda # $80
                 sta L2340
@@ -586,9 +587,9 @@ clv
     sta ZPKERNAL_PNT_LO
     lda ZPKERNAL_PNT_HI
     adc # 0
-;>>++
-clv
-;<<++
+    ;>>++
+    clv
+    ;<<++
     sta ZPKERNAL_PNT_HI
     inc T5A
 
@@ -601,15 +602,15 @@ clv
     lda ZPKERNAL_PNT_LO
     sec
     sbc # OUR_SCREEN_WIDTH
-;>>++
-;clv
-;<<++
+    ;>>++
+    ;clv
+    ;<<++
     sta ZPKERNAL_PNT_LO
     lda ZPKERNAL_PNT_HI
     sbc # 0
-;>>++
-clv
-;<<++
+    ;>>++
+    clv
+    ;<<++
     sta ZPKERNAL_PNT_HI
     dec T5A
 
@@ -702,9 +703,9 @@ clv
         lda [T4E],y                                         ; A = T4E.POINTER
         clc
         adc # 1
-;>>++
-clv
-;<<++
+    ;>>++
+    clv
+    ;<<++
         if_ne_then
             sta [T4E],y
         else_end
@@ -911,9 +912,9 @@ clv
                     lda [T4E],y                             ; A = T4E.POINTER ; Can remove this instruction?
                     sec
                     sbc # 1
-;>>++
-clv
-;<<++
+    ;>>++
+    clv
+    ;<<++
                     sta [T4E],y
                     ldy CURRENT_BUFFER_B
                     jsr L1B9C
@@ -945,9 +946,9 @@ clv
                     lda [T4E],y
                     sec
                     sbc # 1
-;>>++
-clv
-;<<++
+    ;>>++
+    clv
+    ;<<++
                     sta [T4E],y
                     from
                         ldy CURRENT_BUFFER_C
@@ -3482,12 +3483,14 @@ clv
         else_end
 
         jsr EXECUTE_COMMAND                         ; in: A | changed: A+ X+ Y+ V=0 DX+ ... | throws: EXCEPTION
-        if_vs_then
-            ; Rethrow
-           ;rts
-        else_end
+       ;bvs _rethrow
+       ;if_vs_then
+       ;    ; Rethrow
+       ;    rts
+       ;else_end
     end
 
+    _rethrow:
     rts
 .endproc
 
@@ -3601,11 +3604,12 @@ clv
     else_end
 
     lda # TRUE                                              ; Do create buffer if not exists
-    jsr FIND_BUFFER_OPT_CREATE                              ; if C=0 then out A ; May throw EXCEPTION_NO_MORE_FREE_FILES
-    if_vs_then
-        ; Exception
-        rts                                                 ; Rethrow
-    else_end
+    jsr FIND_BUFFER_OPT_CREATE                              ; out: A (if C=0) | throws: EXCEPTION_NO_MORE_FREE_FILES
+    bvs _rethrow                                            ; Exception -> rethrow
+   ;if_vs_then
+   ;    ; Exception
+   ;    rts                                                 ; Rethrow
+   ;else_end
 
     if_cs_then
         ; Not found?
@@ -3631,6 +3635,7 @@ clv
     lda # $27                                                ; ?
     sta CURSOR_SCREEN_X
 
+    _rethrow:
     rts
 .endproc
 
@@ -5093,46 +5098,39 @@ clv
     ; $20 - $7F Printable characters
     ; $80 - $9F Control characters
     ; $A0 - $FF Printable characters
-    try
-        cmp # PETSCII_CONTROL_CHARACTERS_2_FIRST
+    cmp # PETSCII_CONTROL_CHARACTERS_2_FIRST
+    if_lt_then
+        ; A < $80
+        cmp # PETSCII_CONTROL_CHARACTERS_1_AFTER
         if_lt_then
-            ; A < $80
-            cmp # PETSCII_CONTROL_CHARACTERS_1_AFTER
-            if_lt_then
-                ; A < $20
-                jsr PROCESS_CONTROL_CHAR                        ; in: A | throws: EXCEPTION_OUT_OF_MEMORY
-               ;bvs _catch
-                clc
-                bcc _end
-            else
-                ; $20 <= A < 80
-                jsr ADD_CHAR                                ; in: A | throws: EXCEPTION_OUT_OF_MEMORY
-               ;bvs _catch
-            end
-
-            clc
-            bcc _end                                        ; bra
+            ; A < $20
+            jsr PROCESS_CONTROL_CHAR                        ; in: A | throws: EXCEPTION_OUT_OF_MEMORY
+            bvs _rethrow                                    ; Exception -> rethrow
+            bvc _end                                        ; bra
         else
-            ; A >= $80
-            cmp # PETSCII_CONTROL_CHARACTERS_2_AFTER
-            if_lt_then
-                ; $80 <= A < $A0
-                jsr PROCESS_CONTROL_CHAR                        ; in: A | throws: EXCEPTION_* (not EXCEPTION_NO_SUCH_ELEMENT)
-               ;bvs _catch
-                clc
-                bcc _end                                        ; bra
-            else
-                ; $A0 <= A <= $FF
-                jsr ADD_CHAR                                    ; in: A | throws: EXCEPTION_OUT_OF_MEMORY
-               ;bvs _catch
-               ;clc
-               ;bcc _end                                        ; bra
-            end
+            ; $20 <= A < 80
+            jsr ADD_CHAR                                    ; in: A | throws: EXCEPTION_OUT_OF_MEMORY
+            bvs _rethrow                                    ; Exception -> rethrow
         end
-    catch
-       ;rts                                                 ; Rethrow
-    finally_end
 
+        bvc _end                                            ; bra
+    else
+        ; A >= $80
+        cmp # PETSCII_CONTROL_CHARACTERS_2_AFTER
+        if_lt_then
+            ; $80 <= A < $A0
+            jsr PROCESS_CONTROL_CHAR                        ; in: A | throws: EXCEPTION_* (not EXCEPTION_NO_SUCH_ELEMENT)
+            bvs _rethrow                                    ; Exception -> rethrow
+            bvc _end                                        ; bra
+        else
+            ; $A0 <= A <= $FF
+            jsr ADD_CHAR                                    ; in: A | throws: EXCEPTION_OUT_OF_MEMORY
+           ;bvs _rethrow                                    ; Exception -> rethrow
+           ;bvc _end                                        ; bra
+        end
+    end
+
+    _rethrow:
     rts
 .endproc
 
@@ -5265,7 +5263,7 @@ clv
     if_cs_then
         jsr MOVE_CURSOR_UP                                  ; A+ X- Y- ZPKERNAL_PNT_LO+ ZPKERNAL_PNT_HI+ T5A+
         ;jmp _end
-        bvc _end
+        bvc _end                                            ; bra
         brk
     else
         jsr L268E
@@ -5313,9 +5311,9 @@ clv
             lda ZPKERNAL_PNT_LO
             clc
             adc # OUR_SCREEN_WIDTH
-;>>++
-clv
-;<<++
+    ;>>++
+    clv
+    ;<<++
             sta TFB
             if_cs_then
                 inc TFC
@@ -5391,14 +5389,14 @@ clv
             lda T5A
             sec
             sbc L1CE7
-;>>++
-;clv
-;<<++
+    ;>>++
+    ;clv
+    ;<<++
             lda # 0
             sbc L1CE8
-;>>++
-clv
-;<<++
+    ;>>++
+    clv
+    ;<<++
             if_mi_then
                 lda # $80                                   ; ?
                 sta L2340
@@ -5457,9 +5455,9 @@ clv
             lda ZPKERNAL_PNT_LO
             sec
             sbc # OUR_SCREEN_WIDTH
-;>>++
-clv
-;<<++
+    ;>>++
+    clv
+    ;<<++
             sta TFB
             if_cc_then
                 dec TFC
@@ -5775,13 +5773,17 @@ clv
     ; Does not come here
 .endproc
 
+;;; summary: Handle exception
+;;; in: ZP_EXCEPTION_CODE
+;;; out: V=0
+;;; changed: A+ X+ Y? AX+
 .proc HANDLE_EXCEPTION
     if_vc_then
+        ; Should not get here when no exception -> panic
         brk
     else_end
 
     ; Clear exception
-    clc
     clv
 
     ; Lookup exception message, display ,wait for <RETURN>
