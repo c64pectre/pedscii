@@ -72,6 +72,8 @@ V38B1:      .res 1      ; $38B1
 ;U38B2:      .res 1      ; $38B2  Unused
 V38B3:      .res 1      ; $38B3
 
+OLD_KERNAL_CBINV:   .res 2
+
 _38B4:
 
 ; __BSS_LOAD__ + __BSS_SIZE__

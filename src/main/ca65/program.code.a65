@@ -29,40 +29,46 @@
         ldy CURSOR_SCREEN_X
         lda [ZPKERNAL_PNT],y
         pha
-        jsr REVERSE_CURSOR_CHAR
-        from_loop INNER_LOOP
-            tya
-            pha
-            jsr KERNAL_GETIN
-            bne _end                                ; break ; We've got a char
-            jsr L2017
+            jsr REVERSE_CURSOR_CHAR
+            from_loop INNER_LOOP
+                tya
+                pha
+                    jsr KERNAL_GETIN
+                    bne _end                            ; break ; We've got a char
+                    jsr L2017
+                pla
+                tay
+                lda ZPKERNAL_TIME_2
+                sec
+                sbc PREVIOUS_ZPKERNAL_TIME_2
+;>>++
+clv
+;<<++
+                cmp # CURSOR_BLINK_DELAY
+                if_pl_then
+                    jsr REVERSE_CURSOR_CHAR
+                else_end
+            next
+                ;jmp _loop
+                bvc _loop                                   ; bra
+                brk
+            end
+
+            ; We've got a char in A
+            tax
             pla
             tay
-            lda ZPKERNAL_TIME_2
-            sec
-            sbc PREVIOUS_ZPKERNAL_TIME_2
-            cmp # CURSOR_BLINK_DELAY
-            if_pl_then
-                jsr REVERSE_CURSOR_CHAR
-            else_end
-        next
-            jmp _loop
-        end
-
-        ; We've got a char in A
-        tax
-        pla
-        tay
         pla
         sta [ZPKERNAL_PNT],y
         txa
         jsr PROCESS_CHAR
     next
-        jmp _loop
+        ;jmp _loop
+        bvc _loop                                           ; bra
+        brk
     end
 
     ; Does not come here
-    brk
 .endproc
 
 ;;; summary reverse character under cursor
@@ -213,6 +219,9 @@
     txa
     clc
     adc V3781
+;>>++
+clv
+;<<++
     if_cs_then
         jsr L1B9C
         rts
@@ -241,7 +250,9 @@
             jsr L1B9C
         else_end
 
-        jmp _end
+        ;jmp _end
+        bvc _end                                            ; bra
+        brk
     else
         jsr L1C99                                           ; A- X- Y-
     end
@@ -294,7 +305,9 @@
         jsr L1B9C
         jsr L1BBC
     next
-        jmp _loop
+        ;jmp _loop
+        bvc _loop                                           ; bra
+        brk
     end
 
     jsr L1B9C
@@ -318,10 +331,19 @@
             lda # EDIT_PANEL_LAST_LINE
             sec
             sbc T5A
+;>>++
+;clv
+;<<++
             clc
             adc L1CE7
+;>>++
+;clv
+;<<++
             lda # 0
             adc L1CE8
+;>>++
+clv
+;<<++
             if_mi_then
                 lda # $80
                 sta L2340
@@ -353,15 +375,16 @@
 ;;; out:
 ;;;   C=0  OK
 ;;;   C=1  Fail
+;;;   X    ?
 ;;; changed: ...
 .proc L19DD
-    ldx # 0
+    ldx # 0                                                 ; X = 0
     jsr L1C99                                               ; A- X- Y-
     if_cs_then
         rts                                                 ; Fail
     else_end
 
-    inx
+    inx                                                     ; X = 1
     from_loop
         jsr L1C99                                           ; A- X- Y-
         if_cs_then
@@ -374,10 +397,12 @@
         beq _end                                            ; break
     next
         inx
-        jmp _loop
+        ;jmp _loop
+        bvc _loop                                           ; bra
+        brk
     end
 
-    jsr L1B9C
+    jsr L1B9C                                               ; A- X- Y-
     clc                                                     ; OK
 
     rts
@@ -445,7 +470,9 @@
             jsr L1B9C
             inc CURRENT_BUFFER_COLUMN
         next
-            jmp _loop
+            ;jmp _loop
+            bvc _loop                                       ; bra
+            brk
         end
 
         from_loop
@@ -460,7 +487,9 @@
         next
             inc CURSOR_SCREEN_X
             inc CURRENT_BUFFER_COLUMN
-            jmp _loop
+            ;jmp _loop
+            bvc _loop                                       ; bra
+            brk
         else_end
 
         jsr L1BCB
@@ -472,7 +501,9 @@
             iny
             jsr L1B9C
         next
-            jmp _loop
+            ;jmp _loop
+            bvc _loop                                       ; bra
+            brk
         end                                                 ; L1A79:
 
         jsr L1BD6
@@ -490,8 +521,9 @@
     sta T5C
     ldx # >STATUS_COMMAND_PANEL_FIRST_LINE_START_CR
     ldy # <STATUS_COMMAND_PANEL_FIRST_LINE_START_CR
+    ;jmp L1A9B
     bvc L1A9B                                               ; bra
-    jmp L1A9B
+    brk
 .endproc
 
 ;;; summary: Setup colors
@@ -546,6 +578,9 @@
     sta ZPKERNAL_PNT_LO
     lda ZPKERNAL_PNT_HI
     adc # 0
+;>>++
+clv
+;<<++
     sta ZPKERNAL_PNT_HI
     inc T5A
 
@@ -558,9 +593,15 @@
     lda ZPKERNAL_PNT_LO
     sec
     sbc # OUR_SCREEN_WIDTH
+;>>++
+;clv
+;<<++
     sta ZPKERNAL_PNT_LO
     lda ZPKERNAL_PNT_HI
     sbc # 0
+;>>++
+clv
+;<<++
     sta ZPKERNAL_PNT_HI
     dec T5A
 
@@ -635,7 +676,9 @@
             else_end
 
             ldy # 0
-            jmp _end
+            ;jmp _end
+            beq _end                                        ; bra
+            brk
         else
             sta [T4E],y
         end
@@ -647,10 +690,13 @@
 
     lda L1B46
     sta [T4E],y
-    ldy # BLOCK_OFFSET_POINTER                              ; 2
-    lda [T4E],y
+    ldy # BLOCK_OFFSET_POINTER                              ; Y = BLOCK_OFFSET_POINTER = 2
+    lda [T4E],y                                             ; A = T4E.POINTER
     clc
     adc # 1
+;>>++
+clv
+;<<++
     if_ne_then
         sta [T4E],y
     else_end
@@ -678,7 +724,9 @@
                 iny                                         ; Y = 1 = BLOCK_OFFSET_PREVIOUS
                 sta [T22],y                                 ; Y = 1 = BLOCK_OFFSET_PREVIOUS
                 dey                                         ; Y = 0 = BLOCK_OFFSET_NEXT
-                jmp _end
+                ;jmp _end
+                beq _end                                    ; bra
+                brk
             else
                 lda L1B47
             end
@@ -730,7 +778,7 @@
 .endproc
 
 ;;; summary:
-;;; changed: A-, Y-
+;;; changed: A- X- Y-
 .proc L1B9C
     pha
         tya
@@ -749,8 +797,10 @@
                     lda # BLOCK_OFFSET_POINTER_MIN_VALUE
                     sta CURRENT_BUFFER_C
                 else_end
+
+                ;jmp _end
                 bvc _end                                    ; bra
-                jmp _end
+                brk
             else
                 inc CURRENT_BUFFER_C
             end
@@ -850,6 +900,9 @@
                     lda [T4E],y
                     sec
                     sbc # 1
+;>>++
+clv
+;<<++
                     sta [T4E],y
                     ldy CURRENT_BUFFER_B
                     jsr L1B9C
@@ -859,7 +912,9 @@
                         ;bne L1C27
                         tya
                         jsr L1C55
-                        jmp _end                            ; L1C39
+                        ;jmp _end                            ; L1C39
+                        bvc _end
+                        brk
                     else                                    ; L1C27:
                         ldy # BLOCK_OFFSET_POINTER          ; Y = BLOCK_OFFSET_POINTER = 2
                         lda [T57],y                         ; A = [T57],BLOCK_OFFSET_POINTER
@@ -874,12 +929,16 @@
                         else_end
                     end                                     ; L1C39:
 
+                    ;jmp _end
                     bvc _end                                ; bra
-                    jmp _end
+                    brk
                 else
                     lda [T4E],y
                     sec
                     sbc # 1
+;>>++
+clv
+;<<++
                     sta [T4E],y
                     from
                         ldy CURRENT_BUFFER_C
@@ -923,8 +982,9 @@
         ; [T22],BLOCK_OFFSET_NEXT = BLOCK_NONE
         iny                                                 ; Y = BLOCK_OFFSET_PREVIOUS = 1
         lda [T22],y                                         ; A = [T22],BLOCK_OFFSET_PREVIOUS
+        ;jmp _end
         bvc _end                                            ; bra
-        jmp _end
+        brk
     else
         sta T27
         iny                                                 ; Y = BLOCK_OFFSET_PREVIOUS = 1
@@ -941,8 +1001,9 @@
         sta CURRENT_BUFFER_HEAD
         ldx CURRENT_BUFFER_INDEX
         sta BUFFER_TABLE_HEAD,x
+        ;jmp _end
         bvc _end                                            ; bra
-        jmp _end
+        brk
     else
         ; Have previous block
         sta T27
@@ -985,8 +1046,9 @@
                     clc                                     ; OK
                 end
 
+                ;jmp _end
                 bvc _end                                    ; bra
-                jmp _end
+                brk
             else
                 dec CURRENT_BUFFER_C
                 clc                                         ; OK
@@ -1083,7 +1145,9 @@
         sta V37D4
         lda T59
         sta V37D5
-        jmp _end
+        ;jmp _end
+        bvc _end
+        brk
     else
         eor # $FF
         sta L1CEA
@@ -1113,11 +1177,19 @@
         sec
         lda CURRENT_BUFFER_LINE_LO
         sbc L1CE9
+;>>++
+;clv
+;<<++
         sta CURRENT_BUFFER_LINE_LO
         lda CURRENT_BUFFER_LINE_HI
         sbc L1CEA
+;>>++
+clv
+;<<++
         sta CURRENT_BUFFER_LINE_HI
-        jmp _end
+        ;jmp _end
+        bvc _end
+        brk
     else
         inc CURRENT_BUFFER_LINE_LO
         if_eq_then
@@ -1156,8 +1228,14 @@
     lda [T4E],y
     sec
     sbc CURRENT_BUFFER_C
+;>>++
+;clv
+;<<++
     clc
     adc # BLOCK_OFFSET_POINTER_MIN_VALUE
+;>>++
+clv
+;<<++
     sta [TFB],y
     ldy CURRENT_BUFFER_C
     dey
@@ -1191,8 +1269,14 @@
     lda [TFB],y
     sec
     sbc V37D5
+;>>++
+;clv
+;<<++
     clc
     adc # BLOCK_OFFSET_POINTER_MIN_VALUE
+;>>++
+clv
+;<<++
     sta [PFD],y
     ldy V37D5
     dey
@@ -1242,8 +1326,9 @@
         ; A = CURRENT_BUFFER_C = BLOCK_OFFSET_POINTER_MIN_VALUE
         lda CURRENT_BUFFER_B
         jsr L1C55
+        ;jmp _end
         bvc _end                                            ; bra
-        jmp _end
+        brk
     else
         ; A = CURRENT_BUFFER_C != BLOCK_OFFSET_POINTER_MIN_VALUE
         ; implies
@@ -1251,6 +1336,9 @@
         ; because is never decremented below BLOCK_OFFSET_POINTER_MIN_VALUE
         sec
         sbc # 1
+;>>++
+clv
+;<<++
         ; A = CURRENT_BUFFER_C - 1 >=  BLOCK_OFFSET_POINTER_MIN_VALUE
         ldy # BLOCK_OFFSET_POINTER                          ; Y = BLOCK_OFFSET_POINTER = 2
         sta [T4E],y                                         ; T4E.BLOCK_OFFSET_POINTER = A = CURRENT_BUFFER_C - 1 >= BLOCK_OFFSET_POINTER_MIN_VALUE
@@ -1372,6 +1460,9 @@
     sta CURRENT_BUFFER_LINE_LO
     lda CURRENT_BUFFER_LINE_HI
     adc L1CEA
+;>>++
+clv
+;<<++
     sta CURRENT_BUFFER_LINE_HI
     lda # 0
     sta TFB
@@ -1468,10 +1559,15 @@
     if_eq_then
         lda CURRENT_BUFFER_B
         jsr L1C55
-        jmp _end
+        ;jmp _end
+        bvc _end
+        brk
     else
         sec
         sbc # 1
+;>>++
+clv
+;<<++
         ldy # BLOCK_OFFSET_POINTER
         sta [T4E],y
     end
@@ -1488,10 +1584,15 @@
     if_eq_then
         lda PFE
         jsr L1C55
-        jmp _end
+        ;jmp _end
+        bvc _end
+        brk
     else
         sec
         sbc # 1
+;>>++
+clv
+;<<++
         sta [PFD],y                                         ; Y = BLOCK_OFFSET_POINTER = 2
     end
 
@@ -1533,8 +1634,9 @@
         ; A = TFB.NEXT != BLOCK_NONE
         sta TFC                                             ; Go to next block
     next
+        ;jmp _loop
         bne _loop                                           ; bra
-        jmp _loop
+        brk
     end
 
     txa
@@ -1544,7 +1646,6 @@
 
 ;;; summary: ?
 ;;; changed: A+ X+ Y+ T5C T5D T5E V3787 V3788 V3789 V378A V378B V3783
-
 .proc L2017
     lda # 0
     sta T5C
@@ -1701,6 +1802,9 @@
         lda V3784
         sec
         sbc # BLOCK_OFFSET_POINTER_MIN_VALUE
+;>>++
+;clv
+;<<++
         sta V3786
         inc V3785
         ldy V3784
@@ -1721,6 +1825,9 @@
         lda CURRENT_BUFFER_C
         sec
         sbc V3786
+;>>++
+;clv
+;<<++
         sta CURRENT_BUFFER_C
     else_end
 
@@ -1729,6 +1836,9 @@
         lda T59
         sec
         sbc V3786
+;>>++
+;clv
+;<<++
         sta T59
     else_end
 
@@ -1737,6 +1847,9 @@
         lda V37D8
         sec
         sbc V3786
+;>>++
+;clv
+;<<++
         sta V37D8
     else_end
 
@@ -1745,6 +1858,9 @@
         lda V37D5
         sec
         sbc V3786
+;>>++
+;clv
+;<<++
         sta V37D5
     else_end
 
@@ -1753,15 +1869,25 @@
         lda L1CE6
         sec
         sbc V3786
+;>>++
+;clv
+;<<++
         sta L1CE6
     else_end
 
     lda V3785
     clc
     sbc V3786
+;>>++
+;clv
+;<<++
     ldy # BLOCK_OFFSET_POINTER                              ; Y = BLOCK_OFFSET_POINTER = 2
     sta [T5E],y                                             ; T5E.POINTER = A
     sec                                                     ; Fail?
+
+;>>++
+clv
+;<<++
 
     rts
 .endproc
@@ -1790,7 +1916,9 @@
         jsr L1B9C
         jsr L19DD
         dex
-        jmp _end
+        ;jmp _end
+        bvc _end
+        brk
     else
         ldx # 0
     end
@@ -1800,6 +1928,9 @@
     txa
     sec
     sbc CURSOR_SCREEN_X
+;>>++
+clv
+;<<++
     if_cc_then
         lda CURRENT_BUFFER_COLUMN
         sta CURSOR_SCREEN_X
@@ -1832,6 +1963,9 @@
             lda TFB
             clc
             adc # OUR_SCREEN_WIDTH
+;>>++
+clv
+;<<++
             sta TFB
             if_cs_then
                 inc TFC
@@ -1875,7 +2009,9 @@
                 sta V37D4
                 lda CURRENT_BUFFER_C
                 sta V37D5
-                jmp _end
+                ;jmp _end
+                bvc _end
+                brk
             else
                 lda Z97
                 sta V37D4
@@ -1893,6 +2029,9 @@
             clc
             lda TFB
             adc # OUR_SCREEN_WIDTH
+;>>++
+clv
+;<<++
             sta TFB
             if_cs_then
                 inc TFC
@@ -1908,7 +2047,9 @@
             end
         next
             inc PFE
-            jmp _loop
+            ;jmp _loop
+            bvc _loop
+            brk
         end
 
         jsr L1BD6
@@ -1929,6 +2070,9 @@
         sta ZPKERNAL_PNT_LO
         lda ZPKERNAL_PNT_HI
         adc # >OUR_VIDEO_MATRIX_BASE
+;>>++
+clv
+;<<++
         sta ZPKERNAL_PNT_HI
     else_end
 
@@ -1996,7 +2140,9 @@
             cmp # PETSCII_RETURN
             if_eq_then
                 ldy # 0
-                jmp L2319                                   ; break break
+                ;jmp L2319                                   ; break break
+                bvc L2319
+                brk
             else_end
 
             cpx V378C
@@ -2041,7 +2187,9 @@
                 bne L22F1
             ;end
 
-            jmp L2319                                       ; break
+            ;jmp L2319                                       ; break
+            bvc L2319
+            brk
         ;else
             L2304:
             jsr L240D                                       ; A+, V378D+
@@ -2055,7 +2203,9 @@
         ;end
     ;next
         inx
-        jmp L22E6                                           ; _loop
+        ;jmp L22E6                                           ; _loop
+        bvc L22E6
+        brk
     ;end
     L2319:
 
@@ -2169,7 +2319,9 @@
     if_cc_then
         jsr MOVE_CURSOR_DOWN                                ; A+ X- Y- ZPKERNAL_PNT_LO+ ZPKERNAL_PNT_HI+ T5A+
         jsr L2649
-        jmp _end
+        ;jmp _end
+        bvc _end
+        brk
     else
         jsr L2671
     end
@@ -2214,6 +2366,9 @@
         sta T5C
         clc
         adc # OUR_SCREEN_WIDTH
+;>>++
+clv
+;<<++
         sta T5E
         if_cs_then
             inc T5F
@@ -2255,6 +2410,9 @@
         sta T5C
         clc
         adc # >OUR_COLOR_RAM_BASE
+;>>++
+clv
+;<<++
         sta T5E
         if_cc_then
             dec T5F
@@ -2313,7 +2471,9 @@
                 sta [TFB],y
             else_end
 
-            jmp _end ; bvc _end ; bra
+            ;jmp _end
+            bvc _end                                        ; bra
+            brk
         else
             pha
             lda L24E5
@@ -2331,13 +2491,17 @@
                     rts
                 else_end
 
-                jmp L246C
+                ;jmp L246C
+                bvc L246C
+                brk
             else_end
 
             pla
             cmp # PETSCII_RETURN
             if_eq_then
-                jmp L249D
+                ;jmp L249D
+                bvc L249D
+                brk
             else_end
 
     L246C:
@@ -2351,7 +2515,9 @@
             else_end
         end
     next
-        jmp _loop
+        ;jmp _loop
+        bvc _loop
+        brk
     end
     
     L247D:
@@ -2365,7 +2531,9 @@
             cmp # PETSCII_LATIN_LETTER_A
             if_cc_then
                 ldy # 1
-                jmp L2497
+                ;jmp L2497
+                bne L2497
+                brk
             else_end
 
             cmp # PETSCII_LATIN_LETTER_Z + 1
@@ -2465,12 +2633,17 @@
             lda ZPKERNAL_TIME_2
             sec
             sbc L251E
+;>>++
+clv
+;<<++
             cmp # CURSOR_BLINK_DELAY
             if_pl_then
                 jsr L2521
             else_end
         next
-            jmp _loop
+            ;jmp _loop
+            bvc _loop
+            brk
         end
     catch_finally_end
 
@@ -2644,9 +2817,15 @@
             sec
             lda BL
             sbc TABLE_POWER_OF_10_LO,y
+;>>++
+;clv
+;<<++
             sta CL
             lda BH
             sbc TABLE_POWER_OF_10_HI,y
+;>>++
+;clv
+;<<++
             bcc _end                                        ; break
             sta BH
             lda CL
@@ -2666,6 +2845,9 @@
             ; CH != 0 or X != 0
             clc
             adc # PETSCII_DIGIT_ZERO
+;>>++
+;clv
+;<<++
             sta INT_TO_STRING_RESULT,x
             inx
         else_end                                            ; L260B:
@@ -2673,12 +2855,17 @@
         dey
         bpl _loop
     end
+    ; Y = 0
 
     txa
     if_eq_then
         lda # PETSCII_DIGIT_ZERO
         sta INT_TO_STRING_RESULT
     else_end
+
+;>>++
+clv
+;<<++
 
     rts
 .endproc
@@ -2955,7 +3142,9 @@
 
             ; X >= 2 or A = BUFFER_TABLE_HEAD[x] = 0
             ; Found custom (not main, not paste) buffer without head.
-            jmp LOOP::_end                                  ; break
+            ;jmp LOOP::_end                                  ; break
+            bvc LOOP::_end
+            brk
         else_end
         ; No match
     next
@@ -2963,6 +3152,9 @@
         lda PFD
         clc
         adc # BUFFER_NAME_MAX_LENGTH
+;>>++
+clv
+;<<++
         sta PFD
         if_cs_then
             inc PFE
@@ -3026,6 +3218,9 @@
         sta TFB
         lda # 0
         adc # >BUFFER_TABLE_NAME
+;>>++
+clv
+;<<++
         sta TFC
         ; Copy NAME_TEXT to TFB#TFC.
         ldy # 0
@@ -3069,7 +3264,9 @@
         cpx CURRENT_BUFFER_INDEX
         if_eq_then
             lda CURRENT_BUFFER_HEAD
-            jmp _end
+            ;jmp _end
+            bvc _end
+            brk
         else
             lda BUFFER_TABLE_HEAD,x
         end
@@ -3103,6 +3300,9 @@
         lda T5C
         clc
         adc # BUFFER_NAME_MAX_LENGTH
+;>>++
+clv
+;<<++
         sta T5C
         if_cs_then
             inc T5D
@@ -3168,6 +3368,9 @@
     loop
         sec
         sbc # 100
+;>>++
+;clv
+;<<++
         bcc _end
         cpx # PETSCII_SPACE
         if_eq_then
@@ -3176,13 +3379,18 @@
         else_end
     next
         inx
-        jmp _loop
+        ;jmp _loop
+        bvc _loop
+        brk
     end
 
     adc # 100
     from_loop
         sec
         sbc # 10
+;>>++
+;clv
+;<<++
         bcc _end                                            ; break
         cpy # PETSCII_SPACE
         if_eq_then
@@ -3190,7 +3398,9 @@
         else_end
     next
         iny
-        jmp _loop
+        ;jmp _loop
+        bvc _loop
+        brk
     end
 
     adc # 10 + PETSCII_DIGIT_ZERO
@@ -3198,6 +3408,10 @@
     tay
     txa
     ldx L297F
+
+;>>++
+clv
+;<<++
 
     rts
 .endproc
@@ -3245,7 +3459,9 @@
             finally_end
         end
     next
-        jmp _loop
+        ;jmp _loop
+        bvc _loop
+        brk
     end
 
     ; Does not come here
@@ -3306,7 +3522,9 @@
         jsr JSR_INDIRECT_DX
         jsr L21A2
         bvs _catch
-        jmp _finally
+        ;jmp _finally
+        bvc _finally
+        brk
     catch
         jsr HANDLE_EXCEPTION
         ; check V=0
@@ -3325,7 +3543,9 @@
         sta CURRENT_BUFFER_LINE_LO
         sta CURRENT_BUFFER_LINE_HI
         lda CURRENT_BUFFER_INDEX
-        jmp _end
+        ;jmp _end
+        bvc _end
+        brk
     else
         lda # FALSE                                         ; Do not create buffer if not exists
         jsr FIND_BUFFER_OPT_CREATE                          ; out A, C, V ; May throw EXCEPTION_NO_MORE_FREE_FILES ?
@@ -3389,10 +3609,13 @@
     rts
 .endproc
 
-;;; summary: ?
+;;; summary: Open disk file
+;;; in:
+;;;   A          Read/write flag: FALSE: read , TRUE: write
+;;;   NAME_TEXT  File name (nul-terminated string)
 ;;; throws: EXCEPTION_DRIVE_NOT_PRESENT
 ;;; changed: ...
-.proc L2AB7
+.proc OPEN_DISK_FILE
     pha
         ; Close disk command channel
         lda # DISK_CMD_FH
@@ -3410,7 +3633,7 @@
         ldx ZPKERNAL_FA
         ldy # SERIAL_DATA_DOC_SA
         jsr KERNAL_SETLFS
-
+        ; Y := NAME_TEXT.INDEX_OF(PETSCII_NUL)
         from
             ldy # 0
         loop
@@ -3418,10 +3641,15 @@
             beq _end                                            ; break
         next
             iny
-            jmp _loop
+            ;jmp _loop
+            bvc _loop
+            brk
         end
     pla
+    ; Read or write?
     if_ne_then
+        ; Write
+        ; Make NAME_TEXT ending with ",s,w".
         dey
         dey
         lda NAME_TEXT,y
@@ -3445,20 +3673,23 @@
         iny
     else_end
 
+    ; Y = NAME_TEXT.LENGTH
+
     tya
     ldx # <NAME_TEXT
     ldy # >NAME_TEXT
     jsr KERNAL_SETNAM
     jsr KERNAL_OPEN
-    if_cs_then
+    if_cs_then                                              ; Fail
         lda # SERIAL_DATA_FH
         jsr KERNAL_CLOSE
         lda # DISK_CMD_FH
         jsr KERNAL_CLOSE
+        ; throw EXCEPTION_DRIVE_NOT_PRESENT
         ldx # <RESOURCE_STRING_DRIVE_NOT_PRESENT
         ldy # >RESOURCE_STRING_DRIVE_NOT_PRESENT
-        pla                                                 ; ?
-        pla                                                 ; ?
+        ;--pla                                                 ; ?
+        ;--pla                                                 ; ?
         jsr PRINT_STATUS_LINE
 
         rts
@@ -3470,18 +3701,23 @@
 .endproc
 
 ;;; summary: Command: Get (load) file
-;;; throws: EXCEPTION_OUT_OF_MEMORY
+;;; throws: EXCEPTION_DRIVE_NOT_PRESENT, EXCEPTION_OUT_OF_MEMORY
 ;;; changed: ...
 .proc CMD_GET
+    ; Set edit mode
     lda # MODE_EDIT
     sta G_MODE
+
+    ; Have file name?
     lda NAME_TEXT
     if_eq_then
-        rts
+        rts                                                 ; no -> return
     else_end
 
-    lda # 0
-    jsr L2AB7
+    ; Have file name
+
+    lda # FALSE                                             ; Flag "read"
+    jsr OPEN_DISK_FILE                                      ; May throw EXCEPTION_DRIVE_NOT_PRESENT
     if_cs_then
         ; Error
         lda # SERIAL_DATA_FH
@@ -3542,20 +3778,21 @@
     else_end
 
     jsr L1BD6
-
     rts
 .endproc
 
 ;;; summary: Command: Put (save) file
+;;; throws: EXCEPTION_DRIVE_NOT_PRESENT
 ;;; changed: ...
 .proc CMD_PUT
+    ; Have file name?
     lda NAME_TEXT
     if_eq_then
-        rts
+        rts                                                 ; no -> return
     else_end
 
-    lda # 1
-    jsr L2AB7
+    lda # TRUE                                              ; Flag "write"
+    jsr OPEN_DISK_FILE                                      ; May throw EXCEPTION_DRIVE_NOT_PRESENT
     if_cs_then
         lda # SERIAL_DATA_FH
         jsr KERNAL_CLOSE
@@ -3580,7 +3817,9 @@
         jsr KERNAL_CHROUT
         jsr L1B9C
     next
-        jmp _loop
+        ;jmp _loop
+        bvc _loop
+        brk
     end
 
     jsr L1BD6
@@ -3637,7 +3876,9 @@
         sta V380B,y
     next
         iny
-        jmp _loop
+        ;jmp _loop
+        bvc _loop
+        brk
     end
 
     lda # PETSCII_NUL
@@ -3647,7 +3888,9 @@
     cmp # PETSCII_DIGIT_ZERO
     if_eq_then
         clc                                                 ; OK
-        jmp _end
+        ;jmp _end
+        bcc _end
+        brk
     else
         sec                                                 ; Fail
     end
@@ -3746,7 +3989,9 @@
                 beq _end                                    ; break
                 jsr KERNAL_CHROUT
             next
-                jmp _loop
+                ;jmp _loop
+                bvc _loop
+                brk
             end
 
             lda # PETSCII_RETURN
@@ -4003,7 +4248,9 @@
                     beq _end
                     jsr L1C99                               ; A- X- Y-
                 next
-                    jmp _loop
+                    ;jmp _loop
+                    bvc _loop
+                    brk
                 end
             else_end
         else_end
@@ -4109,7 +4356,9 @@
             cmp V386F,y
             if_eq_then
                 iny
-                jmp _end
+                ;jmp _end
+                bvc _end
+                brk
             else
                 cpy # 0
                 if_ne_then
@@ -4117,7 +4366,9 @@
                 else_end
             end
         next
-            jmp _loop
+            ;jmp _loop
+            bvc _loop
+            brk
         end
     catch_finally_end
 
@@ -4222,7 +4473,9 @@
                     rts
                 else_end
 
-                jmp _end
+                ;jmp _end
+                bvc _end
+                brk
             else
                 iny
                 cpy V38AB
@@ -4233,7 +4486,9 @@
                 dey
             end
         next
-            jmp _loop
+            ;jmp _loop
+            bvc _loop
+            brk
         end
     catch_finally_end
 
@@ -4298,8 +4553,19 @@
 ;;; changed: A, X, Y, ...
 .proc INITIALIZE
 
+    ; For setting `V`.
     lda # CPU_P_V
     sta ZP_BIT_V
+
+    ; Setup `brk` handler, saved handler is used in `CMD_QUIT`.
+    lda KERNAL_CBINV
+    sta OLD_KERNAL_CBINV
+    lda KERNAL_CBINV + 1
+    sta OLD_KERNAL_CBINV + 1
+    lda # <CMD_PANIC
+    sta KERNAL_CBINV
+    lda # >CMD_PANIC
+    sta KERNAL_CBINV + 1
 
     ; Clear any exception
     clv
@@ -4337,6 +4603,9 @@
                 sta CURRENT_BUFFER_B
                 clc
                 adc # 1
+;>>++
+clv
+;<<++
                 cmp # EDIT_BUFFERS_1_LAST_PAGE + 1
                 if_eq_then
                     ; A = EDIT_BUFFERS_1_LAST_PAGE + 1
@@ -4396,6 +4665,9 @@
             sta T5C
             lda SHELL_ARGV_HI
             adc # 0
+;>>++
+clv
+;<<++
             sta T5D
             ; T5C#T5D := *argv[1]
             ldy # 0                                         ; Y = 0
@@ -4416,6 +4688,7 @@
             end
 
             ; Load
+            lda # FALSE                                     ; Flag "Read"
             jsr CMD_GET
 
             jsr L21A2
@@ -4429,7 +4702,7 @@
 ;;; changed: ...
 .proc CMD_QUIT
     ; Jump to BASIC, basically same as <RUN STOP>+<RESTORE>. Selects BASIC ROM, IO devices, Kernal ROM.
-    jmp [KERNAL_CBINV]
+    jmp [OLD_KERNAL_CBINV]
         ; Does not return to here.
 .endproc
 
@@ -4445,6 +4718,9 @@
         lda P36
         clc
         adc # OUR_SCREEN_WIDTH - 1
+;>>++
+clv
+;<<++
         sta ZAB
 
         lda # 0
@@ -4489,7 +4765,9 @@
                     pha
                 else_end
                 
-                jmp _end
+                ;jmp _end
+                bvc _end
+                brk
             else
                 ldy ZA9
                 cpy ZAB
@@ -4509,7 +4787,9 @@
                 inc ZA8
                 iny
                 inc ZA9
-                jmp _loop
+                ;jmp _loop
+                bvc _loop
+                brk
             end
         end
 
@@ -4541,6 +4821,9 @@
         lda TFB
         clc
         adc # OUR_SCREEN_WIDTH
+;>>++
+clv
+;<<++
         sta TFB
         if_cs_then
             inc TFC
@@ -4621,7 +4904,9 @@
                     pha
                 else_end
 
-                jmp INNER_LOOP::_end                        ; break
+                ;jmp INNER_LOOP::_end                        ; break
+                bvc INNER_LOOP::_end                        ; break
+                brk
             else_end
 
             ldy ZB3
@@ -4642,7 +4927,9 @@
             inc Z9C
             iny
             inc ZB3
-            jmp _loop
+            ;jmp _loop
+            bvc _loop
+            brk
         end
     
         ldx Z9C
@@ -4664,7 +4951,9 @@
             iny
             sta [TFB],y
         next
-            jmp _loop
+            ;jmp _loop
+            bvc _loop
+            brk
         end
 
         pla
@@ -4674,11 +4963,13 @@
         lda TFB
         clc
         adc # OUR_SCREEN_WIDTH
+;>>++
+clv
+;<<++
         sta TFB
         if_cs_then
             inc TFC
         else_end
-
     next
         inc PFD
         lda PFD
@@ -4701,25 +4992,39 @@
             sta L3380
             sec
             sbc L1CE7
+;>>++
+;clv
+;<<++
             sta L337F
             lda # 0
             sbc L1CE8
+;>>++
+clv
+;<<++
             if_mi_then
                 lda # 0
                 sta L337F
             else_end
 
-            jmp _end
+            ;jmp _end
+            bvc _end
+            brk
         else
             lda T5A
             sta L337F
             inc L337F
             sec
             sbc L1CE7
+;>>++
+clv
+;<<++
             sta L3380
             inc L3380
             lda # $FF
             sbc L1CE8
+;>>++
+clv
+;<<++
             if_pl_then
                 lda # $19                                   ; ?
                 sta L3380
@@ -4854,7 +5159,8 @@
         if_cs_then
             inc P36
             jsr SCROLL_RIGHT
-            jmp L2545
+            jsr L2545
+            rts
         else_end
 
         inc CURSOR_SCREEN_X
@@ -4891,7 +5197,8 @@
             if_ne_then
                 dec P36
                 jsr SCROLL_LEFT
-                jmp L2545
+                jsr L2545
+                rts
             else_end
         else_end
 
@@ -4909,7 +5216,9 @@
     cmp # BUMP_TOP
     if_cs_then
         jsr MOVE_CURSOR_UP                                  ; A+ X- Y- ZPKERNAL_PNT_LO+ ZPKERNAL_PNT_HI+ T5A+
-        jmp _end
+        ;jmp _end
+        bvc _end
+        brk
     else
         jsr L268E
         if_cs_then
@@ -4919,7 +5228,9 @@
             else_end
 
             jsr MOVE_CURSOR_UP                              ; A+ X- Y- ZPKERNAL_PNT_LO+ ZPKERNAL_PNT_HI+ T5A+
-            jmp _end
+            ;jmp _end
+            bvc _end
+            brk
         else
             jsr L2649
             jsr L23DF
@@ -4947,11 +5258,16 @@
         if_pl_then
             lda ZPKERNAL_PNT_LO
             sta TFB
-            jmp _end
+            ;jmp _end
+            bvc _end
+            brk
         else
             lda ZPKERNAL_PNT_LO
             clc
             adc # OUR_SCREEN_WIDTH
+;>>++
+clv
+;<<++
             sta TFB
             if_cs_then
                 inc TFC
@@ -4999,7 +5315,8 @@
         bcs _end                                            ; break
     next
         iny
-        jmp _loop
+        ;jmp _loop
+        bvc _loop
     end
 
     sty T5A
@@ -5026,8 +5343,14 @@
             lda T5A
             sec
             sbc L1CE7
+;>>++
+;clv
+;<<++
             lda # 0
             sbc L1CE8
+;>>++
+clv
+;<<++
             if_mi_then
                 lda # $80                                   ; ?
                 sta L2340
@@ -5055,14 +5378,18 @@
     cmp # BUMP_BOTTOM
     if_cc_then
         jsr MOVE_CURSOR_DOWN                                ; A+ X- Y- ZPKERNAL_PNT_LO+ ZPKERNAL_PNT_HI+ T5A+
-        jmp _end
+        ;jmp _end
+        bvc _end
+        brk
     else
         jsr L23B1
         jsr L2671
         jsr L2627
         if_cc_then
             jsr L199D
-            jmp _end
+            ;jmp _end
+            bvc _end
+            brk
         else
             jsr CLEAR_EDIT_PANEL_LAST_LINE
         end
@@ -5082,12 +5409,17 @@
             lda ZPKERNAL_PNT_LO
             sec
             sbc # OUR_SCREEN_WIDTH
+;>>++
+clv
+;<<++
             sta TFB
             if_cc_then
                 dec TFC
             else_end
 
-            jmp _end
+            ;jmp _end
+            bvc _end
+            brk
         else
             lda ZPKERNAL_PNT_LO
             sta TFB
@@ -5194,10 +5526,16 @@
         sec
         lda L1CE7
         sbc CURRENT_BUFFER_LINE_LO
+;>>++
+;clv
+;<<++
         sta L1CE7
         lda L1CE8
         sbc CURRENT_BUFFER_LINE_HI
-        sta L1CE8
+ ;>>++
+clv
+;<<++
+       sta L1CE8
     else_end
 
     lda # 0
@@ -5374,22 +5712,31 @@
 .endproc
 
 .proc CMD_PANIC
-    pha
-        lda # COLOR_RED
-        sta VIC_EC
-    pla
+    php
+        pha
+            lda # COLOR_RED
+            sta VIC_EC
+        pla
+    plp
 
-    from_loop
-    next
-        jmp _loop
-    end
+
+    CMD_PANIC_INFINITE_LOOP:
+    bvs CMD_PANIC_INFINITE_LOOP
+    bvc CMD_PANIC_INFINITE_LOOP
 
     ; Does not come here
-    brk
 .endproc
 
 .proc HANDLE_EXCEPTION
-    clv                                                 ; Clear exception
+    if_vc_then
+        brk
+    else_end
+
+    ; Clear exception
+    clc
+    clv
+
+    ; Lookup exception message, display ,wait for <RETURN>
     ldx ZP_EXCEPTION_CODE
     lda MAP_EXCEPTION_CODE_TO_RESOURCE_STRING_LO,x
     sta AL
@@ -5433,4 +5780,4 @@ BREAK26:
 BREAK27:
 BREAK28:
 BREAK29:
-nop
+
