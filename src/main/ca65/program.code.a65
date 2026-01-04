@@ -630,77 +630,76 @@ clv
 
 ;;; summary: ?
 ;;; throws: EXCEPTION_OUT_OF_MEMORY
-;;; changed: ...
+;;; changed: A+ X? Y- ...
 .proc L1AE4
     sta L1B46
     tya
     pha
-    ldy # BLOCK_OFFSET_POINTER                              ; 2
-    lda [T4E],y
-    cmp # BLOCK_OFFSET_POINTER_MAX_VALUE
-    if_eq_then
-        ; A = BLOCK_OFFSET_POINTER_MAX_VALUE = $FF
-        jsr L1B77                                           ; May throw EXCEPTION_OUT_OF_MEMORY
-        if_cs_then
-            ; Fail
-            pla
-            rts
-        else_end
-
-        sta L1B47
-    else_end
-
-    lda V37D4
-    cmp CURRENT_BUFFER_B
-    if_eq_then
-        inc V37D5
-    else_end
-
-    ldy # BLOCK_OFFSET_POINTER                              ; Y = 2
-    lda [T4E],y
-    tay
-    iny
-    from_loop
-        dey
-        lda [T4E],y
-        iny
+        ldy # BLOCK_OFFSET_POINTER                          ; Y = BLOCK_OFFSET_POINTER = 2
+        lda [T4E],y                                         ; A = T4E.POINTER
+        cmp # BLOCK_OFFSET_POINTER_MAX_VALUE
         if_eq_then
-            ; Y = 0
-            jsr L1B48
-            ldy V37D5
-            if_eq_then
-                lda T23
-                sta V37D4
-                lda # BLOCK_OFFSET_POINTER_MIN_VALUE
-                sta V37D5
+            ; A = T4E.POINTER = BLOCK_OFFSET_POINTER_MAX_VALUE = $FF
+            jsr L1B77                                       ; May throw EXCEPTION_OUT_OF_MEMORY
+            if_cs_then
+                ; Fail
+                pla
+                rts
             else_end
 
-            ldy # 0
-            ;jmp _end
-            beq _end                                        ; bra
-            brk
-        else
-            sta [T4E],y
-        end
-    next
-        dey
-        cpy CURRENT_BUFFER_C
-        bne _loop
-    end
+            sta L1B47
+        else_end
 
-    lda L1B46
-    sta [T4E],y
-    ldy # BLOCK_OFFSET_POINTER                              ; Y = BLOCK_OFFSET_POINTER = 2
-    lda [T4E],y                                             ; A = T4E.POINTER
-    clc
-    adc # 1
+        lda V37D4
+        cmp CURRENT_BUFFER_B
+        if_eq_then
+            inc V37D5
+        else_end
+
+        ldy # BLOCK_OFFSET_POINTER                          ; Y = BLOCK_OFFSET_POINTER = 2
+        lda [T4E],y                                         ; A = T4E.POINTER
+        tay                                                 ; Y = A = T4E.POINTER
+        iny                                                 ; Y = A + 1 = T4E.POINTER + 1
+        from_loop
+            dey
+            lda [T4E],y
+            iny
+            if_eq_then
+                ; Y = 0
+                jsr L1B48
+                ldy V37D5
+                if_eq_then
+                    lda T23
+                    sta V37D4
+                    lda # BLOCK_OFFSET_POINTER_MIN_VALUE
+                    sta V37D5
+                else_end
+
+                ldy # 0
+                ;jmp _end
+                beq _end                                    ; bra
+                brk
+            else
+                sta [T4E],y
+            end
+        next
+            dey
+            cpy CURRENT_BUFFER_C
+            bne _loop
+        end
+
+        lda L1B46
+        sta [T4E],y
+        ldy # BLOCK_OFFSET_POINTER                          ; Y = BLOCK_OFFSET_POINTER = 2
+        lda [T4E],y                                         ; A = T4E.POINTER
+        clc
+        adc # 1
 ;>>++
 clv
 ;<<++
-    if_ne_then
-        sta [T4E],y
-    else_end
-
+        if_ne_then
+            sta [T4E],y
+        else_end
     pla
     tay
     lda L1B46
@@ -711,18 +710,21 @@ clv
 
 ;;; summary: ?
 ;;; in:
+;;;   A  ?
 ;;;   Y = 0 = BLOCK_OFFSET_NEXT
 ;;; changed: ...
 .proc L1B48
+    ; Y = 0 = BLOCK_OFFSET_NEXT
     pha
-        lda [T4E],y                                         ; Y = 0 = BLOCK_OFFSET_NEXT
+        lda [T4E],y                                         ; A = T4E.NEXT
         pha
             if_ne_then
+                ; A = T4E._NEXT != BLOCK_NONE
                 ; Have next block
-                sta T23
+                sta T23                                     ; T23 = A = T4E._NEXT != BLOCK_NONE
                 lda L1B47
                 iny                                         ; Y = 1 = BLOCK_OFFSET_PREVIOUS
-                sta [T22],y                                 ; Y = 1 = BLOCK_OFFSET_PREVIOUS
+                sta [T22],y                                 ; T22.PREVIOUS = L1B47
                 dey                                         ; Y = 0 = BLOCK_OFFSET_NEXT
                 ;jmp _end
                 beq _end                                    ; bra
@@ -785,13 +787,13 @@ clv
         pha
             lda CURRENT_BUFFER_C
             ldy # BLOCK_OFFSET_POINTER                      ; Y = 2 = BLOCK_OFFSET_POINTER
-            cmp [T4E],y                                     ; Y = 2 = BLOCK_OFFSET_POINTER
+            cmp [T4E],y                                     ; A ? T4E.POINTER
             if_cs_then
-                ; A >= [T4E],y = [T4E],BLOCK_OFFSET_POINTER
+                ; A >= T4E.POINTER
                 ldy # BLOCK_OFFSET_NEXT                     ; Y = 0 = BLOCK_OFFSET_NEXT
-                lda [T4E],y                                 ; A = [T4E],BLOCK_OFFSET_NEXT
+                lda [T4E],y                                 ; A = T4E.NEXT
                 if_ne_then
-                    ; A = [T4E],BLOCK_OFFSET_NEXT != BLOCK_NONE = 0
+                    ; A = T4E.NEXT != BLOCK_NONE = 0
                     ; We have a next block
                     sta CURRENT_BUFFER_B
                     lda # BLOCK_OFFSET_POINTER_MIN_VALUE
@@ -917,12 +919,12 @@ clv
                         brk
                     else                                    ; L1C27:
                         ldy # BLOCK_OFFSET_POINTER          ; Y = BLOCK_OFFSET_POINTER = 2
-                        lda [T57],y                         ; A = [T57],BLOCK_OFFSET_POINTER
+                        lda [T57],y                         ; A = T57.POINTER
                         cmp T59
                         if_cc_then
                             ;bcs L1C39
                             ldy # BLOCK_OFFSET_NEXT         ; Y = BLOCK_OFFSET_NEXT = 0
-                            lda [T57],y                     ; A = [T57],BLOCK_OFFSET_NEXT
+                            lda [T57],y                     ; A = T57.NEXT
                             sta T58
                             lda # BLOCK_OFFSET_POINTER_MIN_VALUE
                             sta T59
@@ -971,25 +973,25 @@ clv
     sta T23
     cmp V37D7
     if_eq_then
-        lda [T22],y                                         ; A = [T22],BLOCK_OFFSET_NEXT
+        lda [T22],y                                         ; A = T22.NEXT
         sta V37D7
         lda # BLOCK_OFFSET_POINTER_MIN_VALUE
         sta V37D8
     else_end
 
-    lda [T22],y                                             ; A = [T22],BLOCK_OFFSET_NEXT
+    lda [T22],y                                             ; A = T22.NEXT
     if_eq_then
-        ; [T22],BLOCK_OFFSET_NEXT = BLOCK_NONE
+        ; T22.NEXT = BLOCK_NONE
         iny                                                 ; Y = BLOCK_OFFSET_PREVIOUS = 1
-        lda [T22],y                                         ; A = [T22],BLOCK_OFFSET_PREVIOUS
+        lda [T22],y                                         ; A = T22.PREVIOUS
         ;jmp _end
         bvc _end                                            ; bra
         brk
     else
         sta T27
         iny                                                 ; Y = BLOCK_OFFSET_PREVIOUS = 1
-        lda [T22],y                                         ; A = [T22],BLOCK_OFFSET_PREVIOUS
-        sta [T26],y                                         ; [T26],BLOCK_OFFSET_PREVIOUS = [T22],BLOCK_OFFSET_PREVIOUS = A
+        lda [T22],y                                         ; A = T22.PREVIOUS
+        sta [T26],y                                         ; T26.PREVIOUS = T22.PREVIOUS = A
     end
     ; Y = BLOCK_OFFSET_PREVIOUS = 1
 
@@ -1008,8 +1010,8 @@ clv
         ; Have previous block
         sta T27
         dey                                                 ; Y = BLOCK_OFFSET_NEXT = 0
-        lda [T22],y                                         ; A = [T22],BLOCK_OFFSET_NEXT
-        sta [T26],y                                         ; [T26],BLOCK_OFFSET_NEXT = [T22],BLOCK_OFFSET_NEXT = A
+        lda [T22],y                                         ; A = T22.NEXT
+        sta [T26],y                                         ; T26.NEXT = T22.NEXT = A
     end
 
     lda ZP_0E
@@ -1262,8 +1264,8 @@ clv
     sta TFC
     ; PFD.BLOCK_OFFSET_NEXT := TFB.BLOCK_OFFSET_NEXT
     ldy # BLOCK_OFFSET_NEXT                                 ; Y = BLOCK_OFFSET_NEXT = 0
-    lda [TFB],y                                             ; A = [TFB],BLOCK_OFFSET_NEXT
-    sta [PFD],y                                             ; [PFD],BLOCK_OFFSET_NEXT = [TFB],BLOCK_OFFSET_NEXT = A
+    lda [TFB],y                                             ; A = TFB.NEXT
+    sta [PFD],y                                             ; PFD.NEXT = TFB.NEXT = A
 
     ldy # BLOCK_OFFSET_POINTER                              ; Y = BLOCK_OFFSET_POINTER = 2
     lda [TFB],y
