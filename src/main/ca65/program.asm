@@ -124,7 +124,7 @@
 .exportzp ZP_4E := $4E  ; ZPBASIC_DEFPNT_LO_GRBPNT_LO_TEMPF3_LO                 USED
 .exportzp ZP_4F := $4F  ; ZPBASIC_DEFPNT_HI_GRBPNT_HI_TEMPF3_HI                 USED
 .exportzp ZP_50 := $50  ; ZPBASIC_DSCPNT_LO                                     USED
-.exportzp ZP_51 := $51  ; ZPBASIC_DSCPNT_HI
+.exportzp ZP_51 := $51  ; ZPBASIC_DSCPNT_HI                                     USED
 .exportzp ZP_52 := $52  ; ZPBASIC_UNUSED_52 ; Unused                            USED
 .exportzp ZP_53 := $53  ; ZPBASIC_FOUR6                                         USED
 .exportzp ZP_54 := $54  ; ZPBASIC_JMPER
@@ -245,6 +245,8 @@
 .exportzp CURRENT_BUFFER_B := ZP_4F ; Was T4F
 
 .exportzp CURRENT_BUFFER_C := ZP_50 ; Was T50
+
+.exportzp PREVIOUS_ZPKERNAL_TIME_2 := ZP_51                 ; Was in bss
 
 .exportzp T52 := ZP_52
 .exportzp T53 := ZP_53

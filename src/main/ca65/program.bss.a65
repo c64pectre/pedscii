@@ -20,8 +20,8 @@
 
 _3680:
 
-PREVIOUS_ZPKERNAL_TIME_2:
-    V3680:  .res 1      ; $3680
+;PREVIOUS_ZPKERNAL_TIME_2:
+;    V3680:  .res 1      ; $3680
 
 V3781:      .res 1      ; $3781
 ;U3782:      .res 1      ; $3782 Unused
