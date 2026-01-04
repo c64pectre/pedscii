@@ -17,6 +17,7 @@
 ;    Contact: https://github.com/c64pectre/pedscii/ create an issue
 
 ;;; summary: Main
+;;; does-not-throw:
 ;;; notes:
 ;;;   Stack:
 ;;;     | F4 | F5 F6      | F7 F8 | F9 FA FB FC FD FE FF |
@@ -61,7 +62,14 @@ clv
         pla
         sta [ZPKERNAL_PNT],y
         txa
-        jsr PROCESS_CHAR
+        try
+            jsr PROCESS_CHAR
+           ;bvs _catch                                      ; Exception
+            bvc _end                                        ; No exception
+        catch
+            jsr HANDLE_EXCEPTION
+            ; check V=0
+        finally_end
     next
         ;jmp _loop
         bvc _loop                                           ; bra
@@ -769,8 +777,8 @@ clv
         lda ZP_0E
         if_eq_then
             ; Show "out of memory"
-            ldx # <RESOURCE_STRING_OUT_OF_MEMORY
-            ldy # >RESOURCE_STRING_OUT_OF_MEMORY
+            ldx # <RESOURCE_STRING_EXCEPTION_OUT_OF_MEMORY
+            ldy # >RESOURCE_STRING_EXCEPTION_OUT_OF_MEMORY
             jsr PRINT_STATUS_LINE
             sec
         else_end
@@ -1310,7 +1318,7 @@ clv
     sta [TFB],y                                             ; TFB.POINTER = A = V37D5
     tay                                                     ; Y = A = V37D5
     lda # PETSCII_NUL                                       ; A = PETSCII_NUL = 0
-    sta [TFB],y                                             TFB[V37D5] = A = PETSCII_NUL = 0
+    sta [TFB],y                                             ; TFB[V37D5] = A = PETSCII_NUL = 0
     tay                                                     ; Y = 0 = BLOCK_OFFSET_NEXT
     sta [TFB],y                                             ; TFB.NEXT = A = 0 = BLOCK_NONE
     ldy # BLOCK_OFFSET_PREVIOUS                             ; Y = BLOCK_OFFSET_PREVIOUS = 1
@@ -1456,8 +1464,8 @@ clv
     cmp L1EE5
     if_cc_then
         ; Show "not enough memory"
-        ldx # <RESOURCE_STRING_NOT_ENOUGH_MEMORY
-        ldy # >RESOURCE_STRING_NOT_ENOUGH_MEMORY
+        ldx # <RESOURCE_STRING_EXCEPTION_NOT_ENOUGH_MEMORY
+        ldy # >RESOURCE_STRING_EXCEPTION_NOT_ENOUGH_MEMORY
         jsr PRINT_STATUS_LINE
         rts
     else_end
@@ -3434,55 +3442,53 @@ clv
 .endproc
 
 ;;; summary: Command: Enter command mode
-;;; throws: EXCEPTION_COMMAND_NOT_FOUND
+;;; throws: EXCEPTION
 ;;; changed: A  X  Y  AL  BX  CX
 .proc CMD_COMMAND_MODE
-    from_loop
-        ; Show "cmd: " on command line
-        ldx # <RESOURCE_STRING_COMMAND_PROMPT
-        ldy # >RESOURCE_STRING_COMMAND_PROMPT
-        jsr GET_COMMAND_TEXT
-        lda COMMAND_TEXT
-        if_eq_then
-            ; No command text -> leave command mode
-            jsr L2545
-            rts                                             ; return
+    ; Show "cmd: " on command line
+    ldx # <RESOURCE_STRING_COMMAND_PROMPT
+    ldy # >RESOURCE_STRING_COMMAND_PROMPT
+    jsr GET_COMMAND_TEXT
+    lda COMMAND_TEXT
+    if_eq_then
+        ; No command text -> leave command mode
+        jsr L2545
+        rts                                                 ; return
+    else_end
+
+    ; We've got a command text
+    if
+        cmp # PETSCII_LATIN_LETTER_A
+        bcc _then                                       ; A < 'A' -> then
+        ; A >= 'A'
+        cmp # PETSCII_LATIN_LETTER_Z + 1
+        bcc _else                                       ; A >= 'A' and A <= 'Z' -> else
+        ; A >= 'A' and A > 'Z'
+    then
+        ; Not a command. Maybe search down/up.
+        jsr L2D74
+       ;jmp _end
+       ;bvc _end
+        rts                                             ; return
+    else
+        ; Maybe a command
+        ; A >= 'A' and A <= 'Z'
+        jsr MAP_COMMAND_NAME_TO_COMMAND_NUMBER      ; out: A | changed: X+ Y+ AL+ BX+ CX+ | throws: EXCEPTION_NO_SUCH_ELEMENT
+        if_vs_then
+            ; Throw EXCEPTION_COMMAND_NOT_FOUND
+            lda # EXCEPTION_COMMAND_NOT_FOUND
+            sta ZP_EXCEPTION_CODE
+            rts
         else_end
 
-        ; We've got a command text
-        if
-            cmp # PETSCII_LATIN_LETTER_A
-            bcc _then                                       ; A < 'A' -> then
-            ; A >= 'A'
-            cmp # PETSCII_LATIN_LETTER_Z + 1
-            bcc _else                                       ; A >= 'A' and A <= 'Z' -> else
-            ; A >= 'A' and A > 'Z'
-        then
-            ; not (A >= 'A' and A <= 'Z') -> Not a command
-            jsr L2D74                                       ; Handle search down/up?
-            rts                                             ; return
-        else
-            ; Maybe a command
-            try
-                ; A >= 'A' and A <= 'Z'
-                jsr MAP_COMMAND_NAME_TO_COMMAND_NUMBER      ; out: A | changed: X+ Y+ AL+ BX+ CX+
-                bvs _catch                                  ; Exception
-                jsr EXECUTE_COMMAND                         ; in: A | changed: A+ X+ Y+ V=0 DX+ ... | does-not-throw:
-                ; check V=0
-                rts                                         ; return
-            catch
-                jsr HANDLE_EXCEPTION
-                ; check V=0
-            finally_end
-        end
-    next
-        ;jmp _loop
-        bvc _loop
-        brk
+        jsr EXECUTE_COMMAND                         ; in: A | changed: A+ X+ Y+ V=0 DX+ ... | throws: EXCEPTION
+        if_vs_then
+            ; Rethrow
+           ;rts
+        else_end
     end
 
-    ; Does not come here
-    brk
+    rts
 .endproc
 
 ;;; summary: Map command name to command number
@@ -3490,7 +3496,7 @@ clv
 ;;;    COMMAND_TEXT  Nul-terminated string
 ;;; out:
 ;;;   A  Command number
-;;; throws: EXCEPTION_COMMAND_NOT_FOUND
+;;; throws: EXCEPTION_NO_SUCH_ELEMENT
 ;;; changed: A X Y AL BX CX
 .proc MAP_COMMAND_NAME_TO_COMMAND_NUMBER
     from
@@ -3519,9 +3525,9 @@ clv
         bne _loop
     end
 
-    ; Throw EXCEPTION_COMMAND_NOT_FOUND
+    ; Throw EXCEPTION_NO_SUCH_ELEMENT
     bit ZP_BIT_V
-    lda # EXCEPTION_COMMAND_NOT_FOUND
+    lda # EXCEPTION_NO_SUCH_ELEMENT
     sta ZP_EXCEPTION_CODE
 
     rts
@@ -3530,28 +3536,23 @@ clv
 ;;; summary: Execute command with number in `A`
 ;;; in:
 ;;;   A  Command number
-;;; does-not-throw:
+;;; throws: EXCEPTION
 ;;; changed: A+ X+ Y+ V=0 DX+ ...
 .proc EXECUTE_COMMAND
-    try
-        tax
-        lda MAP_COMMAND_NUMBER_TO_HANDLER_LO,x
-        sta DL
-        lda MAP_COMMAND_NUMBER_TO_HANDLER_HI,x
-        sta DH
-        jsr JSR_INDIRECT_DX                                 ; May throw exception
-       ;jsr L21A2                                           ; V=0
-        bvs _catch
-        ;jmp _finally
-        bvc _finally
-        brk
-    catch
-        jsr HANDLE_EXCEPTION
-        ; check V=0
-    finally
-        jsr L21A2                                           ; V=0
-    end
+    tax
+    lda MAP_COMMAND_NUMBER_TO_HANDLER_LO,x
+    sta DL
+    lda MAP_COMMAND_NUMBER_TO_HANDLER_HI,x
+    sta DH
+    jsr JSR_INDIRECT_DX                                     ; throws: EXCEPTION
+    if_vs_then
+        jsr L21A2                                           ; A+ X+ Y+ V=0 ...
+        bit ZP_BIT_V
+        rts                                                 ; Rethrow
+    else_end
 
+    ; check V=0
+    jsr L21A2                                               ; V=0
     ; check V=0
 
     rts
@@ -3710,8 +3711,8 @@ clv
         lda # DISK_CMD_FH
         jsr KERNAL_CLOSE
         ; throw EXCEPTION_DRIVE_NOT_PRESENT
-        ldx # <RESOURCE_STRING_DRIVE_NOT_PRESENT
-        ldy # >RESOURCE_STRING_DRIVE_NOT_PRESENT
+        ldx # <RESOURCE_STRING_EXCEPTION_DRIVE_NOT_PRESENT
+        ldy # >RESOURCE_STRING_EXCEPTION_DRIVE_NOT_PRESENT
         ;--pla                                                 ; ?
         ;--pla                                                 ; ?
         jsr PRINT_STATUS_LINE
@@ -4566,8 +4567,8 @@ clv
 ;;; throws: EXCEPTION_SEARCH_STRING_NOT_FOUND
 ;;; changed: ...
 .proc L2F91
-    ldx # <RESOURCE_STRING_SEARCH_STRING_NOT_FOUND
-    ldy # >RESOURCE_STRING_SEARCH_STRING_NOT_FOUND
+    ldx # <RESOURCE_STRING_EXCEPTION_SEARCH_STRING_NOT_FOUND
+    ldy # >RESOURCE_STRING_EXCEPTION_SEARCH_STRING_NOT_FOUND
     jsr PRINT_STATUS_LINE
 
     rts
@@ -5082,46 +5083,55 @@ clv
     rts
 .endproc
 
-;;; summary: process char in A
+;;; summary: Process control or printable character
 ;;; in:
-;;;   A: character to process (!= 0)
-;;; changed: ...
+;;;   A: Character to process (!= 0)
+;;; throws: EXCEPTION_*
+;;; changed: A+ X+ Y+ DX+ ...
 .proc PROCESS_CHAR
-    ; available: X, Y
-    ;
     ; $00 - $1F Control characters
     ; $20 - $7F Printable characters
     ; $80 - $9F Control characters
     ; $A0 - $FF Printable characters
+    try
+        cmp # PETSCII_CONTROL_CHARACTERS_2_FIRST
+        if_lt_then
+            ; A < $80
+            cmp # PETSCII_CONTROL_CHARACTERS_1_AFTER
+            if_lt_then
+                ; A < $20
+                jsr PROCESS_CONTROL_CHAR                        ; in: A | throws: EXCEPTION_OUT_OF_MEMORY
+               ;bvs _catch
+                clc
+                bcc _end
+            else
+                ; $20 <= A < 80
+                jsr ADD_CHAR                                ; in: A | throws: EXCEPTION_OUT_OF_MEMORY
+               ;bvs _catch
+            end
 
-    cmp # PETSCII_CONTROL_CHARACTERS_2_FIRST
-    if_lt_then
-        ; A < $80
-        cmp # PETSCII_CONTROL_CHARACTERS_1_AFTER
-        if_lt_then
-            ; A < $20
-            jsr PROCESS_CONTROL_CHAR
             clc
-            bcc _end
+            bcc _end                                        ; bra
         else
-            ; $20 <= A < 80
-            jsr ADD_CHAR
+            ; A >= $80
+            cmp # PETSCII_CONTROL_CHARACTERS_2_AFTER
+            if_lt_then
+                ; $80 <= A < $A0
+                jsr PROCESS_CONTROL_CHAR                        ; in: A | throws: EXCEPTION_* (not EXCEPTION_NO_SUCH_ELEMENT)
+               ;bvs _catch
+                clc
+                bcc _end                                        ; bra
+            else
+                ; $A0 <= A <= $FF
+                jsr ADD_CHAR                                    ; in: A | throws: EXCEPTION_OUT_OF_MEMORY
+               ;bvs _catch
+               ;clc
+               ;bcc _end                                        ; bra
+            end
         end
-        clc
-        bcc _end
-    else
-        ; A >= $80
-        cmp # PETSCII_CONTROL_CHARACTERS_2_AFTER
-        if_lt_then
-            ; $80 <= A < $A0
-            jsr PROCESS_CONTROL_CHAR
-            clc
-            bcc _end
-        else
-            ; $A0 <= A <= $FF
-            jsr ADD_CHAR
-        end
-    end
+    catch
+       ;rts                                                 ; Rethrow
+    finally_end
 
     rts
 .endproc
@@ -5129,40 +5139,54 @@ clv
 ;;; summary: Process control character
 ;;; in:
 ;;;   A: character to process (A >= $01 and A <= $1D) or (A >= $80 and A <= $9F)
+;;; throws: EXCEPTION_* (except EXCEPTION_NO_SUCH_ELEMENT)
 ;;; changed:
-;;;    X , Y
+;;;    A+ X+ Y+ DX+ ...
 .proc PROCESS_CONTROL_CHAR
-    from THE_LOOP
-        ldx # 0
+    ; Map keyboard char (key) in A to command number in X
+    jsr MAP_KEYBOARD_CHAR_TO_COMMAND_NUMBER                 ; in: A | out: X | throws: EXCEPTION_NO_SUCH_ELEMENT
+    if_vs_then
+        ; Not in map -> do nothing
+        clv                                                 ; Clear exception
+        rts
+    else_end
+
+    ; We have got a command number in X. Lookup handler and call it.
+    ldy MAP_COMMAND_NUMBER_TO_HANDLER_LO,x
+    sty DL
+    ldy MAP_COMMAND_NUMBER_TO_HANDLER_HI,x
+    sty DH
+    jsr JSR_INDIRECT_DX                                     ; throws: EXCEPTION_*
+
+    rts
+.endproc
+
+;;; summary: Map keyboard key to command number
+;;; in:
+;;;   A  Keyboard char
+;;; out:
+;;;   X  Command number
+;;; throws: EXCEPTION_NO_SUCH_ELEMENT
+;;; changed: A- X+ Y+
+.proc MAP_KEYBOARD_CHAR_TO_COMMAND_NUMBER
+    from
+        ldy # 0
     loop
-        cmp MAP_KEY_TO_EDIT_CMD,x
-        if_lt_then
-            ; C=0 , A < MAP_KEY_TO_EDIT_CMD[X]
-            ; Not in table
-            bcc THE_LOOP::_end                              ; break
-        else_end
-        ;
-        ; C=1 , A >= MAP_KEY_TO_EDIT_CMD[X]
+        cmp MAP_KEYBOARD_CHAR_TO_COMMAND_NUMBER_KEYS,y
         if_eq_then
-            ; C=1 , Z=1 , A = MAP_KEY_TO_EDIT_CMD[X]
-            ; Found: X is command index
-            ldy CMD_ADDR_TABLE_LO,x
-            sty DL
-            ldy CMD_ADDR_TABLE_HI,x
-            sty DH
-            jsr JSR_INDIRECT_DX
-            ; A=? X=? Y=? C=? N=? V=? Z=?
-            clc
-            bcc THE_LOOP::_end                              ; break
+            ldx MAP_KEYBOARD_CHAR_TO_COMMAND_NUMBER_VALUES,y
+            rts
         else_end
-        ;
-        ; C=1 , A != MAP_KEY_TO_EDIT_CMD[X]
-        ; continue
     next
-        inx
-        ldy MAP_KEY_TO_EDIT_CMD,x
+        iny
+        cpy # MAP_KEYBOARD_CHAR_TO_COMMAND_NUMBER_SIZE
         bne _loop
     end
+
+    ; Throw EXCEPTION_NO_SUCH_ELEMENT
+    bit ZP_BIT_V
+    lda # EXCEPTION_NO_SUCH_ELEMENT
+    sta ZP_EXCEPTION_CODE
 
     rts
 .endproc
@@ -5670,7 +5694,7 @@ clv
 .endproc
 
 ;;; summary: JSR indirect to [DX]
-;;; changed: A- X- Y-
+;;; changed: A- X- Y- P-
 .proc JSR_INDIRECT_DX
     jmp [DX]
     rts

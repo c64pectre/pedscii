@@ -11,6 +11,7 @@ Commodore 64 editor based on the Power C editor, with these changes:
 * Ability to edit files up to ___ KB, by using the RAM under IO and kernal.
 * Shortcuts more like Windows standard. Unfortunately, <CTRL>+<C> is not possible for copy because that is the same as the <RUN STOP> key used for command mode and for select mode with <SHIFT>.
 * No more self-modifying code.
+* Command mode now returns to edit mode after (attempting) command execution.
 
 # Build tools
 
