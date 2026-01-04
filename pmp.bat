@@ -9,5 +9,5 @@ set PMP_COMPILER_CA65_OPTIONS=--ignore-case --feature bracket_as_indirect
 set PMP_PACKAGER=ld65
 
 set PMP_RUNNER=x64sc
-set PMP_RUNNER_X64SC_OPTIONS=-config vice.ini -moncommands target/%PMP_PROJECT_ARTIFACT_ID%.vice-labels
-
+set CA65_LIB=/usr/lib/vice
+set PMP_RUNNER_X64SC_OPTIONS=-config vice.ini -moncommands target/%PMP_PROJECT_ARTIFACT_ID%.vice-labels -moncommands %CA65_LIB%/c64-basic-hibasic.vice-labels -moncommands %CA65_LIB%/c64-basic-kernal-r3.vice-labels -moncommands %CA65_LIB%/c64-basic-lobasic.vice-labels
