@@ -3447,9 +3447,9 @@ clv
             ; Maybe a command
             try
                 ; A >= 'A' and A <= 'Z'
-                jsr MAP_COMMAND_NAME_TO_COMMAND_NUMBER      ; out A , X+ Y+ AL+ BX+ CX+
+                jsr MAP_COMMAND_NAME_TO_COMMAND_NUMBER      ; out: A | changed: X+ Y+ AL+ BX+ CX+
                 bvs _catch                                  ; Exception
-                jsr EXECUTE_COMMAND                         ; in A
+                jsr EXECUTE_COMMAND                         ; in: A | changed: A+ X+ Y+ V=0 DX+ ... | does-not-throw:
                 ; check V=0
                 rts                                         ; return
             catch
@@ -3510,7 +3510,10 @@ clv
 .endproc
 
 ;;; summary: Execute command with number in `A`
-;;; changed: A+ X+ Y+ DX+ ...
+;;; in:
+;;;   A  Command number
+;;; does-not-throw:
+;;; changed: A+ X+ Y+ V=0 DX+ ...
 .proc EXECUTE_COMMAND
     try
         tax
@@ -3530,6 +3533,8 @@ clv
     finally
         jsr L21A2                                           ; V=0
     end
+
+    ; check V=0
 
     rts
 .endproc
