@@ -3281,7 +3281,7 @@
     end
 
     adc # 10 + PETSCII_DIGIT_ZERO                           ; V+
-    clv
+    clv                                                     ; V=0
     sty L297F
     tay
     txa
