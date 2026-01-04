@@ -717,7 +717,7 @@
             sta [T4E],y                                     ; Y = 0 = BLOCK_OFFSET_NEXT
             sta T23
             lda [T22],y                                     ; Y = 0 = BLOCK_OFFSET_NEXT
-            sta ZP_0E
+            sta FREE_LIST_HEAD
         pla
         sta [T22],y                                         ; Y = 0 = BLOCK_OFFSET_NEXT
         lda CURRENT_BUFFER_B
@@ -738,7 +738,7 @@
 ;;; changed: ...
 .proc L1B77
     clc
-    lda ZP_0E
+    lda FREE_LIST_HEAD
     if_eq_then
         from_loop
             jsr L2017
@@ -746,7 +746,7 @@
             bcs _loop
         end
 
-        lda ZP_0E
+        lda FREE_LIST_HEAD
         if_eq_then
             ; Show "out of memory"
             ldx # <RESOURCE_STRING_EXCEPTION_OUT_OF_MEMORY
@@ -981,11 +981,11 @@
         sta [T26],y                                         ; T26.NEXT = T22.NEXT = A
     end
 
-    lda ZP_0E                                               ; A = ZP_0E
+    lda FREE_LIST_HEAD                                               ; A = FREE_LIST_HEAD
     ldy # BLOCK_OFFSET_NEXT                                 ; Y = BLOCK_OFFSET_NEXT = 0
-    sta [T22],y                                             ; T22.NEXT = A = ZP_0E
+    sta [T22],y                                             ; T22.NEXT = A = FREE_LIST_HEAD
     lda T23                                                 ; A = T23
-    sta ZP_0E                                               ; ZP_0E = A = T23
+    sta FREE_LIST_HEAD                                               ; FREE_LIST_HEAD = A = T23
 
     rts
 .endproc
@@ -1092,11 +1092,11 @@
     sta TFC
     ldy # BLOCK_OFFSET_NEXT                                 ; Y = BLOCK_OFFSET_NEXT = 2
     lda [TFB],y                                             ; A = TFB.NEXT
-    sta ZP_0E                                               ; ZP_0E = A = TFB.NEXT
+    sta FREE_LIST_HEAD                                               ; FREE_LIST_HEAD = A = TFB.NEXT
     jsr L1B77                                               ; throws: EXCEPTION_OUT_OF_MEMORY
     if_cs_then
         lda L1EE6
-        sta ZP_0E
+        sta FREE_LIST_HEAD
         rts
     else_end
     
@@ -1177,7 +1177,7 @@
     lda L1EE7
     sta PFE                                                 ; PFE = L1EE7
     lda [PFD],y
-    sta ZP_0E                                               ; ZP_0E = PFD.NEXT
+    sta FREE_LIST_HEAD                                               ; FREE_LIST_HEAD = PFD.NEXT
     lda [T4E],y
     sta [TFB],y                                             ; TFB.NEXT = T4E.NEXT
     sta PFE                                                 ; PFE = TFB.NEXT = T4E.NEXT
@@ -1390,13 +1390,14 @@
 
     ; G_MODE = MODE_EDIT
 
+    ; Paste buffer list size
     ldx # BUFFER_INDEX_PASTE                                ; 1
     lda BUFFER_TABLE_HEAD,x
-    jsr L1FFE
+    jsr LIST_SIZE
     sta L1EE5
     inc L1EE5
-    lda ZP_0E
-    jsr L1FFE
+    lda FREE_LIST_HEAD
+    jsr LIST_SIZE
     cmp L1EE5
     if_cc_then
         ; Show "not enough memory"
@@ -1441,7 +1442,7 @@
                 sta [TFB],y                                 ; TFB.NEXT = A
                 sta TFC                                     ; TFC = A
                 lda [TFB],y                                 ; A = TFB.NEXT
-                sta ZP_0E                                   ; ZP_0E = A = TFB.NEXT
+                sta FREE_LIST_HEAD                                   ; FREE_LIST_HEAD = A = TFB.NEXT
             pla
             iny                                             ; Y = BLOCK_OFFSET_PREVIOUS = 1
             sta [TFB],y                                     ; TFB.PREVIOUS = A
@@ -1472,7 +1473,7 @@
         sta [TFB],y
         sta TFC
         lda [TFB],y
-        sta ZP_0E
+        sta FREE_LIST_HEAD
         lda L1EE5
         iny                                                 ; Y = BLOCK_OFFSET_PREVIOUS = 1
         sta [TFB],y                                         ; TFB.PREVIOUS = A = L1EE5
@@ -1558,13 +1559,13 @@
     rts
 .endproc
 
-;;; summary: List block count
+;;; summary: List size (block count)
 ;;; in:
 ;;;   A  Head block
 ;;; out:
 ;;;   A  Block count
 ;;; changed: A+ X+ Y+ TFB#TFC
-.proc L1FFE
+.proc LIST_SIZE
     ; Have head?
     cmp # BLOCK_NONE
     if_eq_then
@@ -1574,6 +1575,7 @@
     else_end
     ; A != 0
 
+    ; Have head
     sta TFC                                                 ; TFC = A
     lda # 0                                                 ; A = 0
     sta TFB                                                 ; TFB = A = 0
@@ -2857,7 +2859,7 @@
     sta TFB
     tay                                                     ; Y = BLOCK_OFFSET_NEXT = 0
     lda [TFB],y
-    sta ZP_0E
+    sta FREE_LIST_HEAD
     tya
     sta [TFB],y
     iny                                                     ; Y = BLOCK_OFFSET_PREVIOUS = 1
@@ -2894,10 +2896,10 @@
     from_loop
         lda [TFB],y
         pha
-        lda ZP_0E
+        lda FREE_LIST_HEAD
         sta [TFB],y
         lda TFC
-        sta ZP_0E
+        sta FREE_LIST_HEAD
         pla
         sta TFC
     next
@@ -3041,10 +3043,8 @@
         ; PFD#PFE := address of next entry in BUFFER_TABLE_NAME
         lda PFD
         clc
-        adc # BUFFER_NAME_MAX_LENGTH
-;>>++
-clv
-;<<++
+        adc # BUFFER_NAME_MAX_LENGTH                        ; V+
+        clv
         sta PFD
         if_cs_then
             inc PFE
@@ -3107,10 +3107,8 @@ clv
         adc # <BUFFER_TABLE_NAME
         sta TFB
         lda # 0
-        adc # >BUFFER_TABLE_NAME
-;>>++
-clv
-;<<++
+        adc # >BUFFER_TABLE_NAME                            ; V+
+        clv
         sta TFC
         ; Copy NAME_TEXT to TFB#TFC.
         ldy # 0
@@ -3166,7 +3164,7 @@ clv
             jsr PUTS
             from_loop
                 lda # PETSCII_SPACE
-                jsr KERNAL_CHROUT                           ; V-
+                jsr KERNAL_CHROUT                           ; screen: V-
             next
                 iny
                 cpy # PETSCII_RETURN
@@ -3174,23 +3172,21 @@ clv
             end
 
             pla
-            jsr L1FFE
+            jsr LIST_SIZE
             jsr A_TO_DECIMAL_3_A_X_Y
-            jsr KERNAL_CHROUT                               ; V-
+            jsr KERNAL_CHROUT                               ; screen: V-
             txa
-            jsr KERNAL_CHROUT                               ; V-
+            jsr KERNAL_CHROUT                               ; screen: V-
             tya
-            jsr KERNAL_CHROUT                               ; V-
+            jsr KERNAL_CHROUT                               ; screen: V-
             lda # PETSCII_RETURN
-            jsr KERNAL_CHROUT                               ; V-
+            jsr KERNAL_CHROUT                               ; screen: V-
         else_end
 
         lda T5C
         clc
-        adc # BUFFER_NAME_MAX_LENGTH
-;>>++
-clv
-;<<++
+        adc # BUFFER_NAME_MAX_LENGTH                        ; V+
+        clv
         sta T5C
         if_cs_then
             inc T5D
@@ -3206,14 +3202,14 @@ clv
     ldx # <RESOURCE_STRING_LIST_FOOTER
     ldy # >RESOURCE_STRING_LIST_FOOTER
     jsr PUTS
-    lda ZP_0E
-    jsr L1FFE
+    lda FREE_LIST_HEAD
+    jsr LIST_SIZE
     jsr A_TO_DECIMAL_3_A_X_Y
-    jsr KERNAL_CHROUT                               ; V-
+    jsr KERNAL_CHROUT                               ; screen: V-
     txa
-    jsr KERNAL_CHROUT                               ; V-
+    jsr KERNAL_CHROUT                               ; screen: V-
     tya
-    jsr KERNAL_CHROUT                               ; V-
+    jsr KERNAL_CHROUT                               ; screen: V-
     ; Show "hit return to continue"
     ldx # <RESOURCE_STRING_HIT_RETURN_TO_CONTINUE
     ldy # >RESOURCE_STRING_HIT_RETURN_TO_CONTINUE
@@ -3251,46 +3247,41 @@ clv
 ;;; changes: A  X  Y
 .proc A_TO_DECIMAL_3_A_X_Y
     from
-        ldx # PETSCII_SPACE
-        ldy # PETSCII_SPACE
+        ldx # PETSCII_SPACE                                 ; X = $20
+        ldy # PETSCII_SPACE                                 ; Y = $20
     loop
         sec
-        sbc # 100
-;>>++
-clv
-;<<++
-        bcc _end
+        sbc # 100                                           ; V+
+       ;clv
+        bcc _end                                            ; break
         cpx # PETSCII_SPACE
         if_eq_then
-            ldx # PETSCII_DIGIT_ZERO
-            ldy # PETSCII_DIGIT_ZERO
+            ldx # PETSCII_DIGIT_ZERO                        ; X = $30
+            ldy # PETSCII_DIGIT_ZERO                        ; Y = $30
         else_end
     next
         inx
-        bvc _loop                                           ; bra
+        bne _loop                                           ; bra
     end
 
-    adc # 100
+    adc # 100                                               ; V+
+   ;clv
     from_loop
         sec
-        sbc # 10
-;>>++
-clv
-;<<++
+        sbc # 10                                            ; V+
+       ;clv
         bcc _end                                            ; break
         cpy # PETSCII_SPACE
         if_eq_then
-            ldy # PETSCII_DIGIT_ZERO
+            ldy # PETSCII_DIGIT_ZERO                        ; Y = $30
         else_end
     next
         iny
-        bvc _loop                                           ; bra
+        bne _loop                                           ; bra
     end
 
-    adc # 10 + PETSCII_DIGIT_ZERO
-;>>++
-clv
-;<<++
+    adc # 10 + PETSCII_DIGIT_ZERO                           ; V+
+    clv
     sty L297F
     tay
     txa
@@ -4487,15 +4478,13 @@ clv
             from
                 lda # EDIT_BUFFERS_1_FIRST_PAGE
                 ; A = EDIT_BUFFERS_1_FIRST_PAGE , X = ? Y = $00
-                sta ZP_0E
-                ; [ZP_0E] = EDIT_BUFFERS_1_FIRST_PAGE
+                sta FREE_LIST_HEAD
+                ; [FREE_LIST_HEAD] = EDIT_BUFFERS_1_FIRST_PAGE
             loop
                 sta CURRENT_BUFFER_B
                 clc
-                adc # 1
-;>>++
-clv
-;<<++
+                adc # 1                                     ; V+
+               ;clv
                 cmp # EDIT_BUFFERS_1_LAST_PAGE + 1
                 if_eq_then
                     ; A = EDIT_BUFFERS_1_LAST_PAGE + 1
@@ -4508,6 +4497,8 @@ clv
                 bne _loop
             end
             ; A = EDIT_BUFFERS_2_LAST_PAGE , X = ? , Y = 0
+
+            clv                                             ; V=0
 
         lda # CPU_PORT_DATA_BASIC_RAM_IO_AREA_KERNAL_ROM_DATASETTE_DEFAULT
         sta CPU_PORT_DATA
@@ -4554,10 +4545,8 @@ clv
             adc # SIZEOF_ADDR                               ; get argv[1] 
             sta T5C
             lda SHELL_ARGV_HI
-            adc # 0
-;>>++
-clv
-;<<++
+            adc # 0                                         ; V+
+            clv                                             ; V=0
             sta T5D
             ; T5C#T5D := *argv[1]
             ldy # 0                                         ; Y = 0
@@ -4607,10 +4596,8 @@ clv
 
         lda P36
         clc
-        adc # OUR_SCREEN_WIDTH - 1
-;>>++
-clv
-;<<++
+        adc # OUR_SCREEN_WIDTH - 1                          ; V+
+        clv
         sta ZAB
 
         lda # 0
@@ -4706,10 +4693,8 @@ clv
         sta [TFB],y
         lda TFB
         clc
-        adc # OUR_SCREEN_WIDTH
-;>>++
-clv
-;<<++
+        adc # OUR_SCREEN_WIDTH                              ; V+
+        clv                                                 ; V=0
         sta TFB
         if_cs_then
             inc TFC
@@ -4841,10 +4826,8 @@ clv
         sta [TFB],y
         lda TFB
         clc
-        adc # OUR_SCREEN_WIDTH
-;>>++
-clv
-;<<++
+        adc # OUR_SCREEN_WIDTH                              ; V+
+        clv                                                 ; V=0
         sta TFB
         if_cs_then
             inc TFC
@@ -5143,10 +5126,8 @@ clv
         else
             lda ZPKERNAL_PNT_LO
             clc
-            adc # OUR_SCREEN_WIDTH
-    ;>>++
-    clv
-    ;<<++
+            adc # OUR_SCREEN_WIDTH                          ; V+
+            clv                                             ; V=0
             sta TFB
             if_cs_then
                 inc TFC
@@ -5278,10 +5259,8 @@ clv
         if_pl_then
             lda ZPKERNAL_PNT_LO
             sec
-            sbc # OUR_SCREEN_WIDTH
-    ;>>++
-    clv
-    ;<<++
+            sbc # OUR_SCREEN_WIDTH                          ; V+
+            clv                                             ; V=0
             sta TFB
             if_cc_then
                 dec TFC

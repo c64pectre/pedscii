@@ -71,7 +71,7 @@
 .exportzp ZP_0B := $0B  ; ZPBASIC_COUNT
 .exportzp ZP_0C := $0C  ; ZPBASIC_DIMFLG
 .exportzp ZP_0D := $0D  ; ZPBASIC_VALTYP                                        USED
-.exportzp ZP_0E := $0E  ; ZPBASIC_INTFLG
+.exportzp ZP_0E := $0E  ; ZPBASIC_INTFLG                                        USED
 .exportzp ZP_0F := $0F  ; ZPBASIC_DORES_GARBFL
 .exportzp ZP_10 := $10  ; ZPBASIC_SUBFLG
 .exportzp ZP_11 := $11  ; ZPBASIC_INPFLG
@@ -223,6 +223,9 @@
 
 
 .exportzp CURRENT_BUFFER_HEAD := ZP_0D
+
+.exportzp FREE_LIST_HEAD := ZP_0E
+
 
 .exportzp P19 := ZP_19
 
