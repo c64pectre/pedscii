@@ -20,11 +20,7 @@
 
 _3680:
 
-;PREVIOUS_ZPKERNAL_TIME_2:
-;    V3680:  .res 1      ; $3680
-
 V3781:      .res 1      ; $3781
-;U3782:      .res 1      ; $3782 Unused
 V3783:      .res 1      ; $3783
 V3784:      .res 1      ; $3784
 V3785:      .res 1      ; $3785
@@ -67,13 +63,7 @@ V38AC:      .res 1      ; $38AC
 V38AD:      .res 1      ; $38AD
 V38AE:      .res 1      ; $38AE
 V38AF:      .res 1      ; $38AF
-;U38B0:      .res 1      ; $38B0 Used in CMD_PRINT, L3186, L31CA
 V38B1:      .res 1      ; $38B1
-;U38B2:      .res 1      ; $38B2  Unused
 V38B3:      .res 1      ; $38B3
-
-OLD_KERNAL_CBINV:   .res 2
-
-_38B4:
 
 ; __BSS_LOAD__ + __BSS_SIZE__

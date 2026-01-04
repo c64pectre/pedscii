@@ -51,10 +51,8 @@
                 tay
                 lda ZPKERNAL_TIME_2
                 sec
-                sbc PREVIOUS_ZPKERNAL_TIME_2
-;>>++
-clv
-;<<++
+                sbc PREVIOUS_ZPKERNAL_TIME_2                ; V+
+                clv                                         ; V=0
                 cmp # CURSOR_BLINK_DELAY
                 if_pl_then
                     jsr REVERSE_CURSOR_CHAR
@@ -86,8 +84,8 @@ clv
     ; Does not come here
 .endproc
 
-;;; summary reverse character under cursor
-;;; changed: A
+;;; summary: Reverse character under cursor
+;;; changed: A+
 .proc REVERSE_CURSOR_CHAR
     lda [ZPKERNAL_PNT],y
     eor # $80
@@ -232,10 +230,8 @@ clv
     jsr L1BD6
     txa
     clc
-    adc V3781
-    ;>>++
-    clv
-    ;<<++
+    adc V3781                                               ; V+
+    clv                                                     ; V=0 
     if_cs_then
         jsr L1B9C
         rts
@@ -340,20 +336,14 @@ clv
         if_mi_then
             lda # EDIT_PANEL_LAST_LINE
             sec
-            sbc T5A
-    ;>>++
-    ;clv
-    ;<<++
+            sbc T5A                                         ; V+
+           ;clv
             clc
-            adc L1CE7
-    ;>>++
-    ;clv
-    ;<<++
+            adc L1CE7                                       ; V+
+           ;clv
             lda # 0
-            adc L1CE8
-    ;>>++
-    clv
-    ;<<++
+            adc L1CE8                                       ; V+
+            clv                                             ; V=0
             if_mi_then
                 lda # $80
                 sta L2340
@@ -574,14 +564,14 @@ clv
 .proc MOVE_CURSOR_DOWN
     lda ZPKERNAL_PNT_LO
     clc
-    adc # OUR_SCREEN_WIDTH
+    adc # OUR_SCREEN_WIDTH                                  ; V+
+   ;clv
     sta ZPKERNAL_PNT_LO
     lda ZPKERNAL_PNT_HI
-    adc # 0
-    ;>>++
-    clv
-    ;<<++
+    adc # 0                                                 ; V+
+    clv                                                     ; V=0
     sta ZPKERNAL_PNT_HI
+
     inc T5A
 
     rts
@@ -592,16 +582,12 @@ clv
 .proc MOVE_CURSOR_UP
     lda ZPKERNAL_PNT_LO
     sec
-    sbc # OUR_SCREEN_WIDTH
-    ;>>++
-    ;clv
-    ;<<++
+    sbc # OUR_SCREEN_WIDTH                                  ; V+
+   ;clv
     sta ZPKERNAL_PNT_LO
     lda ZPKERNAL_PNT_HI
-    sbc # 0
-    ;>>++
-    clv
-    ;<<++
+    sbc # 0                                                 ; V+
+    clv                                                     ; V=0
     sta ZPKERNAL_PNT_HI
     dec T5A
 
@@ -691,10 +677,8 @@ clv
         ldy # BLOCK_OFFSET_POINTER                          ; Y = BLOCK_OFFSET_POINTER = 2
         lda [T4E],y                                         ; A = T4E.POINTER
         clc
-        adc # 1
-    ;>>++
-    clv
-    ;<<++
+        adc # 1                                             ; V+
+        clv                                                 ; V=0
         if_ne_then
             sta [T4E],y
         else_end
@@ -896,10 +880,8 @@ clv
                     ; A = CURRENT_BUFFER_C = X = T4E.POINTER
                     lda [T4E],y                             ; A = T4E.POINTER ; Can remove this instruction?
                     sec
-                    sbc # 1
-    ;>>++
-    clv
-    ;<<++
+                    sbc # 1                                 ; V+
+                    clv                                     ; V=0
                     sta [T4E],y
                     ldy CURRENT_BUFFER_B
                     jsr L1B9C
@@ -926,10 +908,8 @@ clv
                 else
                     lda [T4E],y
                     sec
-                    sbc # 1
-    ;>>++
-    clv
-    ;<<++
+                    sbc # 1                                 ; V+
+                    clv                                     ; V=0
                     sta [T4E],y
                     from
                         ldy CURRENT_BUFFER_C
@@ -1103,7 +1083,7 @@ clv
     lda # 0
     sta TFB
     sta PFD
-    jsr L1B77                                               ; May throw EXCEPTION_OUT_OF_MEMORY
+    jsr L1B77                                               ; throws: EXCEPTION_OUT_OF_MEMORY
     if_cs_then
         rts
     else_end
@@ -1113,7 +1093,7 @@ clv
     ldy # BLOCK_OFFSET_NEXT                                 ; Y = BLOCK_OFFSET_NEXT = 2
     lda [TFB],y                                             ; A = TFB.NEXT
     sta ZP_0E                                               ; ZP_0E = A = TFB.NEXT
-    jsr L1B77                                               ; May throw EXCEPTION_OUT_OF_MEMORY
+    jsr L1B77                                               ; throws: EXCEPTION_OUT_OF_MEMORY
     if_cs_then
         lda L1EE6
         sta ZP_0E
@@ -1164,16 +1144,12 @@ clv
     if_pl_then
         sec
         lda CURRENT_BUFFER_LINE_LO
-        sbc L1CE9
-;>>++
-;clv
-;<<++
+        sbc L1CE9                                           ; V+
+       ;clv
         sta CURRENT_BUFFER_LINE_LO
         lda CURRENT_BUFFER_LINE_HI
-        sbc L1CEA
-;>>++
-clv
-;<<++
+        sbc L1CEA                                           ; V+
+        clv                                                 ; V=0
         sta CURRENT_BUFFER_LINE_HI
         bvc _end                                            ; bra
     else
@@ -1213,15 +1189,11 @@ clv
     iny                                                     ; Y = BLOCK_OFFSET_POINTER = 2
     lda [T4E],y                                             ; A = T4E.POINTER
     sec
-    sbc CURRENT_BUFFER_C                                    ; A = T4E.POINTER - CURRENT_BUFFER_C
-;>>++
-;clv
-;<<++
+    sbc CURRENT_BUFFER_C                                    ; A = T4E.POINTER - CURRENT_BUFFER_C | V+
+   ;clv
     clc
-    adc # BLOCK_OFFSET_POINTER_MIN_VALUE                    ; A = T4E.POINTER - CURRENT_BUFFER_C + BLOCK_OFFSET_POINTER_MIN_VALUE
-;>>++
-clv
-;<<++
+    adc # BLOCK_OFFSET_POINTER_MIN_VALUE                    ; A = T4E.POINTER - CURRENT_BUFFER_C + BLOCK_OFFSET_POINTER_MIN_VALUE | V+
+    clv                                                     ; V=0
     sta [TFB],y                                             ; TFB.POINTER = T4E.POINTER - CURRENT_BUFFER_C + BLOCK_OFFSET_POINTER_MIN_VALUE
     ldy CURRENT_BUFFER_C                                    ; Y = CURRENT_BUFFER_C
     dey                                                     ; Y = CURRENT_BUFFER_C - 1
@@ -1255,15 +1227,11 @@ clv
     ldy # BLOCK_OFFSET_POINTER                              ; Y = BLOCK_OFFSET_POINTER = 2
     lda [TFB],y                                             ; A = TFB.POINTER
     sec
-    sbc V37D5                                               ; A = TFB.POINTER - V37D5
-;>>++
-;clv
-;<<++
+    sbc V37D5                                               ; A = TFB.POINTER - V37D5 | V+
+   ;clv
     clc
-    adc # BLOCK_OFFSET_POINTER_MIN_VALUE                    ; A = TFB.POINTER - V37D5 + BLOCK_OFFSET_POINTER_MIN_VALUE
-;>>++
-clv
-;<<++
+    adc # BLOCK_OFFSET_POINTER_MIN_VALUE                    ; A = TFB.POINTER - V37D5 + BLOCK_OFFSET_POINTER_MIN_VALUE | V+
+    clv                                                     ; V=0
     sta [PFD],y                                             ; PFD.POINTER = A = TFB.POINTER - V37D5 + BLOCK_OFFSET_POINTER_MIN_VALUE
     ldy V37D5
     dey
@@ -1321,10 +1289,8 @@ clv
         ; A = CURRENT_BUFFER_C > BLOCK_OFFSET_POINTER_MIN_VALUE = 3
         ; because is never decremented below BLOCK_OFFSET_POINTER_MIN_VALUE
         sec
-        sbc # 1
-;>>++
-clv
-;<<++
+        sbc # 1                                             ; V+
+        clv                                                 ; V=0
         ; A = CURRENT_BUFFER_C - 1 >=  BLOCK_OFFSET_POINTER_MIN_VALUE
         ldy # BLOCK_OFFSET_POINTER                          ; Y = BLOCK_OFFSET_POINTER = 2
         sta [T4E],y                                         ; T4E.POINTER = A = CURRENT_BUFFER_C - 1 >= BLOCK_OFFSET_POINTER_MIN_VALUE
@@ -1446,10 +1412,8 @@ clv
     adc L1CE9
     sta CURRENT_BUFFER_LINE_LO
     lda CURRENT_BUFFER_LINE_HI
-    adc L1CEA
-;>>++
-clv
-;<<++
+    adc L1CEA                                               ; V+
+    clv                                                     ; V=0
     sta CURRENT_BUFFER_LINE_HI
     lda # 0
     sta TFB
@@ -1555,10 +1519,8 @@ clv
         bvc _end
     else
         sec
-        sbc # 1
-;>>++
-clv
-;<<++
+        sbc # 1                                             ; V+
+        clv                                                 ; V=0
         ldy # BLOCK_OFFSET_POINTER                          ; Y = BLOCK_OFFSET_POINTER = 2
         sta [T4E],y                                         ; T4E.POINTER = A
     end
@@ -1578,10 +1540,8 @@ clv
         bvc _end
     else
         sec
-        sbc # 1
-;>>++
-clv
-;<<++
+        sbc # 1                                             ; V+
+        clv                                                 ; V=0
         sta [PFD],y                                         ; PFD.POINTER = A
     end
 
@@ -1641,7 +1601,6 @@ clv
     sta T5C
     sta T5E
     sta V3787
-    L2020:
     sta V3788
     sta V3789
     sta V378A
@@ -1661,7 +1620,7 @@ clv
         pha
         ldy # BLOCK_OFFSET_POINTER                          ; Y = BLOCK_OFFSET_POINTER = 2
         lda [T5C],y                                         ; A = T5C.POINTER
-        cmp # BLOCK_OFFSET_POINTER_MAX_VALUE
+        cmp # BLOCK_OFFSET_POINTER_MAX_VALUE                ; (A = T5C.POINTER) ? BLOCK_OFFSET_POINTER_MAX_VALUE
         beq _loop                                           ; BLock is full -> continue
     end
 
@@ -1780,7 +1739,7 @@ clv
         inc V3784
         inc V3783
         beq _end
-        jmp _loop                                           ; bne = bra not possible
+        jmp _loop                                           ; bne = bra not possible. TODO V____ to ZP makes code smaller.
     end
 
     from
@@ -1791,10 +1750,8 @@ clv
         sty V3783
         lda V3784
         sec
-        sbc # BLOCK_OFFSET_POINTER_MIN_VALUE
-;>>++
-;clv
-;<<++
+        sbc # BLOCK_OFFSET_POINTER_MIN_VALUE                ; V+
+       ;clv
         sta V3786
         inc V3785
         ldy V3784
@@ -1810,14 +1767,14 @@ clv
         bne _loop
     end
 
+    clv                                                     ; V=0
+
     lda V3787
     if_ne_then
         lda CURRENT_BUFFER_C
         sec
-        sbc V3786
-;>>++
-;clv
-;<<++
+        sbc V3786                                           ; V+
+       ;clv
         sta CURRENT_BUFFER_C
     else_end
 
@@ -1825,10 +1782,8 @@ clv
     if_ne_then
         lda T59
         sec
-        sbc V3786
-;>>++
-;clv
-;<<++
+        sbc V3786                                           ; V+
+       ;clv
         sta T59
     else_end
 
@@ -1836,10 +1791,8 @@ clv
     if_ne_then
         lda V37D8
         sec
-        sbc V3786
-;>>++
-;clv
-;<<++
+        sbc V3786                                           ; V+
+       ;clv
         sta V37D8
     else_end
 
@@ -1847,10 +1800,8 @@ clv
     if_ne_then
         lda V37D5
         sec
-        sbc V3786
-;>>++
-;clv
-;<<++
+        sbc V3786                                           ; V+
+       ;clv
         sta V37D5
     else_end
 
@@ -1858,26 +1809,18 @@ clv
     if_ne_then
         lda L1CE6
         sec
-        sbc V3786
-;>>++
-;clv
-;<<++
+        sbc V3786                                           ; V+
+       ;clv
         sta L1CE6
     else_end
 
     lda V3785
     clc
-    sbc V3786
-;>>++
-;clv
-;<<++
+    sbc V3786                                               ; V+
+    clv                                                     ; V=0
     ldy # BLOCK_OFFSET_POINTER                              ; Y = BLOCK_OFFSET_POINTER = 2
     sta [T5E],y                                             ; T5E.POINTER = A
     sec                                                     ; Fail?
-
-;>>++
-clv
-;<<++
 
     rts
 .endproc
@@ -1915,10 +1858,8 @@ clv
     stx P19
     txa
     sec
-    sbc CURSOR_SCREEN_X
-;>>++
-clv
-;<<++
+    sbc CURSOR_SCREEN_X                                     ; V+
+    clv                                                     ; V=0
     if_cc_then
         lda CURRENT_BUFFER_COLUMN
         sta CURSOR_SCREEN_X
@@ -1950,10 +1891,8 @@ clv
         from_loop
             lda TFB
             clc
-            adc # OUR_SCREEN_WIDTH
-;>>++
-clv
-;<<++
+            adc # OUR_SCREEN_WIDTH                          ; V+
+            clv                                             ; V=0
             sta TFB
             if_cs_then
                 inc TFC
@@ -2014,10 +1953,8 @@ clv
             beq _end                                        ; break
             clc
             lda TFB
-            adc # OUR_SCREEN_WIDTH
-;>>++
-clv
-;<<++
+            adc # OUR_SCREEN_WIDTH                          ; bra
+            clv
             sta TFB
             if_cs_then
                 inc TFC
@@ -2053,10 +1990,8 @@ clv
         rol ZPKERNAL_PNT_HI
         sta ZPKERNAL_PNT_LO
         lda ZPKERNAL_PNT_HI
-        adc # >OUR_VIDEO_MATRIX_BASE
-;>>++
-clv
-;<<++
+        adc # >OUR_VIDEO_MATRIX_BASE                        ; V+
+        clv                                                 ; V=0
         sta ZPKERNAL_PNT_HI
     else_end
 
@@ -2341,10 +2276,8 @@ clv
         lda T5E
         sta T5C
         clc
-        adc # OUR_SCREEN_WIDTH
-;>>++
-clv
-;<<++
+        adc # OUR_SCREEN_WIDTH                              ; V+
+       ;clv
         sta T5E
         if_cs_then
             inc T5F
@@ -2353,6 +2286,8 @@ clv
         dex
         bne _loop
     end
+
+    clv                                                     ; V=0
 
     rts
 .endproc
@@ -2385,10 +2320,8 @@ clv
         lda T5E
         sta T5C
         clc
-        adc # >OUR_COLOR_RAM_BASE
-;>>++
-clv
-;<<++
+        adc # >OUR_COLOR_RAM_BASE                           ; V+
+       ;clv
         sta T5E
         if_cc_then
             dec T5F
@@ -2397,6 +2330,8 @@ clv
         dex
         bne _loop
     end
+
+    clv                                                     ; V=0
 
     rts
 .endproc
@@ -2598,10 +2533,8 @@ clv
             tay
             lda ZPKERNAL_TIME_2
             sec
-            sbc L251E
-;>>++
-clv
-;<<++
+            sbc L251E                                       ; V+
+            clv                                             ; V=0
             cmp # CURSOR_BLINK_DELAY
             if_pl_then
                 jsr L2521
@@ -2783,16 +2716,12 @@ clv
         loop
             sec
             lda BL
-            sbc TABLE_POWER_OF_10_LO,y
-;>>++
-;clv
-;<<++
+            sbc TABLE_POWER_OF_10_LO,y                      ; V+
+           ;clv
             sta CL
             lda BH
-            sbc TABLE_POWER_OF_10_HI,y
-;>>++
-;clv
-;<<++
+            sbc TABLE_POWER_OF_10_HI,y                      ; V+
+           ;clv
             bcc _end                                        ; break
             sta BH
             lda CL
@@ -2811,13 +2740,11 @@ clv
         then                                                ; L2604:
             ; CH != 0 or X != 0
             clc
-            adc # PETSCII_DIGIT_ZERO
-;>>++
-;clv
-;<<++
+            adc # PETSCII_DIGIT_ZERO                        ; V+
+           ;clv
             sta INT_TO_STRING_RESULT,x
             inx
-        else_end                                            ; L260B:
+        else_end
     next
         dey
         bpl _loop
@@ -2830,9 +2757,7 @@ clv
         sta INT_TO_STRING_RESULT
     else_end
 
-;>>++
-clv
-;<<++
+    clv                                                     ; V=0
 
     rts
 .endproc
@@ -4532,16 +4457,6 @@ clv
     lda # CPU_P_V
     sta ZP_BIT_V
 
-    ; Setup `brk` handler, saved handler is used in `CMD_QUIT`.
-    lda KERNAL_CBINV
-    sta OLD_KERNAL_CBINV
-    lda KERNAL_CBINV + 1
-    sta OLD_KERNAL_CBINV + 1
-    lda # <CMD_PANIC
-    sta KERNAL_CBINV
-    lda # >CMD_PANIC
-    sta KERNAL_CBINV + 1
-
     ; Clear any exception
     clv
 
@@ -4677,7 +4592,7 @@ clv
 ;;; changed: ...
 .proc CMD_QUIT
     ; Jump to BASIC, basically same as <RUN STOP>+<RESTORE>. Selects BASIC ROM, IO devices, Kernal ROM.
-    jmp [OLD_KERNAL_CBINV]
+    jmp [KERNAL_CBINV]
         ; Does not return to here.
 .endproc
 
@@ -4955,16 +4870,12 @@ clv
             lda T5A
             sta L3380
             sec
-            sbc L1CE7
-;>>++
-;clv
-;<<++
+            sbc L1CE7                                       ; V+
+           ;clv
             sta L337F
             lda # 0
-            sbc L1CE8
-;>>++
-clv
-;<<++
+            sbc L1CE8                                       ; V+
+            clv                                             ; V=0
             if_mi_then
                 lda # 0
                 sta L337F
@@ -4976,17 +4887,13 @@ clv
             sta L337F
             inc L337F
             sec
-            sbc L1CE7
-;>>++
-clv
-;<<++
+            sbc L1CE7                                       ; V+
+           ;clv
             sta L3380
             inc L3380
             lda # $FF
-            sbc L1CE8
-;>>++
-clv
-;<<++
+            sbc L1CE8                                       ; V+
+            clv                                             ; V=0
             if_pl_then
                 lda # $19                                   ; ?
                 sta L3380
@@ -5313,15 +5220,11 @@ clv
         if_pl_then
             lda T5A
             sec
-            sbc L1CE7
-    ;>>++
-    ;clv
-    ;<<++
+            sbc L1CE7                                       ; V+
+           ;clv
             lda # 0
-            sbc L1CE8
-    ;>>++
-    clv
-    ;<<++
+            sbc L1CE8                                       ; V+
+            clv                                             ; V=0
             if_mi_then
                 lda # $80                                   ; ?
                 sta L2340
@@ -5490,16 +5393,12 @@ clv
         ; G_MODE = MODE_SELECT
         sec
         lda L1CE7
-        sbc CURRENT_BUFFER_LINE_LO
-;>>++
-;clv
-;<<++
+        sbc CURRENT_BUFFER_LINE_LO                          ; V+
+       ;clv
         sta L1CE7
         lda L1CE8
-        sbc CURRENT_BUFFER_LINE_HI
- ;>>++
-clv
-;<<++
+        sbc CURRENT_BUFFER_LINE_HI                          ; V+
+        clv                                                 ; V=0
        sta L1CE8
     else_end
 
